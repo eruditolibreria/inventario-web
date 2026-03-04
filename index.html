@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -8,17 +7,16 @@
 
 <h2>Registrar Producto</h2>
 
-<form id="formRegistro" method="GET" target="hiddenFrame">
-  <input type="hidden" name="CATEGORIA" id="f_categoria">
-  <input type="hidden" name="PRODUCTO" id="f_producto">
-  <input type="hidden" name="COSTO_PAQUETE" id="f_costo">
-  <input type="hidden" name="CANTIDAD_PAQUETE" id="f_cantidad">
-  <input type="hidden" name="UNIDADES_PAQUETE" id="f_unidades">
-  <input type="hidden" name="PRECIO_VENTA" id="f_precioVenta">
-  <input type="hidden" name="PROVEEDOR" id="f_proveedor">
-  <input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
-  <input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
-  <input type="hidden" name="SUCURSAL" id="f_sucursal">
+<input id="categoria" placeholder="Categoría"><br><br>
+<input id="producto" placeholder="Producto"><br><br>
+<input id="costo" type="number" placeholder="Costo Paquete"><br><br>
+<input id="cantidad" type="number" placeholder="Cantidad Paquetes"><br><br>
+<input id="unidades" type="number" placeholder="Unidades por Paquete"><br><br>
+<input id="precioVenta" type="number" placeholder="Precio Venta"><br><br>
+<input id="proveedor" placeholder="Proveedor"><br><br>
+<input id="fecha" type="date"><br><br>
+<input id="ubicacion" placeholder="Ubicación"><br><br>
+<input id="sucursal" placeholder="Sucursal"><br><br>
 
 <button onclick="registrar()">Registrar</button>
 
@@ -27,41 +25,31 @@ function registrar() {
 
   const baseURL = "https://script.google.com/macros/s/AKfycbz3SkZXEzkLDDk0yC_A3DVzYOatPC_Ruojgi4vIQ_TS-gzPyqSUew5j5eNXetC67fpe_w/exec";
 
-  document.getElementById("formRegistro").action = baseURL;
+  const params = new URLSearchParams({
+    CATEGORIA: document.getElementById("categoria").value,
+    PRODUCTO: document.getElementById("producto").value,
+    COSTO_PAQUETE: document.getElementById("costo").value,
+    CANTIDAD_PAQUETE: document.getElementById("cantidad").value,
+    UNIDADES_PAQUETE: document.getElementById("unidades").value,
+    PRECIO_VENTA: document.getElementById("precioVenta").value,
+    PROVEEDOR: document.getElementById("proveedor").value,
+    FECHA_ENTRADA: document.getElementById("fecha").value,
+    UBICACION_PRODUCTO: document.getElementById("ubicacion").value,
+    SUCURSAL: document.getElementById("sucursal").value
+  });
 
-  document.getElementById("f_categoria").value = document.getElementById("categoria").value;
-  document.getElementById("f_producto").value = document.getElementById("producto").value;
-  document.getElementById("f_costo").value = document.getElementById("costo").value;
-  document.getElementById("f_cantidad").value = document.getElementById("cantidad").value;
-  document.getElementById("f_unidades").value = document.getElementById("unidades").value;
-  document.getElementById("f_precioVenta").value = document.getElementById("precioVenta").value;
-  document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
-  document.getElementById("f_fecha").value = document.getElementById("fecha").value;
-  document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
-  document.getElementById("f_sucursal").value = document.getElementById("sucursal").value;
-
-  document.getElementById("formRegistro").submit();
-
-  alert("Producto registrado correctamente");
+  fetch(`${baseURL}?${params}`)
+    .then(response => response.text())
+    .then(data => {
+      alert("Producto registrado");
+    })
+    .catch(error => {
+      alert("Error al registrar");
+      console.error(error);
+    });
 }
 </script>
-  
-</form>
 
-<iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
-  
-  <button onclick="verInventario()">Ver Inventario</button>
-<script>
-function verInventario() {
-  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit?gid=992869814#gid=992869814", "_blank");
-}
-</script>
-  
 </body>
-
 </html>
-
-
-
-
 
