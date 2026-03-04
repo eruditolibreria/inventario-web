@@ -1,25 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Inventario</title>
+<meta charset="UTF-8">
+<title>Panel de Inventario</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  font-family: Arial, sans-serif;
+}
+
+.panel {
+  background: white;
+  width: 380px;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+.panel h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 9px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-registrar {
+  background: #2e7d32;
+  color: white;
+}
+
+.btn-ver {
+  background: #1976d2;
+  color: white;
+}
+
+.mensaje {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  display: none;
+  font-weight: bold;
+}
+
+.exito {
+  background: #d4edda;
+  color: #155724;
+}
+
+.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+</style>
 </head>
+
 <body>
 
-<h2>Registrar Producto</h2>
+<div class="panel">
+<h2>Panel de Inventario</h2>
 
-<input id="categoria" placeholder="Categoría"><br><br>
-<input id="producto" placeholder="Producto"><br><br>
-<input id="costo" type="number" placeholder="Costo Paquete"><br><br>
-<input id="cantidad" type="number" placeholder="Cantidad Paquetes"><br><br>
-<input id="unidades" type="number" placeholder="Unidades por Paquete"><br><br>
-<input id="precioVenta" type="number" placeholder="Precio Venta"><br><br>
-<input id="proveedor" placeholder="Proveedor"><br><br>
-<input id="fecha" type="date"><br><br>
-<input id="ubicacion" placeholder="Ubicación"><br><br>
-<input id="sucursal" placeholder="Sucursal"><br><br>
+<input id="categoria" placeholder="Categoría">
+<input id="producto" placeholder="Producto">
+<input id="costo" type="number" placeholder="Costo Paquete">
+<input id="cantidad" type="number" placeholder="Cantidad Paquetes">
+<input id="unidades" type="number" placeholder="Unidades por Paquete">
+<input id="precioVenta" type="number" placeholder="Precio Venta">
+<input id="proveedor" placeholder="Proveedor">
+<input id="fecha" type="date">
+<input id="ubicacion" placeholder="Ubicación">
+<input id="sucursal" placeholder="Sucursal">
 
-<button onclick="registrar()">Registrar</button>
+<button class="btn-registrar" onclick="registrar()">Registrar Producto</button>
+<button class="btn-ver" onclick="verInventario()">Ver Inventario</button>
+
+<div id="mensaje" class="mensaje"></div>
+</div>
 
 <!-- Formulario oculto -->
 <form id="formRegistro" method="GET" target="hiddenFrame" style="display:none;">
@@ -38,19 +117,39 @@
 <iframe name="hiddenFrame" style="display:none;"></iframe>
 
 <script>
+function mostrarMensaje(texto, tipo) {
+  const mensaje = document.getElementById("mensaje");
+  mensaje.className = "mensaje " + tipo;
+  mensaje.innerText = texto;
+  mensaje.style.display = "block";
+
+  setTimeout(() => {
+    mensaje.style.display = "none";
+  }, 3000);
+}
+
 function registrar() {
+
+  // 🔎 VALIDACIÓN
+  const categoria = document.getElementById("categoria").value.trim();
+  const producto = document.getElementById("producto").value.trim();
+  const precioVenta = document.getElementById("precioVenta").value;
+
+  if (!categoria || !producto || !precioVenta) {
+    mostrarMensaje("Categoría, Producto y Precio Venta son obligatorios.", "error");
+    return;
+  }
 
   const baseURL = "https://script.google.com/macros/s/AKfycbz3SkZXEzkLDDk0yC_A3DVzYOatPC_Ruojgi4vIQ_TS-gzPyqSUew5j5eNXetC67fpe_w/exec";
 
   document.getElementById("formRegistro").action = baseURL;
 
-  // Pasar valores al formulario oculto
-  document.getElementById("f_categoria").value = document.getElementById("categoria").value;
-  document.getElementById("f_producto").value = document.getElementById("producto").value;
+  document.getElementById("f_categoria").value = categoria;
+  document.getElementById("f_producto").value = producto;
   document.getElementById("f_costo").value = document.getElementById("costo").value;
   document.getElementById("f_cantidad").value = document.getElementById("cantidad").value;
   document.getElementById("f_unidades").value = document.getElementById("unidades").value;
-  document.getElementById("f_precioVenta").value = document.getElementById("precioVenta").value;
+  document.getElementById("f_precioVenta").value = precioVenta;
   document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
   document.getElementById("f_fecha").value = document.getElementById("fecha").value;
   document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
@@ -58,18 +157,20 @@ function registrar() {
 
   document.getElementById("formRegistro").submit();
 
-  alert("Producto registrado correctamente");
+  // 🔹 Limpiar formulario
+  document.querySelectorAll(".panel input").forEach(input => input.value = "");
+
+  mostrarMensaje("Producto registrado correctamente.", "exito");
+}
+
+function verInventario() {
+  window.open(
+    "https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit?gid=992869814#gid=992869814",
+    "_blank"
+  );
 }
 </script>
 
-  <button onclick="verInventario()">Ver Inventario</button>
-  
-  <script>
-function verInventario() {
-  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit?gid=992869814#gid=992869814", "_blank");
-}
-</script>
-  
 </body>
 </html>
 
