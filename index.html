@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMPRAS</title>
+<title>Sistema Inventario</title>
 
 <style>
 body {
@@ -31,7 +31,7 @@ h2 {
   margin-bottom: 20px;
 }
 
-input {
+select, input {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
@@ -54,7 +54,6 @@ button {
 
 .btn-registrar { background: #00c853; color: black; }
 .btn-ver { background: #2979ff; color: white; }
-.btn-buscar { background: #ff9100; color: black; }
 
 .mensaje {
   margin-top: 10px;
@@ -67,12 +66,7 @@ button {
 .exito { background: #1b5e20; }
 .error { background: #b71c1c; }
 
-.tabla {
-  margin-top: 15px;
-  max-height: 150px;
-  overflow-y: auto;
-  font-size: 12px;
-}
+.oculto { display:none; }
 </style>
 </head>
 
@@ -84,27 +78,46 @@ button {
 
 <input id="password" type="password" placeholder="Contraseña acceso">
 
+<select id="modo" onchange="cambiarModo()">
+  <option value="COMPRA">Registrar Compra</option>
+  <option value="VENTA">Registrar Venta</option>
+</select>
+
+<!-- CAMPOS COMPRA -->
+<div id="camposCompra">
+
 <input id="categoria" placeholder="Categoría">
 <input id="producto" placeholder="Producto">
 <input id="costo" type="number" placeholder="Costo Paquete">
-<input id="cantidad" type="number" placeholder="Cantidad Paquetes">
+<input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
 <input id="unidades" type="number" placeholder="Unidades por Paquete">
 <input id="precioVenta" type="number" placeholder="Precio Venta">
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
-<input id="sucursal" placeholder="Sucursal">
+<input id="sucursalCompra" placeholder="Sucursal">
 
-<button class="btn-registrar" onclick="registrar()">Registrar</button>
-<button class="btn-buscar" onclick="buscar()">Buscar Producto</button>
+</div>
+
+<!-- CAMPOS VENTA -->
+<div id="camposVenta" class="oculto">
+
+<input id="productoVenta" placeholder="Producto">
+<input id="cantidadVenta" type="number" placeholder="Cantidad">
+<input id="sucursalVenta" placeholder="Sucursal">
+<input id="usuarioVenta" placeholder="Usuario (opcional)">
+
+</div>
+
+<button class="btn-registrar" onclick="registrar()">Procesar</button>
 <button class="btn-ver" onclick="verInventario()">Ver Google Sheet</button>
 
 <div id="mensaje" class="mensaje"></div>
-<div class="tabla" id="resultadoBusqueda"></div>
 
 </div>
 
 <form id="formRegistro" method="GET" target="hiddenFrame" style="display:none;">
+  <input type="hidden" name="ACCION" id="f_accion">
   <input type="hidden" name="CATEGORIA" id="f_categoria">
   <input type="hidden" name="PRODUCTO" id="f_producto">
   <input type="hidden" name="COSTO_PAQUETE" id="f_costo">
@@ -115,6 +128,8 @@ button {
   <input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
   <input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
   <input type="hidden" name="SUCURSAL" id="f_sucursal">
+  <input type="hidden" name="CANTIDAD" id="f_cantidadVenta">
+  <input type="hidden" name="USUARIO" id="f_usuarioVenta">
 </form>
 
 <iframe name="hiddenFrame" style="display:none;"></iframe>
@@ -122,6 +137,7 @@ button {
 <script>
 
 const CLAVE = "1234";
+const baseURL = "https://script.google.com/macros/s/AKfycbxEWKZvh7Zbei81ypbUr_wEu7r02_tRwVdNugAvvz07eLst3S9Jmpq8F08vIDEQo6MyVw/exec";
 
 function mostrarMensaje(texto, tipo) {
   const m = document.getElementById("mensaje");
@@ -131,50 +147,65 @@ function mostrarMensaje(texto, tipo) {
   setTimeout(()=> m.style.display="none", 3000);
 }
 
-function registrar() {
-
-  if(document.getElementById("password").value !== CLAVE){
-    mostrarMensaje("Contraseña incorrecta", "error");
-    return;
-  }
-
-  const producto = document.getElementById("producto").value.trim();
-  if(!producto){
-    mostrarMensaje("Producto es obligatorio", "error");
-    return;
-  }
-
-  const baseURL = "https://script.google.com/macros/s/AKfycbz3SkZXEzkLDDk0yC_A3DVzYOatPC_Ruojgi4vIQ_TS-gzPyqSUew5j5eNXetC67fpe_w/exec";
-  document.getElementById("formRegistro").action = baseURL;
-
-  document.getElementById("f_categoria").value = document.getElementById("categoria").value;
-  document.getElementById("f_producto").value = producto;
-  document.getElementById("f_costo").value = document.getElementById("costo").value;
-  document.getElementById("f_cantidad").value = document.getElementById("cantidad").value;
-  document.getElementById("f_unidades").value = document.getElementById("unidades").value;
-  document.getElementById("f_precioVenta").value = document.getElementById("precioVenta").value;
-  document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
-  document.getElementById("f_fecha").value = document.getElementById("fecha").value;
-  document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
-  document.getElementById("f_sucursal").value = document.getElementById("sucursal").value;
-
-  document.getElementById("formRegistro").submit();
-
-  document.querySelectorAll(".panel input").forEach(i=>{
-    if(i.id !== "password") i.value="";
-  });
-
-  mostrarMensaje("Registrado correctamente", "exito");
+function cambiarModo(){
+  const modo = document.getElementById("modo").value;
+  document.getElementById("camposCompra").classList.toggle("oculto", modo==="VENTA");
+  document.getElementById("camposVenta").classList.toggle("oculto", modo==="COMPRA");
 }
 
-function buscar(){
-  const texto = document.getElementById("producto").value;
-  document.getElementById("resultadoBusqueda").innerHTML =
-  "Búsqueda local: " + texto;
+function registrar(){
+
+  if(document.getElementById("password").value !== CLAVE){
+    mostrarMensaje("Contraseña incorrecta","error");
+    return;
+  }
+
+  const modo = document.getElementById("modo").value;
+  document.getElementById("formRegistro").action = baseURL;
+  document.getElementById("f_accion").value = modo;
+
+  if(modo === "COMPRA"){
+
+    const producto = document.getElementById("producto").value.trim();
+    if(!producto){
+      mostrarMensaje("Producto obligatorio","error");
+      return;
+    }
+
+    document.getElementById("f_categoria").value = document.getElementById("categoria").value;
+    document.getElementById("f_producto").value = producto;
+    document.getElementById("f_costo").value = document.getElementById("costo").value;
+    document.getElementById("f_cantidad").value = document.getElementById("cantidadCompra").value;
+    document.getElementById("f_unidades").value = document.getElementById("unidades").value;
+    document.getElementById("f_precioVenta").value = document.getElementById("precioVenta").value;
+    document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
+    document.getElementById("f_fecha").value = document.getElementById("fecha").value;
+    document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
+    document.getElementById("f_sucursal").value = document.getElementById("sucursalCompra").value;
+
+  } else {
+
+    const producto = document.getElementById("productoVenta").value.trim();
+    const cantidad = document.getElementById("cantidadVenta").value;
+
+    if(!producto || !cantidad){
+      mostrarMensaje("Datos incompletos","error");
+      return;
+    }
+
+    document.getElementById("f_producto").value = producto;
+    document.getElementById("f_cantidadVenta").value = cantidad;
+    document.getElementById("f_sucursal").value = document.getElementById("sucursalVenta").value;
+    document.getElementById("f_usuarioVenta").value = document.getElementById("usuarioVenta").value;
+
+  }
+
+  document.getElementById("formRegistro").submit();
+  mostrarMensaje("Procesando...","exito");
 }
 
 function verInventario(){
-  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit", "_blank");
+  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit","_blank");
 }
 
 </script>
