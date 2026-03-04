@@ -38,11 +38,13 @@ function registrar() {
     UBICACION_PRODUCTO: document.getElementById("ubicacion").value,
     SUCURSAL: document.getElementById("sucursal").value
   });
+  document.getElementById("hiddenFrame").src = `${baseURL}?${params}`;
 
-  window.open(`${baseURL}?${params}`, "_blank");
+  alert("Producto registrado correctamente");
 }
 </script>
 
 </body>
 
 </html>
+
