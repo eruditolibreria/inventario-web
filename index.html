@@ -2,78 +2,76 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Panel de Inventario</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Inventario</title>
 
 <style>
 body {
   margin: 0;
-  height: 100vh;
+  background: #000;
+  font-family: Arial, sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  font-family: Arial, sans-serif;
+  min-height: 100vh;
 }
 
 .panel {
-  background: white;
-  width: 380px;
-  padding: 30px;
+  background: #111;
+  color: white;
+  width: 95%;
+  max-width: 420px;
+  padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 0 20px rgba(0,255,150,0.2);
 }
 
-.panel h2 {
+h2 {
   text-align: center;
   margin-bottom: 20px;
 }
 
 input {
   width: 100%;
-  padding: 9px;
+  padding: 10px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
   border-radius: 6px;
+  border: none;
   box-sizing: border-box;
+  font-size: 14px;
 }
 
 button {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin-top: 8px;
-  border: none;
   border-radius: 6px;
+  border: none;
   font-weight: bold;
   cursor: pointer;
+  font-size: 14px;
 }
 
-.btn-registrar {
-  background: #2e7d32;
-  color: white;
-}
-
-.btn-ver {
-  background: #1976d2;
-  color: white;
-}
+.btn-registrar { background: #00c853; color: black; }
+.btn-ver { background: #2979ff; color: white; }
+.btn-buscar { background: #ff9100; color: black; }
 
 .mensaje {
-  margin-top: 15px;
-  padding: 10px;
+  margin-top: 10px;
+  padding: 8px;
   border-radius: 6px;
   text-align: center;
   display: none;
-  font-weight: bold;
 }
 
-.exito {
-  background: #d4edda;
-  color: #155724;
-}
+.exito { background: #1b5e20; }
+.error { background: #b71c1c; }
 
-.error {
-  background: #f8d7da;
-  color: #721c24;
+.tabla {
+  margin-top: 15px;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 12px;
 }
 </style>
 </head>
@@ -81,7 +79,10 @@ button {
 <body>
 
 <div class="panel">
-<h2>Panel de Inventario</h2>
+
+<h2>Inventario</h2>
+
+<input id="password" type="password" placeholder="Contraseña acceso">
 
 <input id="categoria" placeholder="Categoría">
 <input id="producto" placeholder="Producto">
@@ -89,18 +90,22 @@ button {
 <input id="cantidad" type="number" placeholder="Cantidad Paquetes">
 <input id="unidades" type="number" placeholder="Unidades por Paquete">
 <input id="precioVenta" type="number" placeholder="Precio Venta">
+<input id="precioUnitario" placeholder="Precio Unitario (auto)" readonly>
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
 <input id="sucursal" placeholder="Sucursal">
 
-<button class="btn-registrar" onclick="registrar()">Registrar Producto</button>
-<button class="btn-ver" onclick="verInventario()">Ver Inventario</button>
+<button class="btn-registrar" onclick="registrar()">Registrar</button>
+<button class="btn-buscar" onclick="buscar()">Buscar Producto</button>
+<button class="btn-ver" onclick="verInventario()">Ver Google Sheet</button>
 
 <div id="mensaje" class="mensaje"></div>
+
+<div class="tabla" id="resultadoBusqueda"></div>
+
 </div>
 
-<!-- Formulario oculto -->
 <form id="formRegistro" method="GET" target="hiddenFrame" style="display:none;">
   <input type="hidden" name="CATEGORIA" id="f_categoria">
   <input type="hidden" name="PRODUCTO" id="f_producto">
@@ -117,58 +122,72 @@ button {
 <iframe name="hiddenFrame" style="display:none;"></iframe>
 
 <script>
-function mostrarMensaje(texto, tipo) {
-  const mensaje = document.getElementById("mensaje");
-  mensaje.className = "mensaje " + tipo;
-  mensaje.innerText = texto;
-  mensaje.style.display = "block";
 
-  setTimeout(() => {
-    mensaje.style.display = "none";
-  }, 3000);
+// 🔐 contraseña básica
+const CLAVE = "1234";
+
+// 🔢 cálculo automático
+document.getElementById("precioVenta").addEventListener("input", calcularUnitario);
+document.getElementById("unidades").addEventListener("input", calcularUnitario);
+
+function calcularUnitario() {
+  const precio = parseFloat(document.getElementById("precioVenta").value);
+  const unidades = parseFloat(document.getElementById("unidades").value);
+  if(precio && unidades) {
+    document.getElementById("precioUnitario").value = (precio/unidades).toFixed(2);
+  }
+}
+
+function mostrarMensaje(texto, tipo) {
+  const m = document.getElementById("mensaje");
+  m.className = "mensaje " + tipo;
+  m.innerText = texto;
+  m.style.display = "block";
+  setTimeout(()=> m.style.display="none", 3000);
 }
 
 function registrar() {
 
-  // 🔎 VALIDACIÓN
-  const categoria = document.getElementById("categoria").value.trim();
-  const producto = document.getElementById("producto").value.trim();
-  const precioVenta = document.getElementById("precioVenta").value;
+  if(document.getElementById("password").value !== CLAVE){
+    mostrarMensaje("Contraseña incorrecta", "error");
+    return;
+  }
 
-  if (!categoria || !producto || !precioVenta) {
-    mostrarMensaje("Categoría, Producto y Precio Venta son obligatorios.", "error");
+  const producto = document.getElementById("producto").value.trim();
+  if(!producto){
+    mostrarMensaje("Producto es obligatorio", "error");
     return;
   }
 
   const baseURL = "https://script.google.com/macros/s/AKfycbz3SkZXEzkLDDk0yC_A3DVzYOatPC_Ruojgi4vIQ_TS-gzPyqSUew5j5eNXetC67fpe_w/exec";
-
   document.getElementById("formRegistro").action = baseURL;
 
-  document.getElementById("f_categoria").value = categoria;
-  document.getElementById("f_producto").value = producto;
-  document.getElementById("f_costo").value = document.getElementById("costo").value;
-  document.getElementById("f_cantidad").value = document.getElementById("cantidad").value;
-  document.getElementById("f_unidades").value = document.getElementById("unidades").value;
-  document.getElementById("f_precioVenta").value = precioVenta;
-  document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
-  document.getElementById("f_fecha").value = document.getElementById("fecha").value;
-  document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
-  document.getElementById("f_sucursal").value = document.getElementById("sucursal").value;
+  ["categoria","producto","costo","cantidad","unidades","precioVenta","proveedor","fecha","ubicacion","sucursal"]
+  .forEach(id=>{
+    document.getElementById("f_"+id.replace("precioVenta","precioVenta")).value =
+    document.getElementById(id).value;
+  });
 
   document.getElementById("formRegistro").submit();
 
-  // 🔹 Limpiar formulario
-  document.querySelectorAll(".panel input").forEach(input => input.value = "");
+  document.querySelectorAll(".panel input").forEach(i=> {
+    if(i.id !== "password") i.value="";
+  });
 
-  mostrarMensaje("Producto registrado correctamente.", "exito");
+  mostrarMensaje("Registrado correctamente", "exito");
 }
 
-function verInventario() {
-  window.open(
-    "https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit?gid=992869814#gid=992869814",
-    "_blank"
-  );
+// 🔎 búsqueda simple (local)
+function buscar(){
+  const texto = document.getElementById("producto").value;
+  document.getElementById("resultadoBusqueda").innerHTML =
+  "Búsqueda local: " + texto + "<br>(Para búsqueda real necesitamos backend JSON)";
 }
+
+function verInventario(){
+  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit", "_blank");
+}
+
 </script>
 
 </body>
