@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -38,12 +39,19 @@ function registrar() {
     SUCURSAL: document.getElementById("sucursal").value
   });
 
-  window.location.href = `${baseURL}?${params}`;
+  // Enviar al iframe oculto (sin abrir pestaña ni mostrar OK)
+  window.open(`${baseURL}?${params}`, "hiddenFrame");
+
+  alert("Producto registrado correctamente");
 }
 </script>
 
+<!-- Iframe oculto -->
+<iframe name="hiddenFrame" style="display:none;"></iframe>
+
 </body>
 </html>
+
 
 
 
