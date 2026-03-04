@@ -39,17 +39,10 @@ function registrar() {
     SUCURSAL: document.getElementById("sucursal").value
   });
 
-  fetch(`${baseURL}?${params}`)
-    .then(response => response.text())
-    .then(data => {
-      alert("Producto registrado");
-    })
-    .catch(error => {
-      alert("Error al registrar");
-      console.error(error);
-    });
+  window.open(`${baseURL}?${params}`, "_blank");
 }
 </script>
 
 </body>
+
 </html>
