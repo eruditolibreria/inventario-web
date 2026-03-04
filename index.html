@@ -43,7 +43,22 @@ function registrar() {
   alert("Producto registrado correctamente");
 }
 </script>
+  
+<form id="formRegistro" method="GET" target="hiddenFrame">
+  <input type="hidden" name="CATEGORIA" id="f_categoria">
+  <input type="hidden" name="PRODUCTO" id="f_producto">
+  <input type="hidden" name="COSTO_PAQUETE" id="f_costo">
+  <input type="hidden" name="CANTIDAD_PAQUETE" id="f_cantidad">
+  <input type="hidden" name="UNIDADES_PAQUETE" id="f_unidades">
+  <input type="hidden" name="PRECIO_VENTA" id="f_precioVenta">
+  <input type="hidden" name="PROVEEDOR" id="f_proveedor">
+  <input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
+  <input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
+  <input type="hidden" name="SUCURSAL" id="f_sucursal">
+</form>
+
 <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
+  
   <button onclick="verInventario()">Ver Inventario</button>
 <script>
 function verInventario() {
@@ -54,6 +69,7 @@ function verInventario() {
 </body>
 
 </html>
+
 
 
 
