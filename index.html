@@ -21,36 +21,50 @@
 
 <button onclick="registrar()">Registrar</button>
 
+<!-- Formulario oculto -->
+<form id="formRegistro" method="GET" target="hiddenFrame" style="display:none;">
+  <input type="hidden" name="CATEGORIA" id="f_categoria">
+  <input type="hidden" name="PRODUCTO" id="f_producto">
+  <input type="hidden" name="COSTO_PAQUETE" id="f_costo">
+  <input type="hidden" name="CANTIDAD_PAQUETE" id="f_cantidad">
+  <input type="hidden" name="UNIDADES_PAQUETE" id="f_unidades">
+  <input type="hidden" name="PRECIO_VENTA" id="f_precioVenta">
+  <input type="hidden" name="PROVEEDOR" id="f_proveedor">
+  <input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
+  <input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
+  <input type="hidden" name="SUCURSAL" id="f_sucursal">
+</form>
+
+<iframe name="hiddenFrame" style="display:none;"></iframe>
+
 <script>
 function registrar() {
 
   const baseURL = "https://script.google.com/macros/s/AKfycbz3SkZXEzkLDDk0yC_A3DVzYOatPC_Ruojgi4vIQ_TS-gzPyqSUew5j5eNXetC67fpe_w/exec";
 
-  const params = new URLSearchParams({
-    CATEGORIA: document.getElementById("categoria").value,
-    PRODUCTO: document.getElementById("producto").value,
-    COSTO_PAQUETE: document.getElementById("costo").value,
-    CANTIDAD_PAQUETE: document.getElementById("cantidad").value,
-    UNIDADES_PAQUETE: document.getElementById("unidades").value,
-    PRECIO_VENTA: document.getElementById("precioVenta").value,
-    PROVEEDOR: document.getElementById("proveedor").value,
-    FECHA_ENTRADA: document.getElementById("fecha").value,
-    UBICACION_PRODUCTO: document.getElementById("ubicacion").value,
-    SUCURSAL: document.getElementById("sucursal").value
-  });
+  document.getElementById("formRegistro").action = baseURL;
 
-  // Enviar al iframe oculto (sin abrir pestaña ni mostrar OK)
-  window.open(`${baseURL}?${params}`, "hiddenFrame");
+  // Pasar valores al formulario oculto
+  document.getElementById("f_categoria").value = document.getElementById("categoria").value;
+  document.getElementById("f_producto").value = document.getElementById("producto").value;
+  document.getElementById("f_costo").value = document.getElementById("costo").value;
+  document.getElementById("f_cantidad").value = document.getElementById("cantidad").value;
+  document.getElementById("f_unidades").value = document.getElementById("unidades").value;
+  document.getElementById("f_precioVenta").value = document.getElementById("precioVenta").value;
+  document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
+  document.getElementById("f_fecha").value = document.getElementById("fecha").value;
+  document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
+  document.getElementById("f_sucursal").value = document.getElementById("sucursal").value;
+
+  document.getElementById("formRegistro").submit();
 
   alert("Producto registrado correctamente");
 }
 </script>
 
-<!-- Iframe oculto -->
-<iframe name="hiddenFrame" style="display:none;"></iframe>
-
 </body>
 </html>
+
 
 
 
