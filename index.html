@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Inventario</title>
+</head>
+<body>
+
+<h2>Registrar Producto</h2>
+
+<input id="categoria" placeholder="Categoría"><br><br>
+<input id="producto" placeholder="Producto"><br><br>
+<input id="costo" type="number" placeholder="Costo Paquete"><br><br>
+<input id="cantidad" type="number" placeholder="Cantidad Paquetes"><br><br>
+<input id="unidades" type="number" placeholder="Unidades por Paquete"><br><br>
+<input id="precioVenta" type="number" placeholder="Precio Venta"><br><br>
+<input id="proveedor" placeholder="Proveedor"><br><br>
+<input id="fecha" type="date"><br><br>
+<input id="ubicacion" placeholder="Ubicación"><br><br>
+<input id="sucursal" placeholder="Sucursal"><br><br>
+
+<button onclick="registrar()">Registrar</button>
+
+<script>
+function registrar() {
+
+  const baseURL = "https://script.google.com/macros/s/AKfycbz3SkZXEzkLDDk0yC_A3DVzYOatPC_Ruojgi4vIQ_TS-gzPyqSUew5j5eNXetC67fpe_w/exec";
+
+  const params = new URLSearchParams({
+    CATEGORIA: document.getElementById("categoria").value,
+    PRODUCTO: document.getElementById("producto").value,
+    COSTO_PAQUETE: document.getElementById("costo").value,
+    CANTIDAD_PAQUETE: document.getElementById("cantidad").value,
+    UNIDADES_PAQUETE: document.getElementById("unidades").value,
+    PRECIO_VENTA: document.getElementById("precioVenta").value,
+    PROVEEDOR: document.getElementById("proveedor").value,
+    FECHA_ENTRADA: document.getElementById("fecha").value,
+    UBICACION_PRODUCTO: document.getElementById("ubicacion").value,
+    SUCURSAL: document.getElementById("sucursal").value
+  });
+
+  fetch(`${baseURL}?${params}`)
+    .then(response => response.text())
+    .then(data => {
+      alert("Producto registrado");
+    })
+    .catch(error => {
+      alert("Error al registrar");
+      console.error(error);
+    });
+}
+</script>
+
+</body>
+</html>
