@@ -113,6 +113,13 @@ margin-bottom:10px;
 <option value="VENTA">Registrar Venta</option>
 </select>
 
+<!-- SUCURSAL COMPRA -->
+<select id="sucursalCompra">
+<option value="">Sucursal</option>
+<option value="ERUDITOS">ERUDITOS</option>
+<option value="CENTRAL">CENTRAL</option>
+</select>
+
 <!-- COMPRA -->
 <div id="camposCompra">
 
@@ -131,14 +138,18 @@ margin-bottom:10px;
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
-<input id="sucursalCompra" placeholder="Sucursal">
 
 </div>
 
+<!-- SUCURSAL VENTA -->
+<select id="sucursalVenta" class="oculto">
+<option value="">Sucursal</option>
+<option value="ERUDITOS">ERUDITOS</option>
+<option value="CENTRAL">CENTRAL</option>
+</select>
+
 <!-- VENTA -->
 <div id="camposVenta" class="oculto">
-
-<input id="sucursalVenta" placeholder="Sucursal">
 
 <input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
 <div id="listaProductos" class="autocomplete"></div>
@@ -203,6 +214,12 @@ document.getElementById("camposCompra")
 .classList.toggle("oculto",modo==="VENTA");
 
 document.getElementById("camposVenta")
+.classList.toggle("oculto",modo==="COMPRA");
+
+document.getElementById("sucursalCompra")
+.classList.toggle("oculto",modo==="VENTA");
+
+document.getElementById("sucursalVenta")
 .classList.toggle("oculto",modo==="COMPRA");
 
 }
@@ -401,6 +418,7 @@ cargarInventario();
 
 </body>
 </html>
+
 
 
 
