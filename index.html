@@ -113,14 +113,12 @@ margin-bottom:10px;
 <option value="VENTA">Registrar Venta</option>
 </select>
 
-<!-- SUCURSAL COMPRA -->
 <select id="sucursalCompra">
 <option value="">Sucursal</option>
 <option value="ERUDITOS">ERUDITOS</option>
 <option value="CENTRAL">CENTRAL</option>
 </select>
 
-<!-- COMPRA -->
 <div id="camposCompra">
 
 <input id="categoria" placeholder="Categoría">
@@ -141,14 +139,12 @@ margin-bottom:10px;
 
 </div>
 
-<!-- SUCURSAL VENTA -->
 <select id="sucursalVenta" class="oculto">
 <option value="">Sucursal</option>
 <option value="ERUDITOS">ERUDITOS</option>
 <option value="CENTRAL">CENTRAL</option>
 </select>
 
-<!-- VENTA -->
 <div id="camposVenta" class="oculto">
 
 <input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
@@ -191,7 +187,7 @@ margin-bottom:10px;
 
 const CLAVE="1234";
 
-const baseURL="https://script.google.com/macros/s/AKfycbwdRSrUPLNWJfVWxcYdjPrUKG_ivYoJb0QRFBNik1w_kdx3_71mEMUBUpuFAEkdn8T7Ow/exec";
+const baseURL="TU_URL_SCRIPT_AQUI";
 
 let inventarioGlobal=[];
 
@@ -334,17 +330,8 @@ document.getElementById("f_accion").value=modo;
 
 if(modo==="COMPRA"){
 
-const producto=document.getElementById("producto").value.trim();
-
-if(!producto){
-
-mostrarMensaje("Producto obligatorio","error");
-return;
-
-}
-
 document.getElementById("f_categoria").value=document.getElementById("categoria").value;
-document.getElementById("f_producto").value=producto;
+document.getElementById("f_producto").value=document.getElementById("producto").value;
 document.getElementById("f_costo").value=document.getElementById("costo").value;
 document.getElementById("f_cantidad").value=document.getElementById("cantidadCompra").value;
 document.getElementById("f_unidades").value=document.getElementById("unidades").value;
@@ -356,18 +343,8 @@ document.getElementById("f_sucursal").value=document.getElementById("sucursalCom
 
 }else{
 
-const producto=document.getElementById("productoVenta").value.trim();
-const cantidad=document.getElementById("cantidadVenta").value;
-
-if(!producto||!cantidad){
-
-mostrarMensaje("Datos incompletos","error");
-return;
-
-}
-
-document.getElementById("f_producto").value=producto;
-document.getElementById("f_cantidadVenta").value=cantidad;
+document.getElementById("f_producto").value=document.getElementById("productoVenta").value;
+document.getElementById("f_cantidadVenta").value=document.getElementById("cantidadVenta").value;
 document.getElementById("f_sucursal").value=document.getElementById("sucursalVenta").value;
 document.getElementById("f_usuarioVenta").value=document.getElementById("usuarioVenta").value;
 
@@ -384,22 +361,12 @@ setTimeout(()=>{limpiarCampos();},500);
 
 function limpiarCampos(){
 
-document.getElementById("categoria").value="";
-document.getElementById("producto").value="";
-document.getElementById("costo").value="";
-document.getElementById("cantidadCompra").value="";
-document.getElementById("unidades").value="";
-document.getElementById("precioVenta").value="";
-document.getElementById("proveedor").value="";
-document.getElementById("fecha").value="";
-document.getElementById("ubicacion").value="";
-document.getElementById("sucursalCompra").value="";
+document.querySelectorAll("input").forEach(i=>i.value="");
 
-document.getElementById("productoVenta").value="";
-document.getElementById("cantidadVenta").value="";
-document.getElementById("usuarioVenta").value="";
 document.getElementById("infoProducto").innerText="";
+document.getElementById("infoCompra").innerText="";
 document.getElementById("listaProductos").innerHTML="";
+document.getElementById("listaCompra").innerHTML="";
 
 }
 
