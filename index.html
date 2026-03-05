@@ -6,67 +6,90 @@
 <title>Sistema Inventario</title>
 
 <style>
-body {
-  margin: 0;
-  background: #000;
-  font-family: Arial, sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+
+body{
+margin:0;
+background:#000;
+font-family:Arial;
+display:flex;
+justify-content:center;
+align-items:flex-start;
+padding:20px;
+min-height:100vh;
 }
 
-.panel {
-  background: #111;
-  color: white;
-  width: 95%;
-  max-width: 420px;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,255,150,0.2);
+.panel{
+background:#111;
+color:white;
+width:100%;
+max-width:420px;
+padding:25px;
+border-radius:12px;
+box-shadow:0 0 20px rgba(0,255,150,0.2);
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
+h2{
+text-align:center;
+margin-bottom:20px;
 }
 
-select, input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-  border: none;
-  box-sizing: border-box;
-  font-size: 14px;
+select,input{
+width:100%;
+padding:12px;
+margin-bottom:10px;
+border-radius:6px;
+border:none;
+box-sizing:border-box;
+font-size:15px;
 }
 
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 8px;
-  border-radius: 6px;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 14px;
+button{
+width:100%;
+padding:12px;
+margin-top:8px;
+border-radius:6px;
+border:none;
+font-weight:bold;
+cursor:pointer;
+font-size:14px;
 }
 
-.btn-registrar { background: #00c853; color: black; }
-.btn-ver { background: #2979ff; color: white; }
+.btn-registrar{background:#00c853;color:black;}
+.btn-ver{background:#2979ff;color:white;}
 
-.mensaje {
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 6px;
-  text-align: center;
-  display: none;
+.mensaje{
+margin-top:10px;
+padding:8px;
+border-radius:6px;
+text-align:center;
+display:none;
 }
 
-.exito { background: #1b5e20; }
-.error { background: #b71c1c; }
+.exito{background:#1b5e20;}
+.error{background:#b71c1c;}
 
-.oculto { display:none; }
+.oculto{display:none;}
+
+.autocomplete{
+background:#222;
+border-radius:6px;
+max-height:150px;
+overflow-y:auto;
+margin-top:-8px;
+margin-bottom:10px;
+}
+
+.item{
+padding:8px;
+cursor:pointer;
+border-bottom:1px solid #333;
+}
+
+.item:hover{
+background:#00c853;
+color:black;
+}
+
 </style>
 </head>
 
@@ -79,8 +102,8 @@ button {
 <input id="password" type="password" placeholder="Contraseña acceso">
 
 <select id="modo" onchange="cambiarModo()">
-  <option value="COMPRA">Registrar Compra</option>
-  <option value="VENTA">Registrar Venta</option>
+<option value="COMPRA">Registrar Compra</option>
+<option value="VENTA">Registrar Venta</option>
 </select>
 
 <!-- CAMPOS COMPRA -->
@@ -88,10 +111,13 @@ button {
 
 <input id="categoria" placeholder="Categoría">
 <input id="producto" placeholder="Producto">
+
 <input id="costo" type="number" placeholder="Costo Paquete">
 <input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
 <input id="unidades" type="number" placeholder="Unidades por Paquete">
+
 <input id="precioVenta" type="number" placeholder="Precio Venta">
+
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
@@ -102,9 +128,13 @@ button {
 <!-- CAMPOS VENTA -->
 <div id="camposVenta" class="oculto">
 
-<input id="productoVenta" placeholder="Producto">
-<input id="cantidadVenta" type="number" placeholder="Cantidad">
 <input id="sucursalVenta" placeholder="Sucursal">
+
+<input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
+<div id="listaProductos" class="autocomplete"></div>
+
+<input id="cantidadVenta" type="number" placeholder="Cantidad">
+
 <input id="usuarioVenta" placeholder="Usuario (opcional)">
 
 </div>
@@ -117,96 +147,179 @@ button {
 </div>
 
 <form id="formRegistro" method="GET" target="hiddenFrame" style="display:none;">
-  <input type="hidden" name="ACCION" id="f_accion">
-  <input type="hidden" name="CATEGORIA" id="f_categoria">
-  <input type="hidden" name="PRODUCTO" id="f_producto">
-  <input type="hidden" name="COSTO_PAQUETE" id="f_costo">
-  <input type="hidden" name="CANTIDAD_PAQUETE" id="f_cantidad">
-  <input type="hidden" name="UNIDADES_PAQUETE" id="f_unidades">
-  <input type="hidden" name="PRECIO_VENTA" id="f_precioVenta">
-  <input type="hidden" name="PROVEEDOR" id="f_proveedor">
-  <input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
-  <input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
-  <input type="hidden" name="SUCURSAL" id="f_sucursal">
-  <input type="hidden" name="CANTIDAD" id="f_cantidadVenta">
-  <input type="hidden" name="USUARIO" id="f_usuarioVenta">
+
+<input type="hidden" name="ACCION" id="f_accion">
+<input type="hidden" name="CATEGORIA" id="f_categoria">
+<input type="hidden" name="PRODUCTO" id="f_producto">
+<input type="hidden" name="COSTO_PAQUETE" id="f_costo">
+<input type="hidden" name="CANTIDAD_PAQUETE" id="f_cantidad">
+<input type="hidden" name="UNIDADES_PAQUETE" id="f_unidades">
+<input type="hidden" name="PRECIO_VENTA" id="f_precioVenta">
+<input type="hidden" name="PROVEEDOR" id="f_proveedor">
+<input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
+<input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
+<input type="hidden" name="SUCURSAL" id="f_sucursal">
+<input type="hidden" name="CANTIDAD" id="f_cantidadVenta">
+<input type="hidden" name="USUARIO" id="f_usuarioVenta">
+
 </form>
 
 <iframe name="hiddenFrame" style="display:none;"></iframe>
 
 <script>
 
-const CLAVE = "1234";
-const baseURL = "https://script.google.com/macros/s/AKfycbw4y6qFay1kG74OX9W1YiCwQy44E9kwRvbxtuiZhhO6iBnmK_zxSEWbVRiEVqPSsyeEfA/exec";
+const CLAVE="1234";
 
-function mostrarMensaje(texto, tipo) {
-  const m = document.getElementById("mensaje");
-  m.className = "mensaje " + tipo;
-  m.innerText = texto;
-  m.style.display = "block";
-  setTimeout(()=> m.style.display="none", 3000);
+const baseURL="https://script.google.com/macros/s/AKfycbxqtCt0efeUV_Q2zwBGE8Vbtag61jMqP53WxjsvKQyWMoEwcIa-96ppLz7ziCCbzB_5Bg/exec";
+
+let inventarioGlobal=[];
+
+function mostrarMensaje(texto,tipo){
+
+const m=document.getElementById("mensaje");
+m.className="mensaje "+tipo;
+m.innerText=texto;
+m.style.display="block";
+
+setTimeout(()=>m.style.display="none",3000);
+
 }
 
 function cambiarModo(){
-  const modo = document.getElementById("modo").value;
-  document.getElementById("camposCompra").classList.toggle("oculto", modo==="VENTA");
-  document.getElementById("camposVenta").classList.toggle("oculto", modo==="COMPRA");
+
+const modo=document.getElementById("modo").value;
+
+document.getElementById("camposCompra")
+.classList.toggle("oculto",modo==="VENTA");
+
+document.getElementById("camposVenta")
+.classList.toggle("oculto",modo==="COMPRA");
+
+}
+
+async function cargarInventario(){
+
+const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO");
+
+inventarioGlobal=await res.json();
+
+}
+
+function buscarProducto(){
+
+const texto=document.getElementById("productoVenta").value.toLowerCase();
+
+const sucursal=document.getElementById("sucursalVenta").value;
+
+const lista=document.getElementById("listaProductos");
+
+lista.innerHTML="";
+
+if(texto.length<1)return;
+
+const filtrados=inventarioGlobal.filter(p=>
+
+p.producto.toLowerCase().includes(texto)
+&& p.sucursal===sucursal
+
+);
+
+filtrados.slice(0,8).forEach(p=>{
+
+const div=document.createElement("div");
+
+div.className="item";
+
+div.innerText=
+p.producto+" | Stock:"+p.stock+" | Bs "+p.precio;
+
+div.onclick=()=>{
+
+document.getElementById("productoVenta").value=p.producto;
+
+lista.innerHTML="";
+
+};
+
+lista.appendChild(div);
+
+});
+
 }
 
 function registrar(){
 
-  if(document.getElementById("password").value !== CLAVE){
-    mostrarMensaje("Contraseña incorrecta","error");
-    return;
-  }
+if(document.getElementById("password").value!==CLAVE){
 
-  const modo = document.getElementById("modo").value;
-  document.getElementById("formRegistro").action = baseURL;
-  document.getElementById("f_accion").value = modo;
+mostrarMensaje("Contraseña incorrecta","error");
+return;
 
-  if(modo === "COMPRA"){
+}
 
-    const producto = document.getElementById("producto").value.trim();
-    if(!producto){
-      mostrarMensaje("Producto obligatorio","error");
-      return;
-    }
+const modo=document.getElementById("modo").value;
 
-    document.getElementById("f_categoria").value = document.getElementById("categoria").value;
-    document.getElementById("f_producto").value = producto;
-    document.getElementById("f_costo").value = document.getElementById("costo").value;
-    document.getElementById("f_cantidad").value = document.getElementById("cantidadCompra").value;
-    document.getElementById("f_unidades").value = document.getElementById("unidades").value;
-    document.getElementById("f_precioVenta").value = document.getElementById("precioVenta").value;
-    document.getElementById("f_proveedor").value = document.getElementById("proveedor").value;
-    document.getElementById("f_fecha").value = document.getElementById("fecha").value;
-    document.getElementById("f_ubicacion").value = document.getElementById("ubicacion").value;
-    document.getElementById("f_sucursal").value = document.getElementById("sucursalCompra").value;
+document.getElementById("formRegistro").action=baseURL;
 
-  } else {
+document.getElementById("f_accion").value=modo;
 
-    const producto = document.getElementById("productoVenta").value.trim();
-    const cantidad = document.getElementById("cantidadVenta").value;
+if(modo==="COMPRA"){
 
-    if(!producto || !cantidad){
-      mostrarMensaje("Datos incompletos","error");
-      return;
-    }
+const producto=document.getElementById("producto").value.trim();
 
-    document.getElementById("f_producto").value = producto;
-    document.getElementById("f_cantidadVenta").value = cantidad;
-    document.getElementById("f_sucursal").value = document.getElementById("sucursalVenta").value;
-    document.getElementById("f_usuarioVenta").value = document.getElementById("usuarioVenta").value;
+if(!producto){
 
-  }
+mostrarMensaje("Producto obligatorio","error");
+return;
 
-  document.getElementById("formRegistro").submit();
-  mostrarMensaje("Procesando...","exito");
+}
+
+document.getElementById("f_categoria").value=document.getElementById("categoria").value;
+document.getElementById("f_producto").value=producto;
+document.getElementById("f_costo").value=document.getElementById("costo").value;
+document.getElementById("f_cantidad").value=document.getElementById("cantidadCompra").value;
+document.getElementById("f_unidades").value=document.getElementById("unidades").value;
+document.getElementById("f_precioVenta").value=document.getElementById("precioVenta").value;
+document.getElementById("f_proveedor").value=document.getElementById("proveedor").value;
+document.getElementById("f_fecha").value=document.getElementById("fecha").value;
+document.getElementById("f_ubicacion").value=document.getElementById("ubicacion").value;
+document.getElementById("f_sucursal").value=document.getElementById("sucursalCompra").value;
+
+}else{
+
+const producto=document.getElementById("productoVenta").value.trim();
+
+const cantidad=document.getElementById("cantidadVenta").value;
+
+if(!producto||!cantidad){
+
+mostrarMensaje("Datos incompletos","error");
+return;
+
+}
+
+document.getElementById("f_producto").value=producto;
+document.getElementById("f_cantidadVenta").value=cantidad;
+document.getElementById("f_sucursal").value=document.getElementById("sucursalVenta").value;
+document.getElementById("f_usuarioVenta").value=document.getElementById("usuarioVenta").value;
+
+}
+
+document.getElementById("formRegistro").submit();
+
+mostrarMensaje("Procesando...","exito");
+
 }
 
 function verInventario(){
-  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit","_blank");
+
+window.open(
+"https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit",
+"_blank"
+);
+
 }
+
+cargarInventario();
 
 </script>
 
