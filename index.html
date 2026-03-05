@@ -97,6 +97,23 @@ margin-top:-6px;
 margin-bottom:10px;
 }
 
+table{
+width:100%;
+font-size:13px;
+border-collapse:collapse;
+}
+
+td,th{
+padding:6px;
+border-bottom:1px solid #333;
+text-align:center;
+}
+
+.eliminar{
+cursor:pointer;
+color:#ff5252;
+}
+
 </style>
 </head>
 
@@ -152,36 +169,39 @@ margin-bottom:10px;
 <div id="infoProducto" class="infoProducto"></div>
 
 <input id="cantidadVenta" type="number" placeholder="Cantidad">
+
+<button type="button" onclick="agregarCarrito()">Agregar al carrito</button>
+
 <input id="usuarioVenta" placeholder="Usuario (opcional)">
+
+<h3>Carrito</h3>
+
+<table>
+<thead>
+<tr>
+<th>Producto</th>
+<th>Cant</th>
+<th>Precio</th>
+<th>Total</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody id="carrito"></tbody>
+
+</table>
+
+<h3>Total: <span id="totalVenta">Bs 0</span></h3>
+
+<button onclick="cobrar()" style="background:#ff9800">COBRAR</button>
 
 </div>
 
-<button class="btn-registrar" onclick="registrar()">Procesar</button>
 <button class="btn-ver" onclick="verInventario()">Ver Google Sheet</button>
 
 <div id="mensaje" class="mensaje"></div>
 
 </div>
-
-<form id="formRegistro" method="GET" target="hiddenFrame" style="display:none;">
-
-<input type="hidden" name="ACCION" id="f_accion">
-<input type="hidden" name="CATEGORIA" id="f_categoria">
-<input type="hidden" name="PRODUCTO" id="f_producto">
-<input type="hidden" name="COSTO_PAQUETE" id="f_costo">
-<input type="hidden" name="CANTIDAD_PAQUETE" id="f_cantidad">
-<input type="hidden" name="UNIDADES_PAQUETE" id="f_unidades">
-<input type="hidden" name="PRECIO_VENTA" id="f_precioVenta">
-<input type="hidden" name="PROVEEDOR" id="f_proveedor">
-<input type="hidden" name="FECHA_ENTRADA" id="f_fecha">
-<input type="hidden" name="UBICACION_PRODUCTO" id="f_ubicacion">
-<input type="hidden" name="SUCURSAL" id="f_sucursal">
-<input type="hidden" name="CANTIDAD" id="f_cantidadVenta">
-<input type="hidden" name="USUARIO" id="f_usuarioVenta">
-
-</form>
-
-<iframe name="hiddenFrame" style="display:none;"></iframe>
 
 <script>
 
@@ -189,184 +209,240 @@ const CLAVE="1234";
 
 const baseURL="https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec";
 
-let inventarioGlobal=[];
+let inventarioGlobal=[]
+let carrito=[]
 
 function mostrarMensaje(texto,tipo){
 
-const m=document.getElementById("mensaje");
-m.className="mensaje "+tipo;
-m.innerText=texto;
-m.style.display="block";
+const m=document.getElementById("mensaje")
+m.className="mensaje "+tipo
+m.innerText=texto
+m.style.display="block"
 
-setTimeout(()=>m.style.display="none",3000);
+setTimeout(()=>m.style.display="none",3000)
 
 }
 
 function cambiarModo(){
 
-const modo=document.getElementById("modo").value;
+const modo=document.getElementById("modo").value
 
 document.getElementById("camposCompra")
-.classList.toggle("oculto",modo==="VENTA");
+.classList.toggle("oculto",modo==="VENTA")
 
 document.getElementById("camposVenta")
-.classList.toggle("oculto",modo==="COMPRA");
+.classList.toggle("oculto",modo==="COMPRA")
 
 document.getElementById("sucursalCompra")
-.classList.toggle("oculto",modo==="VENTA");
+.classList.toggle("oculto",modo==="VENTA")
 
 document.getElementById("sucursalVenta")
-.classList.toggle("oculto",modo==="COMPRA");
+.classList.toggle("oculto",modo==="COMPRA")
 
 }
 
 async function cargarInventario(){
 
-const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO");
-
-inventarioGlobal=await res.json();
+const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO")
+inventarioGlobal=await res.json()
 
 }
 
 function buscarProducto(){
 
-const texto=document.getElementById("productoVenta").value.toLowerCase();
-const sucursal=document.getElementById("sucursalVenta").value;
+const texto=document.getElementById("productoVenta").value.toLowerCase()
+const sucursal=document.getElementById("sucursalVenta").value
 
-const lista=document.getElementById("listaProductos");
-lista.innerHTML="";
+const lista=document.getElementById("listaProductos")
+lista.innerHTML=""
 
-if(texto.length<1)return;
+if(texto.length<1)return
 
 const filtrados=inventarioGlobal.filter(p=>
-
 p.producto.toLowerCase().includes(texto)
 && p.sucursal===sucursal
-
-);
+)
 
 filtrados.slice(0,8).forEach(p=>{
 
-const div=document.createElement("div");
-div.className="item";
+const div=document.createElement("div")
+div.className="item"
 
 div.innerText=
-p.producto+" | Stock:"+p.stock+" | Bs "+p.precio;
+p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
 
 div.onclick=()=>{
 
-document.getElementById("productoVenta").value=p.producto;
+document.getElementById("productoVenta").value=p.producto
 
 document.getElementById("infoProducto").innerText=
-"Stock disponible: "+p.stock+" | Precio: Bs "+p.precio;
+"Stock disponible: "+p.stock+" | Precio: Bs "+p.precio
 
-lista.innerHTML="";
+lista.innerHTML=""
 
-};
+}
 
-lista.appendChild(div);
+lista.appendChild(div)
 
-});
+})
+
+}
+
+function agregarCarrito(){
+
+const producto=document.getElementById("productoVenta").value
+const cantidad=Number(document.getElementById("cantidadVenta").value)
+const sucursal=document.getElementById("sucursalVenta").value
+
+if(!producto || !cantidad){
+
+mostrarMensaje("Datos incompletos","error")
+return
+
+}
+
+const prod=inventarioGlobal.find(p=>
+p.producto===producto && p.sucursal===sucursal
+)
+
+if(!prod){
+
+mostrarMensaje("Producto no encontrado","error")
+return
+
+}
+
+if(prod.stock < cantidad){
+
+mostrarMensaje("Stock insuficiente","error")
+return
+
+}
+
+const item={
+producto:producto,
+precio:prod.precio,
+cantidad:cantidad,
+total:prod.precio*cantidad
+}
+
+carrito.push(item)
+
+renderCarrito()
+
+document.getElementById("productoVenta").value=""
+document.getElementById("cantidadVenta").value=""
+
+}
+
+function renderCarrito(){
+
+const tabla=document.getElementById("carrito")
+tabla.innerHTML=""
+
+let total=0
+
+carrito.forEach((item,i)=>{
+
+total+=item.total
+
+tabla.innerHTML+=`
+<tr>
+<td>${item.producto}</td>
+<td>${item.cantidad}</td>
+<td>${item.precio}</td>
+<td>${item.total}</td>
+<td class="eliminar" onclick="eliminarItem(${i})">X</td>
+</tr>
+`
+
+})
+
+document.getElementById("totalVenta").innerText="Bs "+total
+
+}
+
+function eliminarItem(i){
+
+carrito.splice(i,1)
+renderCarrito()
+
+}
+
+async function cobrar(){
+
+if(carrito.length===0){
+
+mostrarMensaje("Carrito vacío","error")
+return
+
+}
+
+const sucursal=document.getElementById("sucursalVenta").value
+const usuario=document.getElementById("usuarioVenta").value || "ADMIN"
+
+for(const item of carrito){
+
+const url=
+baseURL+
+"?ACCION=VENTA"+
+"&PRODUCTO="+encodeURIComponent(item.producto)+
+"&CANTIDAD="+item.cantidad+
+"&SUCURSAL="+sucursal+
+"&USUARIO="+usuario
+
+await fetch(url)
+
+}
+
+mostrarMensaje("Venta registrada","exito")
+
+carrito=[]
+renderCarrito()
+
+cargarInventario()
 
 }
 
 function buscarProductoCompra(){
 
-const texto=document.getElementById("producto").value.toLowerCase();
-const sucursal=document.getElementById("sucursalCompra").value;
+const texto=document.getElementById("producto").value.toLowerCase()
+const sucursal=document.getElementById("sucursalCompra").value
 
-const lista=document.getElementById("listaCompra");
-lista.innerHTML="";
+const lista=document.getElementById("listaCompra")
+lista.innerHTML=""
 
-if(texto.length<1)return;
+if(texto.length<1)return
 
 const filtrados=inventarioGlobal.filter(p=>
-
 p.producto.toLowerCase().includes(texto)
 && p.sucursal===sucursal
-
-);
+)
 
 filtrados.slice(0,8).forEach(p=>{
 
-const div=document.createElement("div");
-div.className="item";
+const div=document.createElement("div")
+div.className="item"
 
 div.innerText=
-p.producto+" | Stock:"+p.stock+" | Bs "+p.precio;
+p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
 
 div.onclick=()=>{
 
-document.getElementById("producto").value=p.producto;
-document.getElementById("categoria").value=p.categoria;
-document.getElementById("precioVenta").value=p.precio;
+document.getElementById("producto").value=p.producto
+document.getElementById("categoria").value=p.categoria
+document.getElementById("precioVenta").value=p.precio
 
 document.getElementById("infoCompra").innerText=
-"Stock actual: "+p.stock;
+"Stock actual: "+p.stock
 
-lista.innerHTML="";
-
-};
-
-lista.appendChild(div);
-
-});
+lista.innerHTML=""
 
 }
 
-function registrar(){
+lista.appendChild(div)
 
-if(document.getElementById("password").value!==CLAVE){
-
-mostrarMensaje("Contraseña incorrecta","error");
-return;
-
-}
-
-const modo=document.getElementById("modo").value;
-
-document.getElementById("formRegistro").action=baseURL;
-document.getElementById("f_accion").value=modo;
-
-if(modo==="COMPRA"){
-
-document.getElementById("f_categoria").value=document.getElementById("categoria").value;
-document.getElementById("f_producto").value=document.getElementById("producto").value;
-document.getElementById("f_costo").value=document.getElementById("costo").value;
-document.getElementById("f_cantidad").value=document.getElementById("cantidadCompra").value;
-document.getElementById("f_unidades").value=document.getElementById("unidades").value;
-document.getElementById("f_precioVenta").value=document.getElementById("precioVenta").value;
-document.getElementById("f_proveedor").value=document.getElementById("proveedor").value;
-document.getElementById("f_fecha").value=document.getElementById("fecha").value;
-document.getElementById("f_ubicacion").value=document.getElementById("ubicacion").value;
-document.getElementById("f_sucursal").value=document.getElementById("sucursalCompra").value;
-
-}else{
-
-document.getElementById("f_producto").value=document.getElementById("productoVenta").value;
-document.getElementById("f_cantidadVenta").value=document.getElementById("cantidadVenta").value;
-document.getElementById("f_sucursal").value=document.getElementById("sucursalVenta").value;
-document.getElementById("f_usuarioVenta").value=document.getElementById("usuarioVenta").value;
-
-}
-
-document.getElementById("formRegistro").submit();
-
-mostrarMensaje("Procesando...","exito");
-
-setTimeout(()=>{cargarInventario();},2000);
-setTimeout(()=>{limpiarCampos();},500);
-
-}
-
-function limpiarCampos(){
-
-document.querySelectorAll("input").forEach(i=>i.value="");
-
-document.getElementById("infoProducto").innerText="";
-document.getElementById("infoCompra").innerText="";
-document.getElementById("listaProductos").innerHTML="";
-document.getElementById("listaCompra").innerHTML="";
+})
 
 }
 
@@ -375,11 +451,11 @@ function verInventario(){
 window.open(
 "https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit",
 "_blank"
-);
+)
 
 }
 
-cargarInventario();
+cargarInventario()
 
 </script>
 
