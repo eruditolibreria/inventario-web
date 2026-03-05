@@ -90,6 +90,13 @@ background:#00c853;
 color:black;
 }
 
+.infoProducto{
+font-size:13px;
+opacity:0.8;
+margin-top:-6px;
+margin-bottom:10px;
+}
+
 </style>
 </head>
 
@@ -133,6 +140,8 @@ color:black;
 <input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
 <div id="listaProductos" class="autocomplete"></div>
 
+<div id="infoProducto" class="infoProducto"></div>
+
 <input id="cantidadVenta" type="number" placeholder="Cantidad">
 
 <input id="usuarioVenta" placeholder="Usuario (opcional)">
@@ -170,7 +179,7 @@ color:black;
 
 const CLAVE="1234";
 
-const baseURL="https://script.google.com/macros/s/AKfycbxqtCt0efeUV_Q2zwBGE8Vbtag61jMqP53WxjsvKQyWMoEwcIa-96ppLz7ziCCbzB_5Bg/exec";
+const baseURL="https://script.google.com/macros/s/AKfycbw6AeggdPaemQqb9OYaK6auV5L-XpNyISiAsE-y7uD2O5Cm0pT44TyyvzY-0VwRrk5DFg/exec";
 
 let inventarioGlobal=[];
 
@@ -236,6 +245,9 @@ p.producto+" | Stock:"+p.stock+" | Bs "+p.precio;
 div.onclick=()=>{
 
 document.getElementById("productoVenta").value=p.producto;
+
+document.getElementById("infoProducto").innerText=
+"Stock disponible: "+p.stock+" | Precio: Bs "+p.precio;
 
 lista.innerHTML="";
 
