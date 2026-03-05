@@ -113,11 +113,14 @@ margin-bottom:10px;
 <option value="VENTA">Registrar Venta</option>
 </select>
 
-<!-- CAMPOS COMPRA -->
+<!-- COMPRA -->
 <div id="camposCompra">
 
 <input id="categoria" placeholder="Categoría">
-<input id="producto" placeholder="Producto">
+
+<input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
+<div id="listaCompra" class="autocomplete"></div>
+<div id="infoCompra" class="infoProducto"></div>
 
 <input id="costo" type="number" placeholder="Costo Paquete">
 <input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
@@ -132,18 +135,16 @@ margin-bottom:10px;
 
 </div>
 
-<!-- CAMPOS VENTA -->
+<!-- VENTA -->
 <div id="camposVenta" class="oculto">
 
 <input id="sucursalVenta" placeholder="Sucursal">
 
 <input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
 <div id="listaProductos" class="autocomplete"></div>
-
 <div id="infoProducto" class="infoProducto"></div>
 
 <input id="cantidadVenta" type="number" placeholder="Cantidad">
-
 <input id="usuarioVenta" placeholder="Usuario (opcional)">
 
 </div>
@@ -217,11 +218,9 @@ inventarioGlobal=await res.json();
 function buscarProducto(){
 
 const texto=document.getElementById("productoVenta").value.toLowerCase();
-
 const sucursal=document.getElementById("sucursalVenta").value;
 
 const lista=document.getElementById("listaProductos");
-
 lista.innerHTML="";
 
 if(texto.length<1)return;
@@ -236,7 +235,6 @@ p.producto.toLowerCase().includes(texto)
 filtrados.slice(0,8).forEach(p=>{
 
 const div=document.createElement("div");
-
 div.className="item";
 
 div.innerText=
@@ -248,6 +246,50 @@ document.getElementById("productoVenta").value=p.producto;
 
 document.getElementById("infoProducto").innerText=
 "Stock disponible: "+p.stock+" | Precio: Bs "+p.precio;
+
+lista.innerHTML="";
+
+};
+
+lista.appendChild(div);
+
+});
+
+}
+
+function buscarProductoCompra(){
+
+const texto=document.getElementById("producto").value.toLowerCase();
+const sucursal=document.getElementById("sucursalCompra").value;
+
+const lista=document.getElementById("listaCompra");
+lista.innerHTML="";
+
+if(texto.length<1)return;
+
+const filtrados=inventarioGlobal.filter(p=>
+
+p.producto.toLowerCase().includes(texto)
+&& p.sucursal===sucursal
+
+);
+
+filtrados.slice(0,8).forEach(p=>{
+
+const div=document.createElement("div");
+div.className="item";
+
+div.innerText=
+p.producto+" | Stock:"+p.stock+" | Bs "+p.precio;
+
+div.onclick=()=>{
+
+document.getElementById("producto").value=p.producto;
+document.getElementById("categoria").value=p.categoria;
+document.getElementById("precioVenta").value=p.precio;
+
+document.getElementById("infoCompra").innerText=
+"Stock actual: "+p.stock;
 
 lista.innerHTML="";
 
@@ -271,7 +313,6 @@ return;
 const modo=document.getElementById("modo").value;
 
 document.getElementById("formRegistro").action=baseURL;
-
 document.getElementById("f_accion").value=modo;
 
 if(modo==="COMPRA"){
@@ -299,7 +340,6 @@ document.getElementById("f_sucursal").value=document.getElementById("sucursalCom
 }else{
 
 const producto=document.getElementById("productoVenta").value.trim();
-
 const cantidad=document.getElementById("cantidadVenta").value;
 
 if(!producto||!cantidad){
@@ -320,6 +360,30 @@ document.getElementById("formRegistro").submit();
 
 mostrarMensaje("Procesando...","exito");
 
+setTimeout(()=>{cargarInventario();},2000);
+setTimeout(()=>{limpiarCampos();},500);
+
+}
+
+function limpiarCampos(){
+
+document.getElementById("categoria").value="";
+document.getElementById("producto").value="";
+document.getElementById("costo").value="";
+document.getElementById("cantidadCompra").value="";
+document.getElementById("unidades").value="";
+document.getElementById("precioVenta").value="";
+document.getElementById("proveedor").value="";
+document.getElementById("fecha").value="";
+document.getElementById("ubicacion").value="";
+document.getElementById("sucursalCompra").value="";
+
+document.getElementById("productoVenta").value="";
+document.getElementById("cantidadVenta").value="";
+document.getElementById("usuarioVenta").value="";
+document.getElementById("infoProducto").innerText="";
+document.getElementById("listaProductos").innerHTML="";
+
 }
 
 function verInventario(){
@@ -337,6 +401,7 @@ cargarInventario();
 
 </body>
 </html>
+
 
 
 
