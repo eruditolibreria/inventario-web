@@ -151,39 +151,18 @@ animation:giro 0.7s linear infinite;
 <option value="COMPRA">Registrar Compra</option>
 </select>
 
-<select id="sucursalCompra">
+
+<!-- =========================
+INTERFAZ VENTA (AHORA PRIMERA)
+========================= -->
+
+<select id="sucursalVenta">
 <option value="">Sucursal</option>
 <option value="ERUDITOS">ERUDITOS</option>
 <option value="CENTRAL">CENTRAL</option>
 </select>
 
-<div id="camposCompra">
-
-<input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
-<div id="listaCompra" class="autocomplete"></div>
-<div id="infoCompra" class="infoProducto"></div>
-
-<input id="categoria" placeholder="Categoría">
-
-<input id="costo" type="number" placeholder="Costo Paquete">
-<input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
-<input id="unidades" type="number" placeholder="Unidades por Paquete">
-<input id="precioVenta" type="number" placeholder="Precio Venta">
-<input id="proveedor" placeholder="Proveedor">
-<input id="fecha" type="date">
-<input id="ubicacion" placeholder="Ubicación">
-
-<button onclick="registrarCompra()" style="background:#00c853">Registrar Compra</button>
-
-</div>
-
-<select id="sucursalVenta" class="oculto">
-<option value="">Sucursal</option>
-<option value="ERUDITOS">ERUDITOS</option>
-<option value="CENTRAL">CENTRAL</option>
-</select>
-
-<div id="camposVenta" class="oculto">
+<div id="camposVenta">
 
 <input id="usuarioVenta" placeholder="Usuario (opcional)">
 
@@ -215,6 +194,38 @@ animation:giro 0.7s linear infinite;
 <div class="loader" id="loader"></div>
 
 <button onclick="cobrar()" style="background:#ff9800">COBRAR</button>
+
+</div>
+
+
+
+<!-- =========================
+INTERFAZ COMPRA (AHORA SEGUNDA)
+========================= -->
+
+<select id="sucursalCompra" class="oculto">
+<option value="">Sucursal</option>
+<option value="ERUDITOS">ERUDITOS</option>
+<option value="CENTRAL">CENTRAL</option>
+</select>
+
+<div id="camposCompra" class="oculto">
+
+<input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
+<div id="listaCompra" class="autocomplete"></div>
+<div id="infoCompra" class="infoProducto"></div>
+
+<input id="categoria" placeholder="Categoría">
+
+<input id="costo" type="number" placeholder="Costo Paquete">
+<input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
+<input id="unidades" type="number" placeholder="Unidades por Paquete">
+<input id="precioVenta" type="number" placeholder="Precio Venta">
+<input id="proveedor" placeholder="Proveedor">
+<input id="fecha" type="date">
+<input id="ubicacion" placeholder="Ubicación">
+
+<button onclick="registrarCompra()" style="background:#00c853">Registrar Compra</button>
 
 </div>
 
