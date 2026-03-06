@@ -1,171 +1,443 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema Inventario</title>
+<title>Sistema Inventario — Grupo Eruditos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 
-body{
-margin:0;
-background:linear-gradient(135deg,#000,#0f0f0f,#1a1a1a);
-font-family:Arial;
-display:flex;
-justify-content:center;
-align-items:flex-start;
-padding:20px;
-min-height:100vh;
-color:white;
+:root{
+  --bg:#080b0f;
+  --surface:#0f1318;
+  --surface2:#161c24;
+  --surface3:#1c2530;
+  --border:#1e2d3d;
+  --accent:#00e676;
+  --accent-dim:rgba(0,230,118,0.12);
+  --accent-glow:rgba(0,230,118,0.25);
+  --orange:#ff9800;
+  --red:#ff4757;
+  --blue:#2979ff;
+  --text:#dde6f0;
+  --muted:#4a6278;
+  --font:'Outfit',sans-serif;
+  --mono:'DM Mono',monospace;
 }
 
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  background:var(--bg);
+  font-family:var(--font);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:20px 12px 40px;
+}
+
+/* ── FONDO ANIMADO ── */
+body::before{
+  content:'';
+  position:fixed;
+  top:-30vh; left:-20vw;
+  width:60vw; height:60vh;
+  background:radial-gradient(ellipse, rgba(0,230,118,0.04) 0%, transparent 70%);
+  pointer-events:none;
+  animation:orb 12s ease-in-out infinite alternate;
+}
+@keyframes orb{
+  from{transform:translate(0,0);}
+  to{transform:translate(20vw,15vh);}
+}
+
+/* ── PANEL BASE ── */
 .panel{
-background:#111;
-width:100%;
-max-width:420px;
-padding:25px;
-border-radius:14px;
-box-shadow:0 0 25px rgba(0,255,150,0.2);
-transition:0.3s;
+  background:var(--surface);
+  width:100%;
+  max-width:460px;
+  border-radius:18px;
+  border:1px solid var(--border);
+  box-shadow:0 0 40px rgba(0,230,118,0.06);
+  overflow:hidden;
+  transition:box-shadow 0.4s;
 }
 
 .panel.ok{
-box-shadow:0 0 35px #00ff9d;
-transform:scale(1.02);
+  box-shadow:0 0 50px var(--accent-glow);
 }
 
-.header{
-text-align:center;
-margin-bottom:20px;
+/* ── HEADER ── */
+.app-header{
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
 }
 
-.header h1{
-margin:0;
-font-size:22px;
-color:#00e676;
-letter-spacing:1px;
+.brand h1{
+  font-size:18px;
+  font-weight:800;
+  color:#fff;
+  letter-spacing:-0.3px;
+}
+.brand h1 span{color:var(--accent);}
+.brand small{
+  font-size:11px;
+  color:var(--muted);
+  font-family:var(--mono);
+  letter-spacing:1px;
 }
 
-.header span{
-font-size:13px;
-opacity:0.7;
+.user-badge{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:5px 12px 5px 8px;
+  font-size:12px;
+  cursor:pointer;
+  transition:border-color 0.2s;
+}
+.user-badge:hover{border-color:var(--red);}
+.user-badge .avatar{
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--accent-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;
+}
+.user-badge .uname{font-weight:600;color:#fff;}
+.user-badge .logout-hint{color:var(--muted);font-size:10px;}
+
+/* ── BODY ── */
+.panel-body{padding:20px 24px;}
+
+/* ── LOGIN ── */
+#loginScreen{
+  padding:32px 24px 28px;
+}
+.login-logo{
+  text-align:center;
+  margin-bottom:28px;
+}
+.login-logo .logo-icon{
+  font-size:44px;
+  display:block;
+  margin-bottom:8px;
+}
+.login-logo h2{
+  font-size:24px;
+  font-weight:800;
+  color:#fff;
+}
+.login-logo p{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:4px;
 }
 
-select,input{
-width:100%;
-padding:12px;
-margin-bottom:12px;
-border-radius:8px;
-border:none;
-box-sizing:border-box;
-font-size:15px;
-background:#1b1b1b;
-color:white;
+.field-group{
+  margin-bottom:14px;
+}
+.field-label{
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:6px;
+  display:block;
 }
 
-button{
-width:100%;
-padding:12px;
-margin-top:8px;
-border-radius:8px;
-border:none;
-font-weight:bold;
-cursor:pointer;
-font-size:14px;
+/* ── INPUTS ── */
+input,select,textarea{
+  width:100%;
+  padding:11px 14px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--text);
+  font-size:14px;
+  font-family:var(--font);
+  transition:border-color 0.2s, box-shadow 0.2s;
+  outline:none;
+  -webkit-appearance:none;
+}
+input:focus,select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-dim);
+}
+input::placeholder{color:var(--muted);}
+select option{background:#1c2530;}
+textarea{resize:vertical;min-height:70px;}
+
+/* ── BUTTONS ── */
+.btn{
+  width:100%;
+  padding:13px;
+  border:none;
+  border-radius:10px;
+  font-family:var(--font);
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  transition:opacity 0.2s, transform 0.1s;
+  letter-spacing:0.3px;
+}
+.btn:active{transform:scale(0.98);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{opacity:0.9;}
+.btn-orange{background:var(--orange);color:#000;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-green{background:#00c853;color:#000;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text);
+}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── TABS / MODO ── */
+.mode-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:4px;
+  background:var(--surface2);
+  border-radius:12px;
+  padding:4px;
+  margin-bottom:18px;
+  border:1px solid var(--border);
+}
+.mode-tab{
+  padding:8px 4px;
+  border-radius:8px;
+  text-align:center;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:600;
+  color:var(--muted);
+  transition:all 0.2s;
+  line-height:1.3;
+}
+.mode-tab.active{
+  background:var(--accent);
+  color:#000;
+}
+.mode-tab .tab-icon{display:block;font-size:16px;margin-bottom:2px;}
+
+/* ── SECTION LABEL ── */
+.section-label{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:10px;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--border);
 }
 
-.btn-ver{background:#2979ff;color:white;}
+/* ── ROW ── */
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.mt-8{margin-top:8px;}
+.mt-12{margin-top:12px;}
+.mb-12{margin-bottom:12px;}
 
-.mensaje{
-margin-top:10px;
-padding:8px;
-border-radius:6px;
-text-align:center;
-display:none;
-}
-
-.exito{background:#1b5e20;}
-.error{background:#b71c1c;}
-
-.oculto{display:none;}
-
+/* ── AUTOCOMPLETE ── */
 .autocomplete{
-background:#222;
-border-radius:6px;
-max-height:150px;
-overflow-y:auto;
-margin-top:-8px;
-margin-bottom:10px;
+  background:var(--surface3);
+  border:1px solid var(--border);
+  border-radius:8px;
+  max-height:160px;
+  overflow-y:auto;
+  margin-top:4px;
+  margin-bottom:8px;
+  display:none;
 }
+.autocomplete.show{display:block;}
+.ac-item{
+  padding:9px 12px;
+  cursor:pointer;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  transition:background 0.15s;
+}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--accent-dim);}
+.ac-item strong{color:var(--accent);font-weight:600;}
+.ac-item small{color:var(--muted);font-size:11px;display:block;margin-top:1px;}
 
-.item{
-padding:8px;
-cursor:pointer;
-border-bottom:1px solid #333;
+.info-prod{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+  margin-bottom:8px;
+  padding:8px 12px;
+  background:var(--surface2);
+  border-radius:8px;
+  border-left:3px solid var(--accent);
+  display:none;
 }
+.info-prod.show{display:block;}
+.stock-bajo{color:var(--red);font-weight:700;}
 
-.item:hover{
-background:#00c853;
-color:black;
+/* ── CARRITO ── */
+.carrito-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:14px 0 8px;
 }
-
-.infoProducto{
-font-size:13px;
-opacity:0.9;
-margin-top:-6px;
-margin-bottom:10px;
+.carrito-header h3{font-size:14px;font-weight:700;color:#fff;}
+.carrito-total{
+  font-size:22px;
+  font-weight:800;
+  color:var(--accent);
+  font-family:var(--mono);
+  text-align:right;
+  margin:10px 0 12px;
 }
-
-.stockBajo{
-color:#ff5252;
-font-weight:bold;
-}
+.carrito-total small{font-size:12px;color:var(--muted);font-weight:400;}
 
 table{
-width:100%;
-font-size:13px;
-border-collapse:collapse;
-background:#1b1b1b;
-border-radius:8px;
-overflow:hidden;
+  width:100%;
+  font-size:12px;
+  border-collapse:collapse;
+  background:var(--surface2);
+  border-radius:10px;
+  overflow:hidden;
+  border:1px solid var(--border);
 }
-
 td,th{
-padding:6px;
-border-bottom:1px solid #333;
-text-align:center;
+  padding:8px 6px;
+  border-bottom:1px solid var(--border);
+  text-align:center;
 }
-
 th{
-background:#222;
-color:#00e676;
+  background:var(--surface3);
+  color:var(--accent);
+  font-size:10px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  font-weight:600;
 }
-
-.eliminar{
-cursor:pointer;
-color:#ff5252;
+tr:last-child td{border-bottom:none;}
+.col-prod{text-align:left;padding-left:10px;font-weight:600;}
+.btn-del{
+  background:none;border:none;color:var(--red);
+  cursor:pointer;font-size:14px;padding:2px 6px;
+  border-radius:4px;transition:background 0.15s;
 }
+.btn-del:hover{background:rgba(255,71,87,0.1);}
 
+/* ── MENSAJE ── */
+.mensaje{
+  margin-top:12px;
+  padding:10px 14px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  text-align:center;
+  display:none;
+  animation:fadeIn 0.2s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.msg-ok{background:rgba(0,230,118,0.12);color:var(--accent);border:1px solid rgba(0,230,118,0.25);}
+.msg-err{background:rgba(255,71,87,0.12);color:var(--red);border:1px solid rgba(255,71,87,0.25);}
+
+/* ── LOADER ── */
 .loader{
-display:none;
-margin:auto;
-border:4px solid #333;
-border-top:4px solid #00c853;
-border-radius:50%;
-width:30px;
-height:30px;
-animation:giro 0.7s linear infinite;
+  display:none;
+  margin:10px auto;
+  border:3px solid var(--border);
+  border-top:3px solid var(--accent);
+  border-radius:50%;
+  width:28px;height:28px;
+  animation:spin 0.7s linear infinite;
+}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+/* ── BÚSQUEDA RESULTADO ── */
+.search-result{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  margin-top:12px;
+  animation:fadeIn 0.25s ease;
+  display:none;
+}
+.search-result.show{display:block;}
+.sr-name{
+  font-size:16px;
+  font-weight:700;
+  color:#fff;
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.sr-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.sr-field{
+  background:var(--surface3);
+  border-radius:8px;
+  padding:9px 12px;
+  border-left:2px solid var(--border);
+}
+.sr-field.accent{border-left-color:var(--accent);}
+.sr-field.orange{border-left-color:var(--orange);}
+.sr-field.red{border-left-color:var(--red);}
+.sr-field.blue{border-left-color:var(--blue);}
+.sr-key{
+  font-size:9px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:3px;
+}
+.sr-val{
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:500;
+  color:#fff;
+}
+.sr-val.ok{color:var(--accent);}
+.sr-val.warn{color:var(--red);}
+.sr-val.orange{color:var(--orange);}
+
+.search-results-list{margin-top:12px;}
+
+/* ── OCULTO ── */
+.oculto{display:none !important;}
+
+/* ── DIVIDER ── */
+.divider{
+  height:1px;
+  background:var(--border);
+  margin:16px 0;
 }
 
-#totalVenta{
-font-size:22px;
-font-weight:bold;
-color:#00e676;
-}
-
-@keyframes giro{
-0%{transform:rotate(0deg)}
-100%{transform:rotate(360deg)}
+/* ── PIN DE ACCESO (compatibilidad) ── */
+.access-notice{
+  font-size:11px;
+  color:var(--muted);
+  text-align:center;
+  margin-top:8px;
 }
 
 </style>
@@ -173,416 +445,774 @@ color:#00e676;
 
 <body>
 
-<div class="panel" id="panel">
+<div class="panel" id="mainPanel">
 
-<div class="header">
-<h1>📦 Sistema Inventario</h1>
-<span>Grupo Eruditos</span>
-</div>
+  <!-- ══════════════════ LOGIN ══════════════════ -->
+  <div id="loginScreen">
 
-<input id="password" type="password" placeholder="🔑 Contraseña acceso">
+    <div class="login-logo">
+      <span class="logo-icon">📦</span>
+      <h2>Grupo Eruditos</h2>
+      <p>Sistema de Inventario · Acceso seguro</p>
+    </div>
 
-<select id="modo" onchange="cambiarModo()">
-<option value="VENTA">Registrar Venta</option>
-<option value="COMPRA">Registrar Compra</option>
-</select>
+    <div class="field-group">
+      <label class="field-label">Usuario</label>
+      <input id="loginUser" type="text" placeholder="Ingresa tu usuario" autocomplete="username"
+             onkeydown="if(event.key==='Enter')loginSubmit()">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Contraseña</label>
+      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')loginSubmit()">
+    </div>
 
+    <div class="loader" id="loginLoader"></div>
+    <div id="loginMsg" class="mensaje"></div>
 
-<!-- INTERFAZ VENTA -->
+    <button class="btn btn-primary mt-8" onclick="loginSubmit()">Ingresar al sistema</button>
 
-<select id="sucursalVenta">
-<option value="">🏪 Sucursal</option>
-<option value="ERUDITOS">ERUDITOS</option>
-<option value="CENTRAL">CENTRAL</option>
-</select>
+    <p class="access-notice">Acceso solo para usuarios autorizados</p>
 
-<div id="camposVenta">
+  </div>
 
-<input id="usuarioVenta" placeholder="👤 Usuario (opcional)">
+  <!-- ══════════════════ APP ══════════════════ -->
+  <div id="appScreen" class="oculto">
 
-<input id="productoVenta" placeholder="🔎 Producto" onkeyup="buscarProducto()">
-<div id="listaProductos" class="autocomplete"></div>
-<div id="infoProducto" class="infoProducto"></div>
+    <!-- Header con usuario y logout -->
+    <div class="app-header">
+      <div class="brand">
+        <h1>📦 <span>Eruditos</span></h1>
+        <small>INVENTARIO v2</small>
+      </div>
+      <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
+        <div class="avatar">👤</div>
+        <div>
+          <div class="uname" id="badgeUser">-</div>
+          <div class="logout-hint">Cerrar sesión</div>
+        </div>
+      </div>
+    </div>
 
-<input id="cantidadVenta" type="number" placeholder="📦 Cantidad">
+    <div class="panel-body">
 
-<button onclick="agregarCarrito()" style="background:#00c853">Agregar al carrito</button>
+      <!-- TABS MODO -->
+      <div class="mode-tabs">
+        <div class="mode-tab active" onclick="setModo('VENTA')" id="tab-VENTA">
+          <span class="tab-icon">💰</span>Venta
+        </div>
+        <div class="mode-tab" onclick="setModo('COMPRA')" id="tab-COMPRA">
+          <span class="tab-icon">🛒</span>Compra
+        </div>
+        <div class="mode-tab" onclick="setModo('GASTO')" id="tab-GASTO">
+          <span class="tab-icon">💸</span>Gastos
+        </div>
+        <div class="mode-tab" onclick="setModo('BUSQUEDA')" id="tab-BUSQUEDA">
+          <span class="tab-icon">🔎</span>Buscar
+        </div>
+      </div>
 
-<h3 id="tituloCarrito">🛒 Carrito (0)</h3>
+      <!-- ────────────── VENTA ────────────── -->
+      <div id="seccion-VENTA">
 
-<table>
-<thead>
-<tr>
-<th>Producto</th>
-<th>Cant</th>
-<th>Precio</th>
-<th>Total</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="carrito"></tbody>
-</table>
+        <div class="section-label">Registrar venta</div>
 
-<h3>Total: <span id="totalVenta">Bs 0</span></h3>
+        <div class="row-2 mb-12">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Sucursal</label>
+            <select id="sucursalVenta">
+              <option value="">🏪 Seleccionar</option>
+              <option value="ERUDITOS">ERUDITOS</option>
+              <option value="CENTRAL">CENTRAL</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Usuario</label>
+            <input id="usuarioVenta" placeholder="Opcional">
+          </div>
+        </div>
 
-<div class="loader" id="loader"></div>
+        <div class="field-group">
+          <label class="field-label">Producto</label>
+          <input id="productoVenta" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoVenta()">
+          <div id="listaVenta" class="autocomplete"></div>
+          <div id="infoProductoVenta" class="info-prod"></div>
+        </div>
 
-<button onclick="cobrar()" style="background:#ff9800;font-size:17px">COBRAR</button>
+        <div class="field-group">
+          <label class="field-label">Cantidad</label>
+          <input id="cantidadVenta" type="number" min="1" placeholder="0">
+        </div>
 
-</div>
+        <button class="btn btn-green mb-12" onclick="agregarCarrito()">+ Agregar al carrito</button>
 
+        <div class="carrito-header">
+          <h3 id="tituloCarrito">🛒 Carrito <span style="color:var(--muted)">(0)</span></h3>
+        </div>
 
-<!-- INTERFAZ COMPRA -->
+        <table>
+          <thead>
+            <tr>
+              <th class="col-prod">Producto</th>
+              <th>Cant</th>
+              <th>Precio</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="carritoBody"></tbody>
+        </table>
 
-<select id="sucursalCompra" class="oculto">
-<option value="">🏪 Sucursal</option>
-<option value="ERUDITOS">ERUDITOS</option>
-<option value="CENTRAL">CENTRAL</option>
-</select>
+        <div class="carrito-total">
+          <small>TOTAL A COBRAR</small><br>
+          <span id="totalVenta">Bs 0.00</span>
+        </div>
 
-<div id="camposCompra" class="oculto">
+        <div class="loader" id="loaderVenta"></div>
+        <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()">⚡ COBRAR</button>
 
-<input id="producto" placeholder="🔎 Producto" onkeyup="buscarProductoCompra()">
-<div id="listaCompra" class="autocomplete"></div>
-<div id="infoCompra" class="infoProducto"></div>
+      </div>
 
-<input id="categoria" placeholder="📂 Categoría">
+      <!-- ────────────── COMPRA ────────────── -->
+      <div id="seccion-COMPRA" class="oculto">
 
-<input id="costo" type="number" placeholder="Costo Paquete">
-<input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
-<input id="unidades" type="number" placeholder="Unidades por Paquete">
-<input id="precioVenta" type="number" placeholder="Precio Venta">
-<input id="proveedor" placeholder="Proveedor">
-<input id="fecha" type="date">
-<input id="ubicacion" placeholder="Ubicación">
+        <div class="section-label">Registrar compra</div>
 
-<button onclick="registrarCompra()" style="background:#00c853">Registrar Compra</button>
+        <div class="field-group">
+          <label class="field-label">Sucursal</label>
+          <select id="sucursalCompra">
+            <option value="">🏪 Seleccionar</option>
+            <option value="ERUDITOS">ERUDITOS</option>
+            <option value="CENTRAL">CENTRAL</option>
+          </select>
+        </div>
 
-</div>
+        <div class="field-group">
+          <label class="field-label">Producto</label>
+          <input id="productoCompra" placeholder="🔎 Escribe para buscar o crear..." onkeyup="buscarProductoCompra()">
+          <div id="listaCompra" class="autocomplete"></div>
+          <div id="infoCompra" class="info-prod"></div>
+        </div>
 
-<button class="btn-ver" onclick="verInventario()">Ver Google Sheet</button>
+        <div class="field-group">
+          <label class="field-label">Categoría</label>
+          <input id="categoriaCompra" placeholder="Ej: Bebidas, Snacks...">
+        </div>
 
-<div id="mensaje" class="mensaje"></div>
+        <div class="row-2">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Costo paquete</label>
+            <input id="costoCompra" type="number" placeholder="Bs 0.00">
+          </div>
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Precio venta</label>
+            <input id="precioVentaCompra" type="number" placeholder="Bs 0.00">
+          </div>
+        </div>
 
-</div>
+        <div class="row-2 mt-8">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Cant. paquetes</label>
+            <input id="cantidadCompra" type="number" placeholder="0">
+          </div>
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Unid. x paquete</label>
+            <input id="unidadesCompra" type="number" placeholder="0">
+          </div>
+        </div>
+
+        <div class="field-group mt-8">
+          <label class="field-label">Proveedor</label>
+          <input id="proveedorCompra" placeholder="Nombre del proveedor">
+        </div>
+
+        <div class="row-2">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Fecha entrada</label>
+            <input id="fechaCompra" type="date">
+          </div>
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Ubicación</label>
+            <input id="ubicacionCompra" placeholder="Ej: Pasillo 2">
+          </div>
+        </div>
+
+        <div class="loader" id="loaderCompra"></div>
+        <button class="btn btn-green mt-8" onclick="registrarCompra()">✅ Registrar Compra</button>
+
+      </div>
+
+      <!-- ────────────── GASTOS ────────────── -->
+      <div id="seccion-GASTO" class="oculto">
+
+        <div class="section-label">Registrar gasto operativo</div>
+
+        <div class="field-group">
+          <label class="field-label">Concepto</label>
+          <input id="gastoConcepto" placeholder="Ej: Pago luz, limpieza, flete...">
+        </div>
+
+        <div class="row-2">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Categoría</label>
+            <select id="gastoCategoria">
+              <option value="">Seleccionar...</option>
+              <option value="SERVICIOS">💡 Servicios</option>
+              <option value="TRANSPORTE">🚚 Transporte</option>
+              <option value="PERSONAL">👥 Personal</option>
+              <option value="ALQUILER">🏠 Alquiler</option>
+              <option value="LIMPIEZA">🧹 Limpieza</option>
+              <option value="MARKETING">📣 Marketing</option>
+              <option value="OTRO">📌 Otro</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Importe (Bs)</label>
+            <input id="gastoImporte" type="number" min="0.01" step="0.01" placeholder="0.00">
+          </div>
+        </div>
+
+        <div class="row-2 mt-8">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Responsable</label>
+            <input id="gastoPersona" placeholder="Nombre">
+          </div>
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Fecha</label>
+            <input id="gastoFecha" type="date">
+          </div>
+        </div>
+
+        <div class="field-group mt-8">
+          <label class="field-label">Notas</label>
+          <textarea id="gastoNotas" placeholder="Detalles adicionales (opcional)"></textarea>
+        </div>
+
+        <div class="loader" id="loaderGasto"></div>
+        <button class="btn btn-primary mt-8" onclick="registrarGasto()">💸 Registrar Gasto</button>
+
+      </div>
+
+      <!-- ────────────── BÚSQUEDA ────────────── -->
+      <div id="seccion-BUSQUEDA" class="oculto">
+
+        <div class="section-label">Búsqueda de producto</div>
+
+        <div class="field-group">
+          <label class="field-label">Nombre del producto</label>
+          <input id="busquedaInput" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDetalle()">
+          <div id="listaBusqueda" class="autocomplete"></div>
+        </div>
+
+        <div class="loader" id="loaderBusqueda"></div>
+
+        <!-- Resultados múltiples -->
+        <div id="searchResultsList" class="search-results-list"></div>
+
+      </div>
+
+      <!-- ── MENSAJE GLOBAL ── -->
+      <div id="mensajeApp" class="mensaje"></div>
+
+      <!-- ── VER SHEET ── -->
+      <div class="divider"></div>
+      <button class="btn btn-ghost" onclick="verInventario()">📊 Ver Google Sheet</button>
+
+    </div>
+  </div>
+
+</div><!-- end .panel -->
 
 <script>
 
-const CLAVE="1234"
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
 
-const baseURL="https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec"
+const baseURL = "https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec";
 
-let inventarioGlobal=[]
-let carrito=[]
+// Estado de sesión (en memoria)
+let sessionToken  = null;
+let sessionUser   = null;
+let sessionRol    = null;
+let inventarioGlobal = [];
+let carrito       = [];
 
-const sonidoCaja=new Audio("https://actions.google.com/sounds/v1/cash_register/cash_register.ogg")
+const sonidoCaja = new Audio("https://actions.google.com/sounds/v1/cash_register/cash_register.ogg");
 
-function mostrarMensaje(texto,tipo){
+// ══════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════
 
-const m=document.getElementById("mensaje")
-m.className="mensaje "+tipo
-m.innerText=texto
-m.style.display="block"
+async function loginSubmit() {
+  const usuario  = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
 
-setTimeout(()=>m.style.display="none",3000)
+  if (!usuario || !password) {
+    mostrarMensajeLogin("Completa usuario y contraseña", "err");
+    return;
+  }
 
+  const loader = document.getElementById("loginLoader");
+  const btn    = document.querySelector("#loginScreen .btn");
+  loader.style.display = "block";
+  btn.disabled = true;
+
+  try {
+    const url = baseURL + "?ACCION=LOGIN&USUARIO=" + encodeURIComponent(usuario) + "&PASSWORD=" + encodeURIComponent(password);
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.ok) {
+      sessionToken = data.token;
+      sessionUser  = data.usuario;
+      sessionRol   = data.rol;
+      document.getElementById("badgeUser").textContent = sessionUser;
+      document.getElementById("loginScreen").classList.add("oculto");
+      document.getElementById("appScreen").classList.remove("oculto");
+      // Fecha por defecto en gastos
+      document.getElementById("gastoFecha").value = hoy();
+      cargarInventario();
+    } else {
+      mostrarMensajeLogin("Usuario o contraseña incorrectos", "err");
+    }
+  } catch (err) {
+    mostrarMensajeLogin("Error de conexión. Intenta de nuevo.", "err");
+  }
+
+  loader.style.display = "none";
+  btn.disabled = false;
 }
 
-function cambiarModo(){
-
-const modo=document.getElementById("modo").value
-
-document.getElementById("camposCompra")
-.classList.toggle("oculto",modo==="VENTA")
-
-document.getElementById("camposVenta")
-.classList.toggle("oculto",modo==="COMPRA")
-
-document.getElementById("sucursalCompra")
-.classList.toggle("oculto",modo==="VENTA")
-
-document.getElementById("sucursalVenta")
-.classList.toggle("oculto",modo==="COMPRA")
-
+function mostrarMensajeLogin(txt, tipo) {
+  const m = document.getElementById("loginMsg");
+  m.className = "mensaje " + (tipo === "ok" ? "msg-ok" : "msg-err");
+  m.textContent = txt;
+  m.style.display = "block";
+  setTimeout(() => m.style.display = "none", 3000);
 }
 
-async function cargarInventario(){
-
-const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO")
-inventarioGlobal=await res.json()
-
+function cerrarSesion() {
+  if (!confirm("¿Cerrar sesión?")) return;
+  if (sessionToken) {
+    fetch(baseURL + "?ACCION=LOGOUT&TOKEN=" + sessionToken).catch(() => {});
+  }
+  sessionToken = sessionUser = sessionRol = null;
+  inventarioGlobal = []; carrito = [];
+  document.getElementById("loginUser").value = "";
+  document.getElementById("loginPass").value = "";
+  document.getElementById("appScreen").classList.add("oculto");
+  document.getElementById("loginScreen").classList.remove("oculto");
 }
 
-setInterval(cargarInventario,10000)
+// ══════════════════════════════════════════════
+//  UTILIDADES
+// ══════════════════════════════════════════════
 
-function buscarProducto(){
-
-const texto=document.getElementById("productoVenta").value.toLowerCase()
-const sucursal=document.getElementById("sucursalVenta").value
-
-const lista=document.getElementById("listaProductos")
-lista.innerHTML=""
-
-if(texto.length<1)return
-
-const filtrados=inventarioGlobal.filter(p=>
-p.producto.toLowerCase().includes(texto)
-&& p.sucursal===sucursal
-)
-
-filtrados.slice(0,8).forEach(p=>{
-
-const div=document.createElement("div")
-div.className="item"
-
-div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
-
-div.onclick=()=>{
-
-document.getElementById("productoVenta").value=p.producto
-
-let aviso=p.stock<=5? " ⚠ Stock bajo": ""
-
-document.getElementById("infoProducto").innerHTML=
-"Stock disponible: "+p.stock+" | Precio: Bs "+p.precio+
-(p.stock<=5? "<div class='stockBajo'>⚠ Stock bajo</div>":"")
-
-lista.innerHTML=""
-
+function hoy() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-lista.appendChild(div)
-
-})
-
+function mostrarMsg(txt, tipo) {
+  const m = document.getElementById("mensajeApp");
+  m.className = "mensaje " + (tipo === "ok" ? "msg-ok" : "msg-err");
+  m.textContent = txt;
+  m.style.display = "block";
+  setTimeout(() => m.style.display = "none", 3500);
 }
 
-function agregarCarrito(){
-
-const producto=document.getElementById("productoVenta").value
-const cantidad=Number(document.getElementById("cantidadVenta").value)
-const sucursal=document.getElementById("sucursalVenta").value
-
-if(!producto || !cantidad){
-
-mostrarMensaje("Datos incompletos","error")
-return
-
+function setModo(modo) {
+  ["VENTA","COMPRA","GASTO","BUSQUEDA"].forEach(m => {
+    document.getElementById("seccion-" + m).classList.toggle("oculto", m !== modo);
+    document.getElementById("tab-" + m).classList.toggle("active", m === modo);
+  });
 }
 
-const prod=inventarioGlobal.find(p=>
-p.producto===producto && p.sucursal===sucursal
-)
-
-if(!prod){
-
-mostrarMensaje("Producto no encontrado","error")
-return
-
+function verInventario() {
+  window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit", "_blank");
 }
 
-if(prod.stock < cantidad){
+// ══════════════════════════════════════════════
+//  INVENTARIO (recarga periódica)
+// ══════════════════════════════════════════════
 
-mostrarMensaje("Stock insuficiente","error")
-return
-
+async function cargarInventario() {
+  try {
+    const res = await fetch(baseURL + "?ACCION=LISTAR_INVENTARIO&LIMITE=200");
+    const data = await res.json();
+    inventarioGlobal = data.datos || data; // compatible con ambos formatos
+  } catch (e) { /* silencioso */ }
 }
 
-const item={
-producto:producto,
-precio:prod.precio,
-cantidad:cantidad,
-total:prod.precio*cantidad
+setInterval(() => {
+  if (sessionToken) cargarInventario();
+}, 15000);
+
+// ══════════════════════════════════════════════
+//  AUTOCOMPLETE HELPERS
+// ══════════════════════════════════════════════
+
+function construirAC(lista, items, onSelect) {
+  lista.innerHTML = "";
+  if (items.length === 0) { lista.classList.remove("show"); return; }
+  items.slice(0, 8).forEach(p => {
+    const div = document.createElement("div");
+    div.className = "ac-item";
+    div.innerHTML = `<strong>${p.producto}</strong><small>Stock: ${p.stock} | Bs ${p.precio} | ${p.sucursal}</small>`;
+    div.onclick = () => { onSelect(p); lista.classList.remove("show"); };
+    lista.appendChild(div);
+  });
+  lista.classList.add("show");
 }
 
-carrito.push(item)
+// ══════════════════════════════════════════════
+//  VENTA
+// ══════════════════════════════════════════════
 
-renderCarrito()
-
-document.getElementById("productoVenta").value=""
-document.getElementById("cantidadVenta").value=""
-
+function buscarProductoVenta() {
+  const texto    = document.getElementById("productoVenta").value.toLowerCase();
+  const sucursal = document.getElementById("sucursalVenta").value;
+  const lista    = document.getElementById("listaVenta");
+  const info     = document.getElementById("infoProductoVenta");
+  info.classList.remove("show");
+  if (texto.length < 1) { lista.classList.remove("show"); return; }
+  const filtrados = inventarioGlobal.filter(p =>
+    p.producto.toLowerCase().includes(texto) && p.sucursal === sucursal
+  );
+  construirAC(lista, filtrados, p => {
+    document.getElementById("productoVenta").value = p.producto;
+    info.innerHTML = `Stock disponible: <b>${p.stock}</b> | Precio: <b>Bs ${p.precio}</b>` +
+      (p.stock <= 5 ? `<br><span class="stock-bajo">⚠ Stock bajo</span>` : "");
+    info.classList.add("show");
+  });
 }
 
-function renderCarrito(){
+function agregarCarrito() {
+  const producto = document.getElementById("productoVenta").value.trim();
+  const cantidad = Number(document.getElementById("cantidadVenta").value);
+  const sucursal = document.getElementById("sucursalVenta").value;
 
-const tabla=document.getElementById("carrito")
-tabla.innerHTML=""
+  if (!producto || !cantidad || cantidad <= 0) { mostrarMsg("Completa producto y cantidad","err"); return; }
+  if (!sucursal)                                { mostrarMsg("Selecciona una sucursal","err"); return; }
 
-let total=0
+  const prod = inventarioGlobal.find(p => p.producto === producto && p.sucursal === sucursal);
+  if (!prod)                  { mostrarMsg("Producto no encontrado en inventario","err"); return; }
+  if (prod.stock < cantidad)  { mostrarMsg("Stock insuficiente (disponible: " + prod.stock + ")","err"); return; }
 
-carrito.forEach((item,i)=>{
+  // verificar si ya está en carrito para sumar
+  const existe = carrito.find(i => i.producto === producto);
+  if (existe) {
+    existe.cantidad += cantidad;
+    existe.total    = existe.precio * existe.cantidad;
+  } else {
+    carrito.push({ producto, precio: prod.precio, cantidad, total: prod.precio * cantidad });
+  }
 
-total+=item.total
-
-tabla.innerHTML+=`
-<tr>
-<td>${item.producto}</td>
-<td>${item.cantidad}</td>
-<td>${item.precio}</td>
-<td>${item.total}</td>
-<td class="eliminar" onclick="eliminarItem(${i})">X</td>
-</tr>
-`
-
-})
-
-document.getElementById("totalVenta").innerText="Bs "+total
-document.getElementById("tituloCarrito").innerText="🛒 Carrito ("+carrito.length+")"
-
+  renderCarrito();
+  document.getElementById("productoVenta").value  = "";
+  document.getElementById("cantidadVenta").value  = "";
+  document.getElementById("infoProductoVenta").classList.remove("show");
 }
 
-function eliminarItem(i){
-
-carrito.splice(i,1)
-renderCarrito()
-
+function renderCarrito() {
+  const tbody = document.getElementById("carritoBody");
+  tbody.innerHTML = "";
+  let total = 0;
+  carrito.forEach((item, i) => {
+    total += item.total;
+    tbody.innerHTML += `
+      <tr>
+        <td class="col-prod">${item.producto}</td>
+        <td>${item.cantidad}</td>
+        <td>Bs ${item.precio}</td>
+        <td>Bs ${item.total.toFixed(2)}</td>
+        <td><button class="btn-del" onclick="eliminarItem(${i})">✕</button></td>
+      </tr>`;
+  });
+  document.getElementById("totalVenta").textContent = "Bs " + total.toFixed(2);
+  document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`;
 }
 
-async function cobrar(){
+function eliminarItem(i) { carrito.splice(i, 1); renderCarrito(); }
 
-if(document.getElementById("password").value!==CLAVE){
+async function cobrar() {
+  if (!sessionToken) { mostrarMsg("Sesión expirada. Vuelve a iniciar sesión.","err"); return; }
+  if (carrito.length === 0) { mostrarMsg("El carrito está vacío","err"); return; }
 
-mostrarMensaje("Contraseña incorrecta","error")
-return
+  const sucursal = document.getElementById("sucursalVenta").value;
+  const usuario  = document.getElementById("usuarioVenta").value || sessionUser;
+  if (!sucursal) { mostrarMsg("Selecciona una sucursal","err"); return; }
 
+  const loader = document.getElementById("loaderVenta");
+  const btn    = document.getElementById("btnCobrar");
+  loader.style.display = "block";
+  btn.disabled = true;
+
+  try {
+    // Usar VENTA_POS para envío atómico del carrito
+    const url = baseURL
+      + "?ACCION=VENTA_POS"
+      + "&CARRITO=" + encodeURIComponent(JSON.stringify(carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad }))))
+      + "&SUCURSAL=" + encodeURIComponent(sucursal)
+      + "&USUARIO="  + encodeURIComponent(usuario)
+      + "&TOKEN="    + sessionToken;
+
+    const res  = await fetch(url);
+    const texto = await res.text();
+
+    if (texto === "VENTA_POS_OK") {
+      sonidoCaja.play().catch(() => {});
+      mostrarMsg("✅ Venta registrada correctamente", "ok");
+      document.getElementById("mainPanel").classList.add("ok");
+      setTimeout(() => document.getElementById("mainPanel").classList.remove("ok"), 700);
+      carrito = [];
+      renderCarrito();
+      cargarInventario();
+    } else {
+      const data = (() => { try { return JSON.parse(texto); } catch(e) { return null; } })();
+      if (data && data.error === "STOCK_INSUFICIENTE") {
+        mostrarMsg("⚠ Stock insuficiente: " + data.producto + " (disponible: " + data.stockDisponible + ")", "err");
+      } else {
+        mostrarMsg("Error al registrar venta: " + texto, "err");
+      }
+    }
+  } catch (e) {
+    mostrarMsg("Error de conexión","err");
+  }
+
+  loader.style.display = "none";
+  btn.disabled = false;
 }
 
-if(carrito.length===0){
+// ══════════════════════════════════════════════
+//  COMPRA
+// ══════════════════════════════════════════════
 
-mostrarMensaje("Carrito vacío","error")
-return
-
+function buscarProductoCompra() {
+  const texto    = document.getElementById("productoCompra").value.toLowerCase();
+  const sucursal = document.getElementById("sucursalCompra").value;
+  const lista    = document.getElementById("listaCompra");
+  const info     = document.getElementById("infoCompra");
+  info.classList.remove("show");
+  if (texto.length < 1) { lista.classList.remove("show"); return; }
+  const filtrados = inventarioGlobal.filter(p =>
+    p.producto.toLowerCase().includes(texto) && p.sucursal === sucursal
+  );
+  construirAC(lista, filtrados, p => {
+    document.getElementById("productoCompra").value    = p.producto;
+    document.getElementById("categoriaCompra").value   = p.categoria || "";
+    document.getElementById("precioVentaCompra").value = p.precio;
+    info.textContent = "Stock actual: " + p.stock;
+    info.classList.add("show");
+  });
 }
 
-const loader=document.getElementById("loader")
-loader.style.display="block"
+async function registrarCompra() {
+  if (!sessionToken) { mostrarMsg("Sesión expirada","err"); return; }
 
-const sucursal=document.getElementById("sucursalVenta").value
-const usuario=document.getElementById("usuarioVenta").value || "ADMIN"
+  const loader = document.getElementById("loaderCompra");
+  loader.style.display = "block";
 
-for(const item of carrito){
+  const url = baseURL
+    + "?ACCION=COMPRA"
+    + "&PRODUCTO="           + encodeURIComponent(document.getElementById("productoCompra").value)
+    + "&CATEGORIA="          + encodeURIComponent(document.getElementById("categoriaCompra").value)
+    + "&COSTO_PAQUETE="      + document.getElementById("costoCompra").value
+    + "&CANTIDAD_PAQUETE="   + document.getElementById("cantidadCompra").value
+    + "&UNIDADES_PAQUETE="   + document.getElementById("unidadesCompra").value
+    + "&PRECIO_VENTA="       + document.getElementById("precioVentaCompra").value
+    + "&PROVEEDOR="          + encodeURIComponent(document.getElementById("proveedorCompra").value)
+    + "&FECHA_ENTRADA="      + document.getElementById("fechaCompra").value
+    + "&UBICACION_PRODUCTO=" + encodeURIComponent(document.getElementById("ubicacionCompra").value)
+    + "&SUCURSAL="           + document.getElementById("sucursalCompra").value
+    + "&TOKEN="              + sessionToken;
 
-const url=
-baseURL+
-"?ACCION=VENTA"+
-"&PRODUCTO="+encodeURIComponent(item.producto)+
-"&CANTIDAD="+item.cantidad+
-"&SUCURSAL="+sucursal+
-"&USUARIO="+usuario
-
-await fetch(url)
-
+  try {
+    const res   = await fetch(url);
+    const texto = await res.text();
+    if (texto.includes("COMPRA")) {
+      mostrarMsg("✅ Compra registrada", "ok");
+      document.querySelectorAll("#seccion-COMPRA input").forEach(i => i.value = "");
+      document.getElementById("categoriaCompra").value = "";
+      cargarInventario();
+    } else {
+      mostrarMsg("Error: " + texto, "err");
+    }
+  } catch (e) {
+    mostrarMsg("Error de conexión","err");
+  }
+  loader.style.display = "none";
 }
 
-loader.style.display="none"
+// ══════════════════════════════════════════════
+//  GASTOS
+// ══════════════════════════════════════════════
 
-sonidoCaja.play()
+async function registrarGasto() {
+  if (!sessionToken) { mostrarMsg("Sesión expirada","err"); return; }
 
-mostrarMensaje("✅ Venta registrada","exito")
+  const concepto  = document.getElementById("gastoConcepto").value.trim();
+  const categoria = document.getElementById("gastoCategoria").value;
+  const importe   = document.getElementById("gastoImporte").value;
+  const persona   = document.getElementById("gastoPersona").value.trim();
+  const fecha     = document.getElementById("gastoFecha").value;
+  const notas     = document.getElementById("gastoNotas").value.trim();
 
-document.getElementById("panel").classList.add("ok")
+  if (!concepto)  { mostrarMsg("Ingresa el concepto del gasto","err"); return; }
+  if (!categoria) { mostrarMsg("Selecciona una categoría","err"); return; }
+  if (!importe || Number(importe) <= 0) { mostrarMsg("Ingresa un importe válido","err"); return; }
 
-setTimeout(()=>{
-document.getElementById("panel").classList.remove("ok")
-},600)
+  const loader = document.getElementById("loaderGasto");
+  loader.style.display = "block";
 
-carrito=[]
-renderCarrito()
+  try {
+    const url = baseURL
+      + "?ACCION=REGISTRAR_GASTO"
+      + "&CONCEPTO="  + encodeURIComponent(concepto)
+      + "&CATEGORIA=" + encodeURIComponent(categoria)
+      + "&IMPORTE="   + Number(importe)
+      + "&PERSONA="   + encodeURIComponent(persona)
+      + "&FECHA="     + fecha
+      + "&NOTAS="     + encodeURIComponent(notas)
+      + "&TOKEN="     + sessionToken;
 
-cargarInventario()
+    const res   = await fetch(url);
+    const texto = await res.text();
 
+    if (texto === "GASTO_REGISTRADO") {
+      mostrarMsg("💸 Gasto registrado correctamente", "ok");
+      document.getElementById("gastoConcepto").value  = "";
+      document.getElementById("gastoCategoria").value = "";
+      document.getElementById("gastoImporte").value   = "";
+      document.getElementById("gastoPersona").value   = "";
+      document.getElementById("gastoFecha").value     = hoy();
+      document.getElementById("gastoNotas").value     = "";
+    } else {
+      mostrarMsg("Error: " + texto, "err");
+    }
+  } catch (e) {
+    mostrarMsg("Error de conexión","err");
+  }
+  loader.style.display = "none";
 }
 
-function registrarCompra(){
+// ══════════════════════════════════════════════
+//  BÚSQUEDA DETALLADA
+// ══════════════════════════════════════════════
 
-if(document.getElementById("password").value!==CLAVE){
+let busquedaTimer = null;
 
-mostrarMensaje("Contraseña incorrecta","error")
-return
+function buscarProductoDetalle() {
+  const texto = document.getElementById("busquedaInput").value.trim();
+  const lista  = document.getElementById("listaBusqueda");
+  const loader = document.getElementById("loaderBusqueda");
 
+  clearTimeout(busquedaTimer);
+  document.getElementById("searchResultsList").innerHTML = "";
+
+  if (texto.length < 2) { lista.classList.remove("show"); return; }
+
+  // Sugerencias del inventario local primero (autocompletado rápido)
+  const sugerencias = inventarioGlobal.filter(p =>
+    p.producto.toLowerCase().includes(texto.toLowerCase())
+  );
+
+  lista.innerHTML = "";
+  if (sugerencias.length > 0) {
+    sugerencias.slice(0, 8).forEach(p => {
+      const div = document.createElement("div");
+      div.className = "ac-item";
+      div.innerHTML = `<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
+      div.onclick = () => {
+        document.getElementById("busquedaInput").value = p.producto;
+        lista.classList.remove("show");
+        ejecutarBusquedaDetalle(p.producto);
+      };
+      lista.appendChild(div);
+    });
+    lista.classList.add("show");
+  } else {
+    lista.classList.remove("show");
+  }
+
+  // Búsqueda al backend con debounce
+  busquedaTimer = setTimeout(() => ejecutarBusquedaDetalle(texto), 600);
 }
 
-const url=
-baseURL+
-"?ACCION=COMPRA"+
-"&PRODUCTO="+encodeURIComponent(document.getElementById("producto").value)+
-"&CATEGORIA="+encodeURIComponent(document.getElementById("categoria").value)+
-"&COSTO_PAQUETE="+document.getElementById("costo").value+
-"&CANTIDAD_PAQUETE="+document.getElementById("cantidadCompra").value+
-"&UNIDADES_PAQUETE="+document.getElementById("unidades").value+
-"&PRECIO_VENTA="+document.getElementById("precioVenta").value+
-"&PROVEEDOR="+encodeURIComponent(document.getElementById("proveedor").value)+
-"&FECHA_ENTRADA="+document.getElementById("fecha").value+
-"&UBICACION_PRODUCTO="+encodeURIComponent(document.getElementById("ubicacion").value)+
-"&SUCURSAL="+document.getElementById("sucursalCompra").value
+async function ejecutarBusquedaDetalle(texto) {
+  const loader = document.getElementById("loaderBusqueda");
+  const lista  = document.getElementById("listaBusqueda");
+  const cont   = document.getElementById("searchResultsList");
 
-fetch(url)
+  lista.classList.remove("show");
+  loader.style.display = "block";
+  cont.innerHTML = "";
 
-mostrarMensaje("Compra registrada","exito")
+  try {
+    const url = baseURL + "?ACCION=BUSCAR_PRODUCTO_DETALLE&PRODUCTO=" + encodeURIComponent(texto);
+    const res  = await fetch(url);
+    const data = await res.json();
 
-document.querySelectorAll("#camposCompra input").forEach(i=>i.value="")
-
-cargarInventario()
-
+    if (!data || data.length === 0) {
+      cont.innerHTML = `<div style="color:var(--muted);text-align:center;padding:20px;font-size:13px">Sin resultados para "<b style="color:var(--text)">${texto}</b>"</div>`;
+    } else {
+      data.forEach(p => cont.appendChild(renderSearchCard(p)));
+    }
+  } catch (e) {
+    cont.innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`;
+  }
+  loader.style.display = "none";
 }
 
-function buscarProductoCompra(){
+function renderSearchCard(p) {
+  const div = document.createElement("div");
+  div.className = "search-result show";
 
-const texto=document.getElementById("producto").value.toLowerCase()
-const sucursal=document.getElementById("sucursalCompra").value
+  const stockColor = p.stock <= 0 ? "warn" : p.stock <= 5 ? "orange" : "ok";
+  const stockLabel = p.stock <= 0 ? "⛔ Sin stock" : p.stock <= 5 ? "⚠ Stock bajo" : "✅ En stock";
 
-const lista=document.getElementById("listaCompra")
-lista.innerHTML=""
-
-if(texto.length<1)return
-
-const filtrados=inventarioGlobal.filter(p=>
-p.producto.toLowerCase().includes(texto)
-&& p.sucursal===sucursal
-)
-
-filtrados.slice(0,8).forEach(p=>{
-
-const div=document.createElement("div")
-div.className="item"
-
-div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
-
-div.onclick=()=>{
-
-document.getElementById("producto").value=p.producto
-document.getElementById("categoria").value=p.categoria
-document.getElementById("precioVenta").value=p.precio
-
-document.getElementById("infoCompra").innerText=
-"Stock actual: "+p.stock
-
-lista.innerHTML=""
-
+  div.innerHTML = `
+    <div class="sr-name">📦 ${p.producto}</div>
+    <div class="sr-grid">
+      <div class="sr-field accent">
+        <div class="sr-key">Precio Venta</div>
+        <div class="sr-val ok">Bs ${p.precioVenta ?? "—"}</div>
+      </div>
+      <div class="sr-field orange">
+        <div class="sr-key">Precio Unidad</div>
+        <div class="sr-val orange">${p.precioUnidad !== undefined ? "Bs " + Number(p.precioUnidad).toFixed(2) : "—"}</div>
+      </div>
+      <div class="sr-field ${stockColor === 'warn' ? 'red' : stockColor === 'orange' ? 'orange' : 'accent'}">
+        <div class="sr-key">Stock Actual</div>
+        <div class="sr-val ${stockColor}">${p.stock} ud. · ${stockLabel}</div>
+      </div>
+      <div class="sr-field blue">
+        <div class="sr-key">Sucursal</div>
+        <div class="sr-val" style="color:#6eb4ff">${p.sucursal ?? "—"}</div>
+      </div>
+      <div class="sr-field">
+        <div class="sr-key">Ubicación</div>
+        <div class="sr-val">${p.ubicacion || "—"}</div>
+      </div>
+      <div class="sr-field">
+        <div class="sr-key">Proveedor</div>
+        <div class="sr-val">${p.proveedor || "—"}</div>
+      </div>
+    </div>`;
+  return div;
 }
 
-lista.appendChild(div)
-
-})
-
-}
-
-function verInventario(){
-
-window.open(
-"https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit",
-"_blank"
-)
-
-}
-
-cargarInventario()
+// cerrar autocomplete al hacer click afuera
+document.addEventListener("click", e => {
+  if (!e.target.closest(".autocomplete") && !e.target.closest("input")) {
+    document.querySelectorAll(".autocomplete").forEach(a => a.classList.remove("show"));
+  }
+});
 
 </script>
-
 </body>
 </html>
+
 
 
 
