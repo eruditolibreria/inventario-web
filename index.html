@@ -26,13 +26,9 @@ max-width:420px;
 padding:25px;
 border-radius:12px;
 box-shadow:0 0 20px rgba(0,255,150,0.2);
-transition:0.3s;
 }
 
-h2{
-text-align:center;
-margin-bottom:20px;
-}
+h2{text-align:center;margin-bottom:20px;}
 
 select,input{
 width:100%;
@@ -158,6 +154,8 @@ animation:giro 0.7s linear infinite;
 <option value="CENTRAL">CENTRAL</option>
 </select>
 
+<!-- VENTAS -->
+
 <div id="camposVenta">
 
 <input id="usuarioVenta" placeholder="Usuario (opcional)">
@@ -193,6 +191,8 @@ animation:giro 0.7s linear infinite;
 
 </div>
 
+<!-- COMPRAS -->
+
 <div id="camposCompra" class="oculto">
 
 <input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
@@ -205,11 +205,14 @@ animation:giro 0.7s linear infinite;
 <input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
 <input id="unidades" type="number" placeholder="Unidades por Paquete">
 <input id="precioVenta" type="number" placeholder="Precio Venta">
+
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
 
-<button onclick="registrarCompra()" style="background:#00c853">Registrar Compra</button>
+<button onclick="registrarCompra()" style="background:#00c853">
+Registrar Compra
+</button>
 
 </div>
 
@@ -222,7 +225,7 @@ animation:giro 0.7s linear infinite;
 <script>
 
 const CLAVE="1234"
-const baseURL="https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec"
+const baseURL="TU_URL_SCRIPT"
 
 let inventarioGlobal=[]
 let carrito=[]
@@ -285,7 +288,8 @@ div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
 div.onclick=()=>{
 
 document.getElementById("productoVenta").value=p.producto
-document.getElementById("infoProducto").innerText="Stock disponible: "+p.stock+" | Precio: Bs "+p.precio
+document.getElementById("infoProducto").innerText=
+"Stock: "+p.stock+" | Precio: Bs "+p.precio
 
 lista.innerHTML=""
 
@@ -335,8 +339,6 @@ lista.appendChild(div)
 })
 
 }
-
-/* FUNCIONES QUE FALTABAN */
 
 function agregarCarrito(){
 
@@ -421,8 +423,7 @@ mostrarMensaje("Carrito vacío","error")
 return
 }
 
-const loader=document.getElementById("loader")
-loader.style.display="block"
+document.getElementById("loader").style.display="block"
 
 const sucursal=document.getElementById("sucursalVenta").value
 const usuario=document.getElementById("usuarioVenta").value || "ADMIN"
@@ -441,7 +442,7 @@ await fetch(url)
 
 }
 
-loader.style.display="none"
+document.getElementById("loader").style.display="none"
 
 mostrarMensaje("Venta registrada","exito")
 
@@ -452,7 +453,7 @@ cargarInventario()
 
 }
 
-function registrarCompra(){
+async function registrarCompra(){
 
 if(document.getElementById("password").value!==CLAVE){
 mostrarMensaje("Contraseña incorrecta","error")
@@ -461,14 +462,26 @@ return
 
 const producto=document.getElementById("producto").value
 const categoria=document.getElementById("categoria").value
-const costo=document.getElementById("costo").value
-const cantidad=document.getElementById("cantidadCompra").value
-const unidades=document.getElementById("unidades").value
-const precio=document.getElementById("precioVenta").value
+
+const costo=Number(document.getElementById("costo").value)
+const cantidad=Number(document.getElementById("cantidadCompra").value)
+const unidades=Number(document.getElementById("unidades").value)
+const precio=Number(document.getElementById("precioVenta").value)
+
 const proveedor=document.getElementById("proveedor").value
 const fecha=document.getElementById("fecha").value
 const ubicacion=document.getElementById("ubicacion").value
 const sucursal=document.getElementById("sucursalCompra").value
+
+if(!producto || !cantidad || !precio){
+mostrarMensaje("Datos incompletos","error")
+return
+}
+
+if(isNaN(costo) || isNaN(cantidad) || isNaN(unidades) || isNaN(precio)){
+mostrarMensaje("Campos numéricos inválidos","error")
+return
+}
 
 const url=
 baseURL+
@@ -484,9 +497,20 @@ baseURL+
 "&UBICACION="+encodeURIComponent(ubicacion)+
 "&SUCURSAL="+sucursal
 
-fetch(url)
+await fetch(url)
 
 mostrarMensaje("Compra registrada","exito")
+
+document.getElementById("producto").value=""
+document.getElementById("categoria").value=""
+document.getElementById("costo").value=""
+document.getElementById("cantidadCompra").value=""
+document.getElementById("unidades").value=""
+document.getElementById("precioVenta").value=""
+document.getElementById("proveedor").value=""
+document.getElementById("fecha").value=""
+document.getElementById("ubicacion").value=""
+document.getElementById("infoCompra").innerText=""
 
 cargarInventario()
 
@@ -507,6 +531,7 @@ cargarInventario()
 
 </body>
 </html>
+
 
 
 
