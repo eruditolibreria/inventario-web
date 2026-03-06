@@ -222,21 +222,17 @@ animation:giro 0.7s linear infinite;
 <script>
 
 const CLAVE="1234"
-
 const baseURL="https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec"
 
 let inventarioGlobal=[]
 let carrito=[]
 
 function mostrarMensaje(texto,tipo){
-
 const m=document.getElementById("mensaje")
 m.className="mensaje "+tipo
 m.innerText=texto
 m.style.display="block"
-
 setTimeout(()=>m.style.display="none",3000)
-
 }
 
 function cambiarModo(){
@@ -258,10 +254,8 @@ document.getElementById("sucursalVenta")
 }
 
 async function cargarInventario(){
-
 const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO")
 inventarioGlobal=await res.json()
-
 }
 
 setInterval(cargarInventario,10000)
@@ -339,6 +333,162 @@ lista.innerHTML=""
 lista.appendChild(div)
 
 })
+
+}
+
+/* FUNCIONES QUE FALTABAN */
+
+function agregarCarrito(){
+
+const producto=document.getElementById("productoVenta").value
+const cantidad=Number(document.getElementById("cantidadVenta").value)
+const sucursal=document.getElementById("sucursalVenta").value
+
+if(!producto || !cantidad){
+mostrarMensaje("Datos incompletos","error")
+return
+}
+
+const prod=inventarioGlobal.find(p=>p.producto===producto && p.sucursal===sucursal)
+
+if(!prod){
+mostrarMensaje("Producto no encontrado","error")
+return
+}
+
+if(prod.stock < cantidad){
+mostrarMensaje("Stock insuficiente","error")
+return
+}
+
+const item={
+producto:producto,
+precio:prod.precio,
+cantidad:cantidad,
+total:prod.precio*cantidad
+}
+
+carrito.push(item)
+
+renderCarrito()
+
+document.getElementById("productoVenta").value=""
+document.getElementById("cantidadVenta").value=""
+
+}
+
+function renderCarrito(){
+
+const tabla=document.getElementById("carrito")
+tabla.innerHTML=""
+
+let total=0
+
+carrito.forEach((item,i)=>{
+
+total+=item.total
+
+tabla.innerHTML+=`
+<tr>
+<td>${item.producto}</td>
+<td>${item.cantidad}</td>
+<td>${item.precio}</td>
+<td>${item.total}</td>
+<td class="eliminar" onclick="eliminarItem(${i})">X</td>
+</tr>
+`
+
+})
+
+document.getElementById("totalVenta").innerText="Bs "+total
+
+}
+
+function eliminarItem(i){
+carrito.splice(i,1)
+renderCarrito()
+}
+
+async function cobrar(){
+
+if(document.getElementById("password").value!==CLAVE){
+mostrarMensaje("Contraseña incorrecta","error")
+return
+}
+
+if(carrito.length===0){
+mostrarMensaje("Carrito vacío","error")
+return
+}
+
+const loader=document.getElementById("loader")
+loader.style.display="block"
+
+const sucursal=document.getElementById("sucursalVenta").value
+const usuario=document.getElementById("usuarioVenta").value || "ADMIN"
+
+for(const item of carrito){
+
+const url=
+baseURL+
+"?ACCION=VENTA"+
+"&PRODUCTO="+encodeURIComponent(item.producto)+
+"&CANTIDAD="+item.cantidad+
+"&SUCURSAL="+sucursal+
+"&USUARIO="+usuario
+
+await fetch(url)
+
+}
+
+loader.style.display="none"
+
+mostrarMensaje("Venta registrada","exito")
+
+carrito=[]
+renderCarrito()
+
+cargarInventario()
+
+}
+
+function registrarCompra(){
+
+if(document.getElementById("password").value!==CLAVE){
+mostrarMensaje("Contraseña incorrecta","error")
+return
+}
+
+const producto=document.getElementById("producto").value
+const categoria=document.getElementById("categoria").value
+const costo=document.getElementById("costo").value
+const cantidad=document.getElementById("cantidadCompra").value
+const unidades=document.getElementById("unidades").value
+const precio=document.getElementById("precioVenta").value
+const proveedor=document.getElementById("proveedor").value
+const fecha=document.getElementById("fecha").value
+const ubicacion=document.getElementById("ubicacion").value
+const sucursal=document.getElementById("sucursalCompra").value
+
+const url=
+baseURL+
+"?ACCION=COMPRA"+
+"&PRODUCTO="+encodeURIComponent(producto)+
+"&CATEGORIA="+encodeURIComponent(categoria)+
+"&COSTO="+costo+
+"&CANTIDAD="+cantidad+
+"&UNIDADES="+unidades+
+"&PRECIO="+precio+
+"&PROVEEDOR="+encodeURIComponent(proveedor)+
+"&FECHA="+fecha+
+"&UBICACION="+encodeURIComponent(ubicacion)+
+"&SUCURSAL="+sucursal
+
+fetch(url)
+
+mostrarMensaje("Compra registrada","exito")
+
+cargarInventario()
 
 }
 
