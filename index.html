@@ -39,7 +39,6 @@ body{
   padding:20px 12px 40px;
 }
 
-/* ── FONDO ANIMADO ── */
 body::before{
   content:'';
   position:fixed;
@@ -54,7 +53,6 @@ body::before{
   to{transform:translate(20vw,15vh);}
 }
 
-/* ── PANEL BASE ── */
 .panel{
   background:var(--surface);
   width:100%;
@@ -70,7 +68,6 @@ body::before{
   box-shadow:0 0 50px var(--accent-glow);
 }
 
-/* ── HEADER ── */
 .app-header{
   padding:20px 24px 16px;
   border-bottom:1px solid var(--border);
@@ -116,10 +113,8 @@ body::before{
 .user-badge .uname{font-weight:600;color:#fff;}
 .user-badge .logout-hint{color:var(--muted);font-size:10px;}
 
-/* ── BODY ── */
 .panel-body{padding:20px 24px;}
 
-/* ── LOGIN ── */
 #loginScreen{
   padding:32px 24px 28px;
 }
@@ -156,7 +151,6 @@ body::before{
   display:block;
 }
 
-/* ── INPUTS ── */
 input,select,textarea{
   width:100%;
   padding:11px 14px;
@@ -178,7 +172,6 @@ input::placeholder{color:var(--muted);}
 select option{background:#1c2530;}
 textarea{resize:vertical;min-height:70px;}
 
-/* ── BUTTONS ── */
 .btn{
   width:100%;
   padding:13px;
@@ -207,7 +200,6 @@ textarea{resize:vertical;min-height:70px;}
 }
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
 
-/* ── TABS / MODO ── */
 .mode-tabs{
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -235,7 +227,6 @@ textarea{resize:vertical;min-height:70px;}
 }
 .mode-tab .tab-icon{display:block;font-size:16px;margin-bottom:2px;}
 
-/* ── SECTION LABEL ── */
 .section-label{
   font-size:10px;
   font-weight:600;
@@ -247,14 +238,12 @@ textarea{resize:vertical;min-height:70px;}
   border-bottom:1px solid var(--border);
 }
 
-/* ── ROW ── */
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .mt-8{margin-top:8px;}
 .mt-12{margin-top:12px;}
 .mb-12{margin-bottom:12px;}
 
-/* ── AUTOCOMPLETE ── */
 .autocomplete{
   background:var(--surface3);
   border:1px solid var(--border);
@@ -292,7 +281,6 @@ textarea{resize:vertical;min-height:70px;}
 .info-prod.show{display:block;}
 .stock-bajo{color:var(--red);font-weight:700;}
 
-/* ── CARRITO ── */
 .carrito-header{
   display:flex;
   justify-content:space-between;
@@ -341,7 +329,6 @@ tr:last-child td{border-bottom:none;}
 }
 .btn-del:hover{background:rgba(255,71,87,0.1);}
 
-/* ── MENSAJE ── */
 .mensaje{
   margin-top:12px;
   padding:10px 14px;
@@ -356,7 +343,6 @@ tr:last-child td{border-bottom:none;}
 .msg-ok{background:rgba(0,230,118,0.12);color:var(--accent);border:1px solid rgba(0,230,118,0.25);}
 .msg-err{background:rgba(255,71,87,0.12);color:var(--red);border:1px solid rgba(255,71,87,0.25);}
 
-/* ── LOADER ── */
 .loader{
   display:none;
   margin:10px auto;
@@ -368,7 +354,6 @@ tr:last-child td{border-bottom:none;}
 }
 @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
-/* ── BÚSQUEDA RESULTADO ── */
 .search-result{
   background:var(--surface2);
   border:1px solid var(--border);
@@ -422,17 +407,14 @@ tr:last-child td{border-bottom:none;}
 
 .search-results-list{margin-top:12px;}
 
-/* ── OCULTO ── */
 .oculto{display:none !important;}
 
-/* ── DIVIDER ── */
 .divider{
   height:1px;
   background:var(--border);
   margin:16px 0;
 }
 
-/* ── PIN DE ACCESO (compatibilidad) ── */
 .access-notice{
   font-size:11px;
   color:var(--muted);
@@ -447,15 +429,12 @@ tr:last-child td{border-bottom:none;}
 
 <div class="panel" id="mainPanel">
 
-  <!-- ══════════════════ LOGIN ══════════════════ -->
   <div id="loginScreen">
-
     <div class="login-logo">
       <span class="logo-icon">📦</span>
       <h2>Grupo Eruditos</h2>
       <p>Sistema de Inventario · Acceso seguro</p>
     </div>
-
     <div class="field-group">
       <label class="field-label">Usuario</label>
       <input id="loginUser" type="text" placeholder="Ingresa tu usuario" autocomplete="username"
@@ -466,20 +445,14 @@ tr:last-child td{border-bottom:none;}
       <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
              onkeydown="if(event.key==='Enter')loginSubmit()">
     </div>
-
     <div class="loader" id="loginLoader"></div>
     <div id="loginMsg" class="mensaje"></div>
-
     <button class="btn btn-primary mt-8" onclick="loginSubmit()">Ingresar al sistema</button>
-
     <p class="access-notice">Acceso solo para usuarios autorizados</p>
-
   </div>
 
-  <!-- ══════════════════ APP ══════════════════ -->
   <div id="appScreen" class="oculto">
 
-    <!-- Header con usuario y logout -->
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
@@ -496,7 +469,6 @@ tr:last-child td{border-bottom:none;}
 
     <div class="panel-body">
 
-      <!-- TABS MODO -->
       <div class="mode-tabs">
         <div class="mode-tab active" onclick="setModo('VENTA')" id="tab-VENTA">
           <span class="tab-icon">💰</span>Venta
@@ -512,11 +484,9 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
 
-      <!-- ────────────── VENTA ────────────── -->
+      <!-- VENTA -->
       <div id="seccion-VENTA">
-
         <div class="section-label">Registrar venta</div>
-
         <div class="row-2 mb-12">
           <div class="field-group" style="margin:0">
             <label class="field-label">Sucursal</label>
@@ -531,25 +501,20 @@ tr:last-child td{border-bottom:none;}
             <input id="usuarioVenta" placeholder="Opcional">
           </div>
         </div>
-
         <div class="field-group">
           <label class="field-label">Producto</label>
           <input id="productoVenta" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoVenta()">
           <div id="listaVenta" class="autocomplete"></div>
           <div id="infoProductoVenta" class="info-prod"></div>
         </div>
-
         <div class="field-group">
           <label class="field-label">Cantidad</label>
           <input id="cantidadVenta" type="number" min="1" placeholder="0">
         </div>
-
         <button class="btn btn-green mb-12" onclick="agregarCarrito()">+ Agregar al carrito</button>
-
         <div class="carrito-header">
           <h3 id="tituloCarrito">🛒 Carrito <span style="color:var(--muted)">(0)</span></h3>
         </div>
-
         <table>
           <thead>
             <tr>
@@ -562,22 +527,17 @@ tr:last-child td{border-bottom:none;}
           </thead>
           <tbody id="carritoBody"></tbody>
         </table>
-
         <div class="carrito-total">
           <small>TOTAL A COBRAR</small><br>
           <span id="totalVenta">Bs 0.00</span>
         </div>
-
         <div class="loader" id="loaderVenta"></div>
         <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()">⚡ COBRAR</button>
-
       </div>
 
-      <!-- ────────────── COMPRA ────────────── -->
+      <!-- COMPRA -->
       <div id="seccion-COMPRA" class="oculto">
-
         <div class="section-label">Registrar compra</div>
-
         <div class="field-group">
           <label class="field-label">Sucursal</label>
           <select id="sucursalCompra">
@@ -586,19 +546,16 @@ tr:last-child td{border-bottom:none;}
             <option value="CENTRAL">CENTRAL</option>
           </select>
         </div>
-
         <div class="field-group">
           <label class="field-label">Producto</label>
           <input id="productoCompra" placeholder="🔎 Escribe para buscar o crear..." onkeyup="buscarProductoCompra()">
           <div id="listaCompra" class="autocomplete"></div>
           <div id="infoCompra" class="info-prod"></div>
         </div>
-
         <div class="field-group">
           <label class="field-label">Categoría</label>
           <input id="categoriaCompra" placeholder="Ej: Bebidas, Snacks...">
         </div>
-
         <div class="row-2">
           <div class="field-group" style="margin:0">
             <label class="field-label">Costo paquete</label>
@@ -609,7 +566,6 @@ tr:last-child td{border-bottom:none;}
             <input id="precioVentaCompra" type="number" placeholder="Bs 0.00">
           </div>
         </div>
-
         <div class="row-2 mt-8">
           <div class="field-group" style="margin:0">
             <label class="field-label">Cant. paquetes</label>
@@ -620,12 +576,10 @@ tr:last-child td{border-bottom:none;}
             <input id="unidadesCompra" type="number" placeholder="0">
           </div>
         </div>
-
         <div class="field-group mt-8">
           <label class="field-label">Proveedor</label>
           <input id="proveedorCompra" placeholder="Nombre del proveedor">
         </div>
-
         <div class="row-2">
           <div class="field-group" style="margin:0">
             <label class="field-label">Fecha entrada</label>
@@ -636,22 +590,17 @@ tr:last-child td{border-bottom:none;}
             <input id="ubicacionCompra" placeholder="Ej: Pasillo 2">
           </div>
         </div>
-
         <div class="loader" id="loaderCompra"></div>
         <button class="btn btn-green mt-8" onclick="registrarCompra()">✅ Registrar Compra</button>
-
       </div>
 
-      <!-- ────────────── GASTOS ────────────── -->
+      <!-- GASTOS -->
       <div id="seccion-GASTO" class="oculto">
-
         <div class="section-label">Registrar gasto operativo</div>
-
         <div class="field-group">
           <label class="field-label">Concepto</label>
           <input id="gastoConcepto" placeholder="Ej: Pago luz, limpieza, flete...">
         </div>
-
         <div class="row-2">
           <div class="field-group" style="margin:0">
             <label class="field-label">Categoría</label>
@@ -671,7 +620,6 @@ tr:last-child td{border-bottom:none;}
             <input id="gastoImporte" type="number" min="0.01" step="0.01" placeholder="0.00">
           </div>
         </div>
-
         <div class="row-2 mt-8">
           <div class="field-group" style="margin:0">
             <label class="field-label">Responsable</label>
@@ -682,46 +630,35 @@ tr:last-child td{border-bottom:none;}
             <input id="gastoFecha" type="date">
           </div>
         </div>
-
         <div class="field-group mt-8">
           <label class="field-label">Notas</label>
           <textarea id="gastoNotas" placeholder="Detalles adicionales (opcional)"></textarea>
         </div>
-
         <div class="loader" id="loaderGasto"></div>
         <button class="btn btn-primary mt-8" onclick="registrarGasto()">💸 Registrar Gasto</button>
-
       </div>
 
-      <!-- ────────────── BÚSQUEDA ────────────── -->
+      <!-- BÚSQUEDA -->
       <div id="seccion-BUSQUEDA" class="oculto">
-
         <div class="section-label">Búsqueda de producto</div>
-
         <div class="field-group">
           <label class="field-label">Nombre del producto</label>
           <input id="busquedaInput" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDetalle()">
           <div id="listaBusqueda" class="autocomplete"></div>
         </div>
-
         <div class="loader" id="loaderBusqueda"></div>
-
-        <!-- Resultados múltiples -->
         <div id="searchResultsList" class="search-results-list"></div>
-
       </div>
 
-      <!-- ── MENSAJE GLOBAL ── -->
       <div id="mensajeApp" class="mensaje"></div>
 
-      <!-- ── VER SHEET ── -->
       <div class="divider"></div>
       <button class="btn btn-ghost" onclick="verInventario()">📊 Ver Google Sheet</button>
 
     </div>
   </div>
 
-</div><!-- end .panel -->
+</div>
 
 <script>
 
@@ -729,8 +666,11 @@ tr:last-child td{border-bottom:none;}
 //  CONFIG
 // ══════════════════════════════════════════════
 
-const baseURL = "/api/proxy";
-// Estado de sesión (en memoria)
+const baseURL = "https://script.google.com/macros/s/AKfycbxAJ_xsJgTzhydxSRcBIv9gYh83fawf4w5dCkAt2m50rYxD6Xa4UvC_yAscCmBPgQJfQA/exec";
+
+// Opciones fetch con redirect:follow — resuelve CORS en Google Apps Script
+const fetchOpts = { redirect: 'follow' };
+
 let sessionToken  = null;
 let sessionUser   = null;
 let sessionRol    = null;
@@ -759,7 +699,7 @@ async function loginSubmit() {
 
   try {
     const url = baseURL + "?ACCION=LOGIN&USUARIO=" + encodeURIComponent(usuario) + "&PASSWORD=" + encodeURIComponent(password);
-    const res  = await fetch(url);
+    const res  = await fetch(url, fetchOpts);  // ← redirect:follow
     const data = await res.json();
 
     if (data.ok) {
@@ -769,7 +709,6 @@ async function loginSubmit() {
       document.getElementById("badgeUser").textContent = sessionUser;
       document.getElementById("loginScreen").classList.add("oculto");
       document.getElementById("appScreen").classList.remove("oculto");
-      // Fecha por defecto en gastos
       document.getElementById("gastoFecha").value = hoy();
       cargarInventario();
     } else {
@@ -794,7 +733,7 @@ function mostrarMensajeLogin(txt, tipo) {
 function cerrarSesion() {
   if (!confirm("¿Cerrar sesión?")) return;
   if (sessionToken) {
-    fetch(baseURL + "?ACCION=LOGOUT&TOKEN=" + sessionToken).catch(() => {});
+    fetch(baseURL + "?ACCION=LOGOUT&TOKEN=" + sessionToken, fetchOpts).catch(() => {});  // ← redirect:follow
   }
   sessionToken = sessionUser = sessionRol = null;
   inventarioGlobal = []; carrito = [];
@@ -832,14 +771,14 @@ function verInventario() {
 }
 
 // ══════════════════════════════════════════════
-//  INVENTARIO (recarga periódica)
+//  INVENTARIO
 // ══════════════════════════════════════════════
 
 async function cargarInventario() {
   try {
-    const res = await fetch(baseURL + "?ACCION=LISTAR_INVENTARIO&LIMITE=200");
+    const res = await fetch(baseURL + "?ACCION=LISTAR_INVENTARIO&LIMITE=200", fetchOpts);  // ← redirect:follow
     const data = await res.json();
-    inventarioGlobal = data.datos || data; // compatible con ambos formatos
+    inventarioGlobal = data.datos || data;
   } catch (e) { /* silencioso */ }
 }
 
@@ -848,7 +787,7 @@ setInterval(() => {
 }, 15000);
 
 // ══════════════════════════════════════════════
-//  AUTOCOMPLETE HELPERS
+//  AUTOCOMPLETE HELPER
 // ══════════════════════════════════════════════
 
 function construirAC(lista, items, onSelect) {
@@ -895,10 +834,9 @@ function agregarCarrito() {
   if (!sucursal)                                { mostrarMsg("Selecciona una sucursal","err"); return; }
 
   const prod = inventarioGlobal.find(p => p.producto === producto && p.sucursal === sucursal);
-  if (!prod)                  { mostrarMsg("Producto no encontrado en inventario","err"); return; }
-  if (prod.stock < cantidad)  { mostrarMsg("Stock insuficiente (disponible: " + prod.stock + ")","err"); return; }
+  if (!prod)                 { mostrarMsg("Producto no encontrado en inventario","err"); return; }
+  if (prod.stock < cantidad) { mostrarMsg("Stock insuficiente (disponible: " + prod.stock + ")","err"); return; }
 
-  // verificar si ya está en carrito para sumar
   const existe = carrito.find(i => i.producto === producto);
   if (existe) {
     existe.cantidad += cantidad;
@@ -948,7 +886,6 @@ async function cobrar() {
   btn.disabled = true;
 
   try {
-    // Usar VENTA_POS para envío atómico del carrito
     const url = baseURL
       + "?ACCION=VENTA_POS"
       + "&CARRITO=" + encodeURIComponent(JSON.stringify(carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad }))))
@@ -956,7 +893,7 @@ async function cobrar() {
       + "&USUARIO="  + encodeURIComponent(usuario)
       + "&TOKEN="    + sessionToken;
 
-    const res  = await fetch(url);
+    const res   = await fetch(url, fetchOpts);  // ← redirect:follow
     const texto = await res.text();
 
     if (texto === "VENTA_POS_OK") {
@@ -1027,7 +964,7 @@ async function registrarCompra() {
     + "&TOKEN="              + sessionToken;
 
   try {
-    const res   = await fetch(url);
+    const res   = await fetch(url, fetchOpts);  // ← redirect:follow
     const texto = await res.text();
     if (texto.includes("COMPRA")) {
       mostrarMsg("✅ Compra registrada", "ok");
@@ -1075,7 +1012,7 @@ async function registrarGasto() {
       + "&NOTAS="     + encodeURIComponent(notas)
       + "&TOKEN="     + sessionToken;
 
-    const res   = await fetch(url);
+    const res   = await fetch(url, fetchOpts);  // ← redirect:follow
     const texto = await res.text();
 
     if (texto === "GASTO_REGISTRADO") {
@@ -1104,14 +1041,12 @@ let busquedaTimer = null;
 function buscarProductoDetalle() {
   const texto = document.getElementById("busquedaInput").value.trim();
   const lista  = document.getElementById("listaBusqueda");
-  const loader = document.getElementById("loaderBusqueda");
 
   clearTimeout(busquedaTimer);
   document.getElementById("searchResultsList").innerHTML = "";
 
   if (texto.length < 2) { lista.classList.remove("show"); return; }
 
-  // Sugerencias del inventario local primero (autocompletado rápido)
   const sugerencias = inventarioGlobal.filter(p =>
     p.producto.toLowerCase().includes(texto.toLowerCase())
   );
@@ -1134,7 +1069,6 @@ function buscarProductoDetalle() {
     lista.classList.remove("show");
   }
 
-  // Búsqueda al backend con debounce
   busquedaTimer = setTimeout(() => ejecutarBusquedaDetalle(texto), 600);
 }
 
@@ -1149,7 +1083,7 @@ async function ejecutarBusquedaDetalle(texto) {
 
   try {
     const url = baseURL + "?ACCION=BUSCAR_PRODUCTO_DETALLE&PRODUCTO=" + encodeURIComponent(texto);
-    const res  = await fetch(url);
+    const res  = await fetch(url, fetchOpts);  // ← redirect:follow
     const data = await res.json();
 
     if (!data || data.length === 0) {
@@ -1201,7 +1135,6 @@ function renderSearchCard(p) {
   return div;
 }
 
-// cerrar autocomplete al hacer click afuera
 document.addEventListener("click", e => {
   if (!e.target.closest(".autocomplete") && !e.target.closest("input")) {
     document.querySelectorAll(".autocomplete").forEach(a => a.classList.remove("show"));
@@ -1211,6 +1144,7 @@ document.addEventListener("click", e => {
 </script>
 </body>
 </html>
+
 
 
 
