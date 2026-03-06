@@ -7,8 +7,6 @@
 
 <style>
 
-/* TU CSS ORIGINAL NO SE MODIFICA */
-
 body{
 margin:0;
 background:linear-gradient(135deg,#000,#0f0f0f,#1a1a1a);
@@ -45,7 +43,6 @@ margin-bottom:20px;
 margin:0;
 font-size:22px;
 color:#00e676;
-letter-spacing:1px;
 }
 
 .header span{
@@ -59,8 +56,6 @@ padding:12px;
 margin-bottom:12px;
 border-radius:8px;
 border:none;
-box-sizing:border-box;
-font-size:15px;
 background:#1b1b1b;
 color:white;
 }
@@ -73,21 +68,21 @@ border-radius:8px;
 border:none;
 font-weight:bold;
 cursor:pointer;
-font-size:14px;
+transition:0.2s;
+}
+
+/* ===== NUEVA ANIMACION BOTONES ===== */
+
+button:hover{
+transform:scale(1.03);
+box-shadow:0 0 10px #00e676;
+}
+
+button:active{
+transform:scale(0.97);
 }
 
 .btn-ver{background:#2979ff;color:white;}
-
-.mensaje{
-margin-top:10px;
-padding:8px;
-border-radius:6px;
-text-align:center;
-display:none;
-}
-
-.exito{background:#1b5e20;}
-.error{background:#b71c1c;}
 
 .oculto{display:none;}
 
@@ -96,8 +91,6 @@ background:#222;
 border-radius:6px;
 max-height:150px;
 overflow-y:auto;
-margin-top:-8px;
-margin-bottom:10px;
 }
 
 .item{
@@ -114,7 +107,6 @@ color:black;
 .infoProducto{
 font-size:13px;
 opacity:0.9;
-margin-top:-6px;
 margin-bottom:10px;
 }
 
@@ -128,19 +120,12 @@ width:100%;
 font-size:13px;
 border-collapse:collapse;
 background:#1b1b1b;
-border-radius:8px;
-overflow:hidden;
 }
 
 td,th{
 padding:6px;
 border-bottom:1px solid #333;
 text-align:center;
-}
-
-th{
-background:#222;
-color:#00e676;
 }
 
 .eliminar{
@@ -182,34 +167,17 @@ color:#00e676;
 <span>Grupo Eruditos</span>
 </div>
 
+<input id="password" type="password" placeholder="🔑 Contraseña acceso">
 
-<!-- ================================================= -->
-<!-- NUEVO: LOGIN DE USUARIO CON BACKEND -->
-<!-- ================================================= -->
-
-<input id="usuarioLogin" placeholder="👤 Usuario">
-<input id="password" type="password" placeholder="🔑 Contraseña">
-
-<button onclick="login()" style="background:#00c853">Ingresar</button>
-
-
-<!-- ================================================= -->
-<!-- PANEL ADMINISTRADOR NUEVO -->
-<!-- ================================================= -->
-
-<div id="panelAdmin" class="oculto">
+<!-- ===== PANEL ADMINISTRADOR NUEVO ===== -->
 
 <select id="modo" onchange="cambiarModo()">
 <option value="VENTA">Registrar Venta</option>
 <option value="COMPRA">Registrar Compra</option>
-<option value="GASTO">Registrar Gasto</option>
 <option value="BUSCAR">Buscar Producto</option>
 </select>
 
-
-<!-- ========================== -->
-<!-- INTERFAZ VENTA (TUYA) -->
-<!-- ========================== -->
+<!-- ================== VENTAS ================== -->
 
 <select id="sucursalVenta">
 <option value="">🏪 Sucursal</option>
@@ -219,13 +187,13 @@ color:#00e676;
 
 <div id="camposVenta">
 
-<input id="usuarioVenta" placeholder="👤 Usuario (opcional)">
+<input id="usuarioVenta" placeholder="👤 Usuario">
 
 <input id="productoVenta" placeholder="🔎 Producto" onkeyup="buscarProducto()">
 <div id="listaProductos" class="autocomplete"></div>
 <div id="infoProducto" class="infoProducto"></div>
 
-<input id="cantidadVenta" type="number" placeholder="📦 Cantidad">
+<input id="cantidadVenta" type="number" placeholder="Cantidad">
 
 <button onclick="agregarCarrito()" style="background:#00c853">Agregar al carrito</button>
 
@@ -241,7 +209,9 @@ color:#00e676;
 <th></th>
 </tr>
 </thead>
+
 <tbody id="carrito"></tbody>
+
 </table>
 
 <h3>Total: <span id="totalVenta">Bs 0</span></h3>
@@ -252,10 +222,7 @@ color:#00e676;
 
 </div>
 
-
-<!-- ========================== -->
-<!-- INTERFAZ COMPRA (TUYA) -->
-<!-- ========================== -->
+<!-- ================== COMPRAS ================== -->
 
 <select id="sucursalCompra" class="oculto">
 <option value="">🏪 Sucursal</option>
@@ -265,16 +232,17 @@ color:#00e676;
 
 <div id="camposCompra" class="oculto">
 
-<input id="producto" placeholder="🔎 Producto" onkeyup="buscarProductoCompra()">
+<input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
 <div id="listaCompra" class="autocomplete"></div>
-<div id="infoCompra" class="infoProducto"></div>
 
-<input id="categoria" placeholder="📂 Categoría">
+<input id="categoria" placeholder="Categoría">
 
-<input id="costo" type="number" placeholder="Costo Paquete">
-<input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
-<input id="unidades" type="number" placeholder="Unidades por Paquete">
-<input id="precioVenta" type="number" placeholder="Precio Venta">
+<input id="costo" type="number" placeholder="Costo paquete">
+<input id="cantidadCompra" type="number" placeholder="Cantidad paquetes">
+<input id="unidades" type="number" placeholder="Unidades paquete">
+
+<input id="precioVenta" type="number" placeholder="Precio venta">
+
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
@@ -283,46 +251,15 @@ color:#00e676;
 
 </div>
 
-
-<!-- ================================================= -->
-<!-- NUEVO: INTERFAZ GASTOS -->
-<!-- ================================================= -->
-
-<div id="camposGasto" class="oculto">
-
-<input id="conceptoGasto" placeholder="Concepto">
-
-<select id="categoriaGasto">
-<option>GASTO FIJO</option>
-<option>GASTO VARIABLE</option>
-<option>GASTO OPERATIVO</option>
-<option>GASTO ADMINISTRATIVO</option>
-</select>
-
-<input id="importeGasto" type="number" placeholder="Importe">
-<input id="personaGasto" placeholder="Responsable">
-<input id="fechaGasto" type="date">
-<input id="notasGasto" placeholder="Notas">
-
-<button onclick="registrarGasto()" style="background:#ff5252">Registrar Gasto</button>
-
-</div>
-
-
-<!-- ================================================= -->
-<!-- NUEVO: BUSCAR PRODUCTO -->
-<!-- ================================================= -->
+<!-- ================== BUSCADOR NUEVO ================== -->
 
 <div id="camposBuscar" class="oculto">
 
-<input id="buscarProductoInput" placeholder="Buscar producto">
-
-<button onclick="buscarProductoDetalle()" style="background:#2979ff">Buscar</button>
+<input id="buscarProductoInput" placeholder="🔎 Buscar producto..." onkeyup="buscarDetalle()">
 
 <div id="resultadoBusqueda"></div>
 
 </div>
-
 
 <button class="btn-ver" onclick="verInventario()">Ver Google Sheet</button>
 
@@ -330,164 +267,246 @@ color:#00e676;
 
 </div>
 
-</div>
-
 <script>
+
+const CLAVE="1234"
 
 const baseURL="https://script.google.com/macros/s/AKfycbzBsX58dd3JAIOVqrgLyJHw4tjgP87rlZfPUMy75LTQcnxhmDYiN8tsQ1f8j1TqhGQLwQ/exec"
 
 let inventarioGlobal=[]
 let carrito=[]
 
+const sonidoCaja=new Audio("https://actions.google.com/sounds/v1/cash_register/cash_register.ogg")
 
-/* ================================================= */
-/* NUEVO: LOGIN */
-/* ================================================= */
-
-async function login(){
-
-const usuario=document.getElementById("usuarioLogin").value
-const pass=document.getElementById("password").value
-
-const res=await fetch(
-baseURL+
-"?ACCION=LOGIN"+
-"&USUARIO="+usuario+
-"&PASSWORD="+pass
-)
-
-const data=await res.json()
-
-if(data.ok){
-
-document.getElementById("panelAdmin").classList.remove("oculto")
-
-mostrarMensaje("Bienvenido "+data.usuario,"exito")
-
-}else{
-
-mostrarMensaje("Login incorrecto","error")
-
-}
-
-}
-
-
-/* ================================================= */
-/* TU CODIGO ORIGINAL NO SE MODIFICA */
-/* ================================================= */
-
-function mostrarMensaje(texto,tipo){
-
-const m=document.getElementById("mensaje")
-m.className="mensaje "+tipo
-m.innerText=texto
-m.style.display="block"
-
-setTimeout(()=>m.style.display="none",3000)
-
-}
-
-
-/* ================================================= */
-/* MODIFICADO: CAMBIAR MODO PARA NUEVAS SECCIONES */
-/* ================================================= */
+/* ===== CAMBIO DE MODO ===== */
 
 function cambiarModo(){
 
 const modo=document.getElementById("modo").value
 
-document.getElementById("camposVenta").classList.add("oculto")
-document.getElementById("camposCompra").classList.add("oculto")
-document.getElementById("camposGasto").classList.add("oculto")
-document.getElementById("camposBuscar").classList.add("oculto")
+document.getElementById("camposVenta").classList.toggle("oculto",modo!=="VENTA")
+document.getElementById("camposCompra").classList.toggle("oculto",modo!=="COMPRA")
+document.getElementById("camposBuscar").classList.toggle("oculto",modo!=="BUSCAR")
 
-if(modo==="VENTA"){
-
-document.getElementById("camposVenta").classList.remove("oculto")
+document.getElementById("sucursalVenta").classList.toggle("oculto",modo!=="VENTA")
+document.getElementById("sucursalCompra").classList.toggle("oculto",modo!=="COMPRA")
 
 }
 
-if(modo==="COMPRA"){
+/* ===== CARGAR INVENTARIO ===== */
 
-document.getElementById("camposCompra").classList.remove("oculto")
+async function cargarInventario(){
 
-}
+const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO")
 
-if(modo==="GASTO"){
-
-document.getElementById("camposGasto").classList.remove("oculto")
+inventarioGlobal=await res.json()
 
 }
 
-if(modo==="BUSCAR"){
+setInterval(cargarInventario,10000)
 
-document.getElementById("camposBuscar").classList.remove("oculto")
+/* ===== BUSCAR PRODUCTO VENTAS ===== */
 
-}
+function buscarProducto(){
 
-}
+const texto=document.getElementById("productoVenta").value.toLowerCase()
 
+const sucursal=document.getElementById("sucursalVenta").value
 
-/* ================================================= */
-/* NUEVO: REGISTRAR GASTO */
-/* ================================================= */
+const lista=document.getElementById("listaProductos")
 
-function registrarGasto(){
+lista.innerHTML=""
 
-const url=
-baseURL+
-"?ACCION=REGISTRAR_GASTO"+
-"&CONCEPTO="+encodeURIComponent(document.getElementById("conceptoGasto").value)+
-"&CATEGORIA="+encodeURIComponent(document.getElementById("categoriaGasto").value)+
-"&IMPORTE="+document.getElementById("importeGasto").value+
-"&PERSONA="+encodeURIComponent(document.getElementById("personaGasto").value)+
-"&FECHA="+document.getElementById("fechaGasto").value+
-"&NOTAS="+encodeURIComponent(document.getElementById("notasGasto").value)
+if(texto.length<1)return
 
-fetch(url)
+const filtrados=inventarioGlobal.filter(p=>
 
-mostrarMensaje("Gasto registrado","exito")
+p.producto.toLowerCase().includes(texto)
+&& p.sucursal===sucursal
 
-}
-
-
-/* ================================================= */
-/* NUEVO: BUSCAR PRODUCTO */
-/* ================================================= */
-
-async function buscarProductoDetalle(){
-
-const texto=document.getElementById("buscarProductoInput").value
-
-const res=await fetch(
-baseURL+
-"?ACCION=BUSCAR_PRODUCTO_DETALLE"+
-"&PRODUCTO="+encodeURIComponent(texto)
 )
 
-const data=await res.json()
+filtrados.slice(0,8).forEach(p=>{
 
-let html=""
+const div=document.createElement("div")
 
-data.forEach(p=>{
+div.className="item"
 
-html+=`
-<div style="margin-top:10px;border-bottom:1px solid #333;padding:8px">
-<b>${p.producto}</b><br>
-Sucursal: ${p.sucursal}<br>
-Ubicación: ${p.ubicacion}<br>
-Precio Compra: Bs ${p.precioCompra}<br>
-Precio Venta: Bs ${p.precioVenta}<br>
-Stock: ${p.stock}
-</div>
+div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
+
+div.onclick=()=>{
+
+document.getElementById("productoVenta").value=p.producto
+
+document.getElementById("infoProducto").innerHTML=
+
+"Stock: "+p.stock+
+(p.stock<=5?" <span class='stockBajo'>⚠ STOCK BAJO</span>":"")
+
+lista.innerHTML=""
+
+}
+
+lista.appendChild(div)
+
+})
+
+}
+
+/* ===== AGREGAR AL CARRITO ===== */
+
+function agregarCarrito(){
+
+const producto=document.getElementById("productoVenta").value
+const cantidad=Number(document.getElementById("cantidadVenta").value)
+const sucursal=document.getElementById("sucursalVenta").value
+
+const prod=inventarioGlobal.find(p=>
+
+p.producto===producto && p.sucursal===sucursal
+
+)
+
+if(!prod)return
+
+const item={
+producto:producto,
+precio:prod.precio,
+cantidad:cantidad,
+total:prod.precio*cantidad
+}
+
+carrito.push(item)
+
+renderCarrito()
+
+}
+
+/* ===== RENDER CARRITO ===== */
+
+function renderCarrito(){
+
+const tabla=document.getElementById("carrito")
+
+tabla.innerHTML=""
+
+let total=0
+
+carrito.forEach((item,i)=>{
+
+total+=item.total
+
+tabla.innerHTML+=`
+
+<tr>
+
+<td>${item.producto}</td>
+<td>${item.cantidad}</td>
+<td>${item.precio}</td>
+<td>${item.total}</td>
+<td class="eliminar" onclick="eliminarItem(${i})">X</td>
+
+</tr>
+
 `
 
 })
 
-document.getElementById("resultadoBusqueda").innerHTML=html
+document.getElementById("totalVenta").innerText="Bs "+total
+
+document.getElementById("tituloCarrito").innerText="🛒 Carrito ("+carrito.length+")"
 
 }
+
+/* ===== ELIMINAR ITEM ===== */
+
+function eliminarItem(i){
+
+carrito.splice(i,1)
+
+renderCarrito()
+
+}
+
+/* ===== COBRAR ===== */
+
+async function cobrar(){
+
+if(document.getElementById("password").value!==CLAVE){
+
+alert("Contraseña incorrecta")
+
+return
+
+}
+
+const sucursal=document.getElementById("sucursalVenta").value
+const usuario=document.getElementById("usuarioVenta").value||"ADMIN"
+
+for(const item of carrito){
+
+await fetch(
+
+baseURL+
+"?ACCION=VENTA"+
+"&PRODUCTO="+encodeURIComponent(item.producto)+
+"&CANTIDAD="+item.cantidad+
+"&SUCURSAL="+sucursal+
+"&USUARIO="+usuario
+
+)
+
+}
+
+sonidoCaja.play()
+
+carrito=[]
+
+renderCarrito()
+
+cargarInventario()
+
+}
+
+/* ===== BUSCADOR DETALLE NUEVO ===== */
+
+function buscarDetalle(){
+
+const texto=document.getElementById("buscarProductoInput").value.toLowerCase()
+
+const res=document.getElementById("resultadoBusqueda")
+
+res.innerHTML=""
+
+inventarioGlobal
+
+.filter(p=>p.producto.toLowerCase().includes(texto))
+
+.slice(0,10)
+
+.forEach(p=>{
+
+res.innerHTML+=`
+
+<div style="padding:8px;border-bottom:1px solid #333">
+
+<b>${p.producto}</b><br>
+
+Sucursal: ${p.sucursal}<br>
+
+Precio: Bs ${p.precio}<br>
+
+Stock: ${p.stock}
+
+</div>
+
+`
+
+})
+
+}
+
+cargarInventario()
 
 </script>
 
