@@ -146,8 +146,6 @@ animation:giro 0.7s linear infinite;
 
 <input id="password" type="password" placeholder="Contraseña acceso">
 
-<input id="usuarioVenta" placeholder="Usuario (opcional)">
-
 <select id="modo" onchange="cambiarModo()">
 <option value="VENTA">Registrar Venta</option>
 <option value="COMPRA">Registrar Compra</option>
@@ -166,6 +164,8 @@ animation:giro 0.7s linear infinite;
 </select>
 
 <div id="camposVenta">
+
+<input id="usuarioVenta" placeholder="Usuario (opcional)">
 
 <input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
 <div id="listaProductos" class="autocomplete"></div>
