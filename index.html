@@ -29,11 +29,6 @@ box-shadow:0 0 20px rgba(0,255,150,0.2);
 transition:0.3s;
 }
 
-.panel.ok{
-box-shadow:0 0 30px #00ff9d;
-transform:scale(1.02);
-}
-
 h2{
 text-align:center;
 margin-bottom:20px;
@@ -140,7 +135,7 @@ animation:giro 0.7s linear infinite;
 
 <body>
 
-<div class="panel" id="panel">
+<div class="panel">
 
 <h2>Inventario</h2>
 
@@ -227,12 +222,11 @@ animation:giro 0.7s linear infinite;
 <script>
 
 const CLAVE="1234"
+
 const baseURL="https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec"
 
 let inventarioGlobal=[]
 let carrito=[]
-
-const sonidoCaja=new Audio("https://actions.google.com/sounds/v1/cash_register/cash_register.ogg")
 
 function mostrarMensaje(texto,tipo){
 
@@ -264,8 +258,10 @@ document.getElementById("sucursalVenta")
 }
 
 async function cargarInventario(){
+
 const res=await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO")
 inventarioGlobal=await res.json()
+
 }
 
 setInterval(cargarInventario,10000)
@@ -307,118 +303,42 @@ lista.appendChild(div)
 
 }
 
-function agregarCarrito(){
+function buscarProductoCompra(){
 
-const producto=document.getElementById("productoVenta").value
-const cantidad=Number(document.getElementById("cantidadVenta").value)
-const sucursal=document.getElementById("sucursalVenta").value
+const texto=document.getElementById("producto").value.toLowerCase()
+const lista=document.getElementById("listaCompra")
 
-if(!producto || !cantidad){
-mostrarMensaje("Datos incompletos","error")
-return
-}
+lista.innerHTML=""
 
-const prod=inventarioGlobal.find(p=>p.producto===producto && p.sucursal===sucursal)
+if(texto.length<1)return
 
-if(!prod){
-mostrarMensaje("Producto no encontrado","error")
-return
-}
+const filtrados=inventarioGlobal.filter(p=>
+p.producto.toLowerCase().includes(texto)
+)
 
-if(prod.stock < cantidad){
-mostrarMensaje("Stock insuficiente","error")
-return
-}
+filtrados.slice(0,8).forEach(p=>{
 
-const item={
-producto:producto,
-precio:prod.precio,
-cantidad:cantidad,
-total:prod.precio*cantidad
-}
+const div=document.createElement("div")
+div.className="item"
 
-carrito.push(item)
+div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
 
-renderCarrito()
+div.onclick=()=>{
 
-document.getElementById("productoVenta").value=""
-document.getElementById("cantidadVenta").value=""
+document.getElementById("producto").value=p.producto
+document.getElementById("categoria").value=p.categoria || ""
+document.getElementById("precioVenta").value=p.precio || ""
+
+document.getElementById("infoCompra").innerText=
+"Stock actual: "+p.stock+" | Precio actual: Bs "+p.precio
+
+lista.innerHTML=""
 
 }
 
-function renderCarrito(){
-
-const tabla=document.getElementById("carrito")
-tabla.innerHTML=""
-
-let total=0
-
-carrito.forEach((item,i)=>{
-
-total+=item.total
-
-tabla.innerHTML+=`
-<tr>
-<td>${item.producto}</td>
-<td>${item.cantidad}</td>
-<td>${item.precio}</td>
-<td>${item.total}</td>
-<td class="eliminar" onclick="eliminarItem(${i})">X</td>
-</tr>
-`
+lista.appendChild(div)
 
 })
-
-document.getElementById("totalVenta").innerText="Bs "+total
-
-}
-
-function eliminarItem(i){
-carrito.splice(i,1)
-renderCarrito()
-}
-
-async function cobrar(){
-
-if(document.getElementById("password").value!==CLAVE){
-mostrarMensaje("Contraseña incorrecta","error")
-return
-}
-
-if(carrito.length===0){
-mostrarMensaje("Carrito vacío","error")
-return
-}
-
-const loader=document.getElementById("loader")
-loader.style.display="block"
-
-const sucursal=document.getElementById("sucursalVenta").value
-const usuario=document.getElementById("usuarioVenta").value || "ADMIN"
-
-for(const item of carrito){
-
-const url=
-baseURL+
-"?ACCION=VENTA"+
-"&PRODUCTO="+encodeURIComponent(item.producto)+
-"&CANTIDAD="+item.cantidad+
-"&SUCURSAL="+sucursal+
-"&USUARIO="+usuario
-
-await fetch(url)
-
-}
-
-loader.style.display="none"
-sonidoCaja.play()
-
-mostrarMensaje("✅ Venta registrada","exito")
-
-carrito=[]
-renderCarrito()
-
-cargarInventario()
 
 }
 
