@@ -26,9 +26,18 @@ max-width:420px;
 padding:25px;
 border-radius:12px;
 box-shadow:0 0 20px rgba(0,255,150,0.2);
+transition:0.3s;
 }
 
-h2{text-align:center;margin-bottom:20px;}
+.panel.ok{
+box-shadow:0 0 30px #00ff9d;
+transform:scale(1.02);
+}
+
+h2{
+text-align:center;
+margin-bottom:20px;
+}
 
 select,input{
 width:100%;
@@ -131,7 +140,7 @@ animation:giro 0.7s linear infinite;
 
 <body>
 
-<div class="panel">
+<div class="panel" id="panel">
 
 <h2>Inventario</h2>
 
@@ -153,8 +162,6 @@ animation:giro 0.7s linear infinite;
 <option value="ERUDITOS">ERUDITOS</option>
 <option value="CENTRAL">CENTRAL</option>
 </select>
-
-<!-- VENTAS -->
 
 <div id="camposVenta">
 
@@ -191,8 +198,6 @@ animation:giro 0.7s linear infinite;
 
 </div>
 
-<!-- COMPRAS -->
-
 <div id="camposCompra" class="oculto">
 
 <input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
@@ -205,14 +210,11 @@ animation:giro 0.7s linear infinite;
 <input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
 <input id="unidades" type="number" placeholder="Unidades por Paquete">
 <input id="precioVenta" type="number" placeholder="Precio Venta">
-
 <input id="proveedor" placeholder="Proveedor">
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
 
-<button onclick="registrarCompra()" style="background:#00c853">
-Registrar Compra
-</button>
+<button onclick="registrarCompra()" style="background:#00c853">Registrar Compra</button>
 
 </div>
 
@@ -225,17 +227,22 @@ Registrar Compra
 <script>
 
 const CLAVE="1234"
-const baseURL="TU_URL_SCRIPT"
+const baseURL="https://script.google.com/macros/s/AKfycbztsaSqd2OcNWFKxpn5AyoNj9l_WvwemwLPpZXI0nje9fuaFAq4K_p0_nYcXJNpPNjtXg/exec"
 
 let inventarioGlobal=[]
 let carrito=[]
 
+const sonidoCaja=new Audio("https://actions.google.com/sounds/v1/cash_register/cash_register.ogg")
+
 function mostrarMensaje(texto,tipo){
+
 const m=document.getElementById("mensaje")
 m.className="mensaje "+tipo
 m.innerText=texto
 m.style.display="block"
+
 setTimeout(()=>m.style.display="none",3000)
+
 }
 
 function cambiarModo(){
@@ -288,47 +295,7 @@ div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
 div.onclick=()=>{
 
 document.getElementById("productoVenta").value=p.producto
-document.getElementById("infoProducto").innerText=
-"Stock: "+p.stock+" | Precio: Bs "+p.precio
-
-lista.innerHTML=""
-
-}
-
-lista.appendChild(div)
-
-})
-
-}
-
-function buscarProductoCompra(){
-
-const texto=document.getElementById("producto").value.toLowerCase()
-const lista=document.getElementById("listaCompra")
-
-lista.innerHTML=""
-
-if(texto.length<1)return
-
-const filtrados=inventarioGlobal.filter(p=>
-p.producto.toLowerCase().includes(texto)
-)
-
-filtrados.slice(0,8).forEach(p=>{
-
-const div=document.createElement("div")
-div.className="item"
-
-div.innerText=p.producto+" | Stock:"+p.stock+" | Bs "+p.precio
-
-div.onclick=()=>{
-
-document.getElementById("producto").value=p.producto
-document.getElementById("categoria").value=p.categoria || ""
-document.getElementById("precioVenta").value=p.precio || ""
-
-document.getElementById("infoCompra").innerText=
-"Stock actual: "+p.stock+" | Precio actual: Bs "+p.precio
+document.getElementById("infoProducto").innerText="Stock disponible: "+p.stock+" | Precio: Bs "+p.precio
 
 lista.innerHTML=""
 
@@ -423,7 +390,8 @@ mostrarMensaje("Carrito vacío","error")
 return
 }
 
-document.getElementById("loader").style.display="block"
+const loader=document.getElementById("loader")
+loader.style.display="block"
 
 const sucursal=document.getElementById("sucursalVenta").value
 const usuario=document.getElementById("usuarioVenta").value || "ADMIN"
@@ -442,75 +410,13 @@ await fetch(url)
 
 }
 
-document.getElementById("loader").style.display="none"
+loader.style.display="none"
+sonidoCaja.play()
 
-mostrarMensaje("Venta registrada","exito")
+mostrarMensaje("✅ Venta registrada","exito")
 
 carrito=[]
 renderCarrito()
-
-cargarInventario()
-
-}
-
-async function registrarCompra(){
-
-if(document.getElementById("password").value!==CLAVE){
-mostrarMensaje("Contraseña incorrecta","error")
-return
-}
-
-const producto=document.getElementById("producto").value
-const categoria=document.getElementById("categoria").value
-
-const costo=Number(document.getElementById("costo").value)
-const cantidad=Number(document.getElementById("cantidadCompra").value)
-const unidades=Number(document.getElementById("unidades").value)
-const precio=Number(document.getElementById("precioVenta").value)
-
-const proveedor=document.getElementById("proveedor").value
-const fecha=document.getElementById("fecha").value
-const ubicacion=document.getElementById("ubicacion").value
-const sucursal=document.getElementById("sucursalCompra").value
-
-if(!producto || !cantidad || !precio){
-mostrarMensaje("Datos incompletos","error")
-return
-}
-
-if(isNaN(costo) || isNaN(cantidad) || isNaN(unidades) || isNaN(precio)){
-mostrarMensaje("Campos numéricos inválidos","error")
-return
-}
-
-const url=
-baseURL+
-"?ACCION=COMPRA"+
-"&PRODUCTO="+encodeURIComponent(producto)+
-"&CATEGORIA="+encodeURIComponent(categoria)+
-"&COSTO="+costo+
-"&CANTIDAD="+cantidad+
-"&UNIDADES="+unidades+
-"&PRECIO="+precio+
-"&PROVEEDOR="+encodeURIComponent(proveedor)+
-"&FECHA="+fecha+
-"&UBICACION="+encodeURIComponent(ubicacion)+
-"&SUCURSAL="+sucursal
-
-await fetch(url)
-
-mostrarMensaje("Compra registrada","exito")
-
-document.getElementById("producto").value=""
-document.getElementById("categoria").value=""
-document.getElementById("costo").value=""
-document.getElementById("cantidadCompra").value=""
-document.getElementById("unidades").value=""
-document.getElementById("precioVenta").value=""
-document.getElementById("proveedor").value=""
-document.getElementById("fecha").value=""
-document.getElementById("ubicacion").value=""
-document.getElementById("infoCompra").innerText=""
 
 cargarInventario()
 
@@ -531,6 +437,7 @@ cargarInventario()
 
 </body>
 </html>
+
 
 
 
