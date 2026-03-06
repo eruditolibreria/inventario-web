@@ -45,7 +45,7 @@ font-size:13px;
 opacity:0.7;
 }
 
-select,input{
+select,input,textarea{
 width:100%;
 padding:12px;
 margin-bottom:12px;
@@ -133,12 +133,25 @@ color:#00e676;
 <span>Grupo Eruditos</span>
 </div>
 
-<input id="password" type="password" placeholder="🔑 Contraseña acceso">
+<!-- LOGIN -->
+
+<div id="loginPanel">
+
+<input id="passwordLogin" type="password" placeholder="🔑 Contraseña">
+
+<button onclick="login()" style="background:#00c853">Ingresar</button>
+
+</div>
+
+<!-- SISTEMA -->
+
+<div id="sistema" class="oculto">
 
 <select id="modo" onchange="cambiarModo()">
 <option value="VENTA">Registrar Venta</option>
 <option value="COMPRA">Registrar Compra</option>
 <option value="BUSCAR">Buscar Producto</option>
+<option value="GASTO">Registrar Gasto</option>
 </select>
 
 <!-- ================== VENTAS ================== -->
@@ -195,13 +208,7 @@ color:#00e676;
 <input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
 <div id="listaCompra" class="autocomplete"></div>
 
-<select id="categoria">
-<option value="">Categoría</option>
-<option>GASTO FIJO</option>
-<option>GASTO VARIABLE</option>
-<option>GASTO OPERATIVO</option>
-<option>GASTO ADMINISTRATIVO</option>
-</select>
+<input id="categoriaCompra" placeholder="Categoría producto">
 
 <input id="costo" type="number" placeholder="Costo paquete">
 <input id="cantidadCompra" type="number" placeholder="Cantidad paquetes">
@@ -211,7 +218,7 @@ color:#00e676;
 <input id="fecha" type="date">
 <input id="ubicacion" placeholder="Ubicación">
 
-<button style="background:#00c853">Registrar Compra</button>
+<button onclick="registrarCompra()" style="background:#00c853">Registrar Compra</button>
 
 </div>
 
@@ -225,7 +232,35 @@ color:#00e676;
 
 </div>
 
+<!-- ================== GASTOS ================== -->
+
+<div id="camposGasto" class="oculto">
+
+<input id="conceptoGasto" placeholder="Concepto">
+
+<select id="categoriaGasto">
+<option value="">Categoría</option>
+<option>GASTO FIJO</option>
+<option>GASTO VARIABLE</option>
+<option>GASTO OPERATIVO</option>
+<option>GASTO ADMINISTRATIVO</option>
+</select>
+
+<input id="importeGasto" type="number" placeholder="Importe">
+
+<input id="personaGasto" placeholder="Persona">
+
+<input id="fechaGasto" type="date">
+
+<textarea id="notaGasto" placeholder="Notas"></textarea>
+
+<button onclick="registrarGasto()" style="background:#ff5252">Registrar Gasto</button>
+
+</div>
+
 <button class="btn-ver" onclick="verInventario()">Ver Google Sheet</button>
+
+</div>
 
 </div>
 
@@ -238,6 +273,23 @@ const baseURL="https://script.google.com/macros/s/AKfycbzBsX58dd3JAIOVqrgLyJHw4t
 let inventarioGlobal=[]
 let carrito=[]
 
+function login(){
+
+const pass=document.getElementById("passwordLogin").value
+
+if(pass!==CLAVE){
+
+alert("Contraseña incorrecta")
+
+return
+
+}
+
+document.getElementById("loginPanel").style.display="none"
+document.getElementById("sistema").classList.remove("oculto")
+
+}
+
 function cambiarModo(){
 
 const modo=document.getElementById("modo").value
@@ -245,6 +297,7 @@ const modo=document.getElementById("modo").value
 document.getElementById("camposVenta").classList.toggle("oculto",modo!=="VENTA")
 document.getElementById("camposCompra").classList.toggle("oculto",modo!=="COMPRA")
 document.getElementById("camposBuscar").classList.toggle("oculto",modo!=="BUSCAR")
+document.getElementById("camposGasto").classList.toggle("oculto",modo!=="GASTO")
 
 document.getElementById("sucursalVenta").classList.toggle("oculto",modo!=="VENTA")
 document.getElementById("sucursalCompra").classList.toggle("oculto",modo!=="COMPRA")
@@ -273,10 +326,7 @@ lista.innerHTML=""
 if(texto.length<1)return
 
 const filtrados=inventarioGlobal.filter(p=>
-
-p.producto.toLowerCase().includes(texto)
-&& p.sucursal===sucursal
-
+p.producto.toLowerCase().includes(texto) && p.sucursal===sucursal
 )
 
 filtrados.slice(0,8).forEach(p=>{
@@ -297,46 +347,13 @@ lista.appendChild(div)
 
 }
 
-function buscarProductoCompra(){
-
-const texto=document.getElementById("producto").value.toLowerCase()
-const lista=document.getElementById("listaCompra")
-
-lista.innerHTML=""
-
-if(texto.length<1)return
-
-const filtrados=inventarioGlobal.filter(p=>
-p.producto.toLowerCase().includes(texto)
-)
-
-filtrados.slice(0,8).forEach(p=>{
-
-const div=document.createElement("div")
-
-div.className="item"
-div.innerText=p.producto
-
-div.onclick=()=>{
-document.getElementById("producto").value=p.producto
-lista.innerHTML=""
-}
-
-lista.appendChild(div)
-
-})
-
-}
-
 function agregarCarrito(){
 
 const producto=document.getElementById("productoVenta").value
 const cantidad=Number(document.getElementById("cantidadVenta").value)
 const sucursal=document.getElementById("sucursalVenta").value
 
-const prod=inventarioGlobal.find(p=>
-p.producto===producto && p.sucursal===sucursal
-)
+const prod=inventarioGlobal.find(p=>p.producto===producto && p.sucursal===sucursal)
 
 if(!prod)return
 
@@ -363,7 +380,6 @@ carrito.forEach((item,i)=>{
 total+=item.total
 
 tabla.innerHTML+=`
-
 <tr>
 <td>${item.producto}</td>
 <td>${item.cantidad}</td>
@@ -371,7 +387,6 @@ tabla.innerHTML+=`
 <td>${item.total}</td>
 <td class="eliminar" onclick="eliminarItem(${i})">X</td>
 </tr>
-
 `
 
 })
@@ -382,16 +397,13 @@ document.getElementById("tituloCarrito").innerText="🛒 Carrito ("+carrito.leng
 }
 
 function eliminarItem(i){
+
 carrito.splice(i,1)
 renderCarrito()
+
 }
 
 async function cobrar(){
-
-if(document.getElementById("password").value!==CLAVE){
-alert("Contraseña incorrecta")
-return
-}
 
 const sucursal=document.getElementById("sucursalVenta").value
 const usuario=document.getElementById("usuarioVenta").value||"ADMIN"
@@ -415,35 +427,36 @@ cargarInventario()
 
 }
 
-function buscarDetalle(){
+async function registrarGasto(){
 
-const texto=document.getElementById("buscarProductoInput").value.toLowerCase()
-const res=document.getElementById("resultadoBusqueda")
+const concepto=document.getElementById("conceptoGasto").value
+const categoria=document.getElementById("categoriaGasto").value
+const importe=document.getElementById("importeGasto").value
+const persona=document.getElementById("personaGasto").value
+const fecha=document.getElementById("fechaGasto").value
+const nota=document.getElementById("notaGasto").value
 
-res.innerHTML=""
+await fetch(
 
-inventarioGlobal
-.filter(p=>p.producto.toLowerCase().includes(texto))
-.slice(0,10)
-.forEach(p=>{
+baseURL+
+"?ACCION=REGISTRAR_GASTO"+
+"&CONCEPTO="+encodeURIComponent(concepto)+
+"&CATEGORIA="+encodeURIComponent(categoria)+
+"&IMPORTE="+importe+
+"&PERSONA="+encodeURIComponent(persona)+
+"&FECHA="+fecha+
+"&NOTAS="+encodeURIComponent(nota)
 
-res.innerHTML+=`
+)
 
-<div style="padding:8px;border-bottom:1px solid #333">
-<b>${p.producto}</b><br>
-Sucursal: ${p.sucursal}<br>
-Precio: Bs ${p.precio}<br>
-Stock: ${p.stock}
-</div>
-
-`
-
-})
+alert("Gasto registrado")
 
 }
 
 function verInventario(){
+
 window.open("TU_GOOGLE_SHEET")
+
 }
 
 cargarInventario()
