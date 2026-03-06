@@ -147,8 +147,8 @@ animation:giro 0.7s linear infinite;
 <input id="password" type="password" placeholder="Contraseña acceso">
 
 <select id="modo" onchange="cambiarModo()">
-<option value="COMPRA">Registrar Compra</option>
 <option value="VENTA">Registrar Venta</option>
+<option value="COMPRA">Registrar Compra</option>
 </select>
 
 <select id="sucursalCompra">
@@ -159,11 +159,11 @@ animation:giro 0.7s linear infinite;
 
 <div id="camposCompra">
 
-<input id="categoria" placeholder="Categoría">
-
 <input id="producto" placeholder="Producto" onkeyup="buscarProductoCompra()">
 <div id="listaCompra" class="autocomplete"></div>
 <div id="infoCompra" class="infoProducto"></div>
+
+<input id="categoria" placeholder="Categoría">
 
 <input id="costo" type="number" placeholder="Costo Paquete">
 <input id="cantidadCompra" type="number" placeholder="Cantidad Paquetes">
@@ -185,6 +185,8 @@ animation:giro 0.7s linear infinite;
 
 <div id="camposVenta" class="oculto">
 
+<input id="usuarioVenta" placeholder="Usuario (opcional)">
+
 <input id="productoVenta" placeholder="Producto" onkeyup="buscarProducto()">
 <div id="listaProductos" class="autocomplete"></div>
 <div id="infoProducto" class="infoProducto"></div>
@@ -192,8 +194,6 @@ animation:giro 0.7s linear infinite;
 <input id="cantidadVenta" type="number" placeholder="Cantidad">
 
 <button onclick="agregarCarrito()">Agregar al carrito</button>
-
-<input id="usuarioVenta" placeholder="Usuario (opcional)">
 
 <h3>Carrito</h3>
 
