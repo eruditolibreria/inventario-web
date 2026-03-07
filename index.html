@@ -1112,7 +1112,7 @@ function renderSearchCard(p) {
       </div>
       <div class="sr-field orange">
         <div class="sr-key">Precio Unidad</div>
-        <div class="sr-val orange">${p.precioUnidad !== undefined ? "Bs " + Number(p.precioUnidad).toFixed(2) : "—"}</div>
+        <div class="sr-val ok">Bs ${p.precioUnidad ?? "—"}</div>
       </div>
       <div class="sr-field ${stockColor === 'warn' ? 'red' : stockColor === 'orange' ? 'orange' : 'accent'}">
         <div class="sr-key">Stock Actual</div>
@@ -1143,6 +1143,7 @@ document.addEventListener("click", e => {
 </script>
 </body>
 </html>
+
 
 
 
