@@ -630,7 +630,7 @@ tr:last-child td{ border-bottom:none; }
         <div id="caja-APERTURA">
           <div class="field-group">
             <label class="field-label">Sucursal</label>
-            <select id="aperturaSucursal">
+            <select id="aperturaSucursal" onchange="verificarEstadoCaja(this.value)">
               <option value="">🏪 Seleccionar</option>
               <option value="ERUDITOS">ERUDITOS</option>
               <option value="CENTRAL">CENTRAL</option>
@@ -1400,10 +1400,11 @@ async function registrarGasto(){
 // ══════════════════════════════════════════════
 
 // Consulta si hay caja abierta hoy y actualiza la UI de estado
-async function verificarEstadoCaja(){
+async function verificarEstadoCaja(sucursal){
   if(!sessionToken) return;
+  const suc = sucursal || document.getElementById("aperturaSucursal").value || "";
   try{
-    const res  = await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken,fetchOpts);
+    const res = await fetch(baseURL+"?ACCION=ESTADO_CAJA&SUCURSAL="+encodeURIComponent(suc)+"&TOKEN="+sessionToken, fetchOpts);
     const data = await res.json();
 
     const estadoTxt    = document.getElementById("cajaEstadoTxt");
@@ -1416,7 +1417,7 @@ async function verificarEstadoCaja(){
       cajaActualId = data.cajaId;
       estadoTxt.className = "caja-estado-ok";
       estadoTxt.textContent = "🟢 Caja abierta";
-      estadoDet.textContent = data.sucursal+" · Saldo inicial: Bs "+data.saldoInicial+
+      estadoDet.textContent = (suc||data.sucursal||"")+" · Saldo inicial: Bs "+data.saldoInicial+
         " · Apertura: "+data.usuarioApertura;
       cajaBadge.style.display="inline-block"; // mostrar badge en header
       cierreInput.value = cajaActualId;
@@ -1891,6 +1892,7 @@ document.getElementById("campoClienteCompra").classList.add("oculto");
 </script>
 </body>
 </html>
+
 
 
 
