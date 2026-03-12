@@ -403,7 +403,7 @@ tr:last-child td{ border-bottom:none; }
           </div>
           <div class="field-group" style="margin:0">
             <label class="field-label">Vendedor</label>
-            <input id="usuarioVenta" placeholder="Opcional">
+            <input id="usuarioVenta" placeholder="Escriba su nombre aquí">
           </div>
         </div>
         <div class="field-group">
@@ -479,7 +479,7 @@ tr:last-child td{ border-bottom:none; }
         </div>
         <div class="field-group">
           <label class="field-label">Categoría</label>
-          <input id="categoriaCompra" placeholder="Ej: Bebidas, Snacks...">
+          <input id="categoriaCompra" placeholder="Libros, cartulinas, bolígrafos...">
         </div>
         <div class="row-2">
           <div class="field-group" style="margin:0">
@@ -559,20 +559,18 @@ tr:last-child td{ border-bottom:none; }
 
         <div class="field-group">
           <label class="field-label">Concepto</label>
-          <input id="gastoConcepto" placeholder="Ej: Pago luz, limpieza, flete...">
+          <input id="gastoConcepto" placeholder="Ej: Refrigerios, gasolina, otros...">
         </div>
         <div class="row-2">
           <div class="field-group" style="margin:0">
             <label class="field-label">Categoría</label>
             <select id="gastoCategoria">
               <option value="">Seleccionar...</option>
-              <option value="SERVICIOS">💡 Servicios</option>
-              <option value="TRANSPORTE">🚚 Transporte</option>
-              <option value="PERSONAL">👥 Personal</option>
-              <option value="ALQUILER">🏠 Alquiler</option>
-              <option value="LIMPIEZA">🧹 Limpieza</option>
-              <option value="MARKETING">📣 Marketing</option>
-              <option value="OTRO">📌 Otro</option>
+              <option value="OPERATIVO">🛠️ Operativo</option>
+              <option value="ADMINISTRATIVO">📝 Administrativo</option>
+              <option value="FIJO">🏠 Fijo</option>
+              <option value="VARIABLE">💡 Variable</option>
+              <option value="VARIOS">👥 Varios o Imprevistos</option>              
             </select>
           </div>
           <div class="field-group" style="margin:0">
@@ -596,8 +594,7 @@ tr:last-child td{ border-bottom:none; }
           <label class="field-label">Método de pago</label>
           <select id="metodoPagoGasto">
             <option value="EFECTIVO">💵 Efectivo</option>
-            <option value="TRANSFERENCIA">🏦 Transferencia</option>
-            <option value="CREDITO">📝 Crédito</option>
+            <option value="TRANSFERENCIA">🏦 Transferencia</option>            
           </select>
         </div>
 
@@ -1894,6 +1891,7 @@ document.getElementById("campoClienteCompra").classList.add("oculto");
 </script>
 </body>
 </html>
+
 
 
 
