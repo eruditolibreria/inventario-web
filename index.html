@@ -566,13 +566,12 @@ tr:last-child td{ border-bottom:none; }
             <label class="field-label">Categoría</label>
             <select id="gastoCategoria">
               <option value="">Seleccionar...</option>
-              <option value="SERVICIOS">💡 Servicios</option>
-              <option value="TRANSPORTE">🚚 Transporte</option>
-              <option value="PERSONAL">👥 Personal</option>
-              <option value="ALQUILER">🏠 Alquiler</option>
-              <option value="LIMPIEZA">🧹 Limpieza</option>
-              <option value="MARKETING">📣 Marketing</option>
-              <option value="OTRO">📌 Otro</option>
+              <option value="FIJO">💡 Fijo</option>
+              <option value="OPERATIVO">🛠️ Operativo</option>
+              <option value="ADMINISTRATIVO">📝 Administrativo</option>
+              <option value="VARIABLE">🔀 Variable</option>
+              <option value="VARIOS O IMPREVISTOS">❓ Varios o imprevistos</option>
+
             </select>
           </div>
           <div class="field-group" style="margin:0">
@@ -956,7 +955,25 @@ let inventarioGlobal = [];
 let carrito          = [];
 let cajaActualId     = null;  // [v3] ID de la caja abierta hoy
 
-const sonidoCaja = new Audio("https://www.soundjay.com/misc/sounds/cash-register-1.mp3");
+function sonidoCaja() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  // Primer "ding"
+  const o1 = ctx.createOscillator();
+  const g1 = ctx.createGain();
+  o1.connect(g1); g1.connect(ctx.destination);
+  o1.frequency.value = 1200;
+  g1.gain.setValueAtTime(0.3, ctx.currentTime);
+  g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+  o1.start(ctx.currentTime); o1.stop(ctx.currentTime + 0.3);
+  // Segundo "ding"
+  const o2 = ctx.createOscillator();
+  const g2 = ctx.createGain();
+  o2.connect(g2); g2.connect(ctx.destination);
+  o2.frequency.value = 800;
+  g2.gain.setValueAtTime(0.2, ctx.currentTime + 0.15);
+  g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+  o2.start(ctx.currentTime + 0.15); o2.stop(ctx.currentTime + 0.5);
+}
 
 // ══════════════════════════════════════════════
 //  PERMISOS POR ROL — [v3] ampliados con CAJA y CUENTAS
@@ -1261,7 +1278,7 @@ async function cobrar(){
     if(!manejarRespuesta(data)){ loader.style.display="none"; btn.disabled=false; return; }
 
     if(data.ok){
-      sonidoCaja.play().catch(()=>{});
+      sonidoCaja();
       // [v3] Mensaje diferenciado para venta a crédito
       const msg = metodoPago==="CREDITO"
         ? "📝 Venta a crédito registrada (cuenta por cobrar creada)"
@@ -1936,6 +1953,7 @@ document.getElementById("campoClienteCompra").classList.add("oculto");
 </script>
 </body>
 </html>
+
 
 
 
