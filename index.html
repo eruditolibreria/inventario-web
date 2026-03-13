@@ -1417,8 +1417,7 @@ async function verificarEstadoCaja(){
   try{
     const res  = await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken, fetchOpts);
     const data = await res.json();
-    alert("DEBUG BACKEND: " + JSON.stringify(data)); // ← agrega esta línea temporalmente
-
+    
     const cajaBadge    = document.getElementById("cajaBadge");
     const cierreSelect = document.getElementById("cierreCajaId");
 
@@ -1937,6 +1936,7 @@ document.getElementById("campoClienteCompra").classList.add("oculto");
 </script>
 </body>
 </html>
+
 
 
 
