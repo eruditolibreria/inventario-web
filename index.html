@@ -279,7 +279,27 @@ select.d-filter-input option{background:#0a1220;}
 @media(min-width:1024px){
   body{display:block;padding:0;}
   .panel{display:none!important;}
-  #loginPanel{display:flex!important;justify-content:center;align-items:flex-start;padding:40px 12px;min-height:100vh;background:var(--bg);}
+  #loginPanel{
+    display:flex!important;
+    justify-content:center;
+    align-items:flex-start;
+    padding:60px 20px;
+    min-height:100vh;
+    width:100%;
+    max-width:none!important;
+    border-radius:0!important;
+    border:none!important;
+    box-shadow:none!important;
+    background:var(--d-bg)!important;
+  }
+  #loginPanel #loginScreen{
+    background:var(--d-panel);
+    border:1px solid var(--d-border);
+    border-radius:20px;
+    box-shadow:0 0 60px rgba(0,230,118,0.06);
+    width:100%;
+    max-width:440px;
+  }
 }
 </style>
 </head>
@@ -708,9 +728,9 @@ select.d-filter-input option{background:#0a1220;}
             <div class="d-field-group"><label class="d-field-label">Categoría</label>
               <select id="dGastoCategoria" class="d-input"><option value="">Seleccionar...</option><option value="FIJO">💡 Fijo</option><option value="OPERATIVO">🛠️ Operativo</option><option value="ADMINISTRATIVO">📝 Administrativo</option><option value="VARIABLE">🔀 Variable</option><option value="VARIOS O IMPREVISTOS">❓ Varios/Imprevistos</option></select></div>
             <div class="d-field-group"><label class="d-field-label">Método de pago</label>
-              <select id="dMetodoPagoGasto" class="d-input"><option value="EFECTIVO">💵 Efectivo</option><option value="TRANSFERENCIA">🏦 Transferencia</option></select></div>
+              <select id="dMetodoPagoGasto" class="d-input"><option value="EFECTIVO">💵 Efectivo</option><option value="TRANSFERENCIA">🏦 Transferencia</option><option value="CREDITO">📝 Crédito</option></select></div>
           </div>
-          <div class="d-field-group d-mt-12"><label class="d-field-label">Concepto</label><input id="dGastoConcepto" class="d-input" placeholder="Ej: Mantenimiento, Servicios básicos"></div>
+          <div class="d-field-group d-mt-12"><label class="d-field-label">Concepto</label><input id="dGastoConcepto" class="d-input" placeholder="Ej: Pago luz, limpieza..."></div>
           <div class="d-row-3 d-mt-12">
             <div class="d-field-group"><label class="d-field-label">Importe (Bs)</label><input id="dGastoImporte" class="d-input" type="number" min="0.01" step="0.01" placeholder="0.00"></div>
             <div class="d-field-group"><label class="d-field-label">Responsable</label><input id="dGastoPersona" class="d-input" placeholder="Nombre"></div>
@@ -2038,16 +2058,19 @@ function dFiltrarInventario() {
   document.getElementById('dInvCount').textContent = data.length + ' productos';
   const tbody = document.getElementById('dInvBody');
   if (!data.length) { tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--d-muted);font-family:var(--d-mono)">Sin resultados</td></tr>'; return; }
-  tbody.innerHTML = data.slice(0,200).map(p => `<tr>
-    <td style="text-align:left;font-weight:600">${p.producto||'—'}</td>
-    <td class="d-td-muted">${p.categoria||'—'}</td>
-    <td class="d-td-mono ${p.stock<=0?'':p.stock<=5?'':''}${p.stock<=0?'" style="color:var(--red)':p.stock<=5?'" style="color:var(--orange)':'"}'>${p.stock}</td>
-    <td class="d-td-green">${fmt(p.precio)}</td>
-    <td class="d-td-mono">${p.precioUnidad?fmt(p.precioUnidad):'—'}</td>
-    <td class="d-td-muted">${p.proveedor||'—'}</td>
-    <td class="d-td-muted">${p.ubicacion||'—'}</td>
-    <td class="d-td-muted">${p.sucursal||'—'}</td>
-  </tr>`).join('');
+  tbody.innerHTML = data.slice(0,200).map(p => {
+    const stockColor = p.stock <= 0 ? 'color:var(--red)' : p.stock <= 5 ? 'color:var(--orange)' : 'color:var(--accent)';
+    return `<tr>
+      <td style="text-align:left;font-weight:600">${p.producto||'—'}</td>
+      <td class="d-td-muted">${p.categoria||'—'}</td>
+      <td class="d-td-mono" style="${stockColor}">${p.stock}</td>
+      <td class="d-td-green">${fmt(p.precio)}</td>
+      <td class="d-td-mono">${p.precioUnidad ? fmt(p.precioUnidad) : '—'}</td>
+      <td class="d-td-muted">${p.proveedor||'—'}</td>
+      <td class="d-td-muted">${p.ubicacion||'—'}</td>
+      <td class="d-td-muted">${p.sucursal||'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -2178,6 +2201,7 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
 
 
 
