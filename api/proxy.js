@@ -1,7 +1,7 @@
 // api/proxy.js
 export default async function handler(req, res) {
   const params = new URLSearchParams(req.query).toString();
-  const url = `https://script.google.com/macros/s/AKfycbw-xlx6sIXnofHmjIdw9Y0Y74DKD1UC_kkByBWRrth1F2nAZGJKIlmLjwz9AMB9tjhwjg/exec?${params}`;
+  const url = `https://script.google.com/macros/s/AKfycbwnohwkNn8ZF0puY50ynHHlGRlolMLXJMW-Q0h8UnWiXiHX26UTteNEcoPvEl7nFkiOTg/exec?${params}`;
 
   const response = await fetch(url, { redirect: 'follow' });
   const text = await response.text();
