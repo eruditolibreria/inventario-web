@@ -403,7 +403,7 @@ tr:last-child td{ border-bottom:none; }
           </div>
           <div class="field-group" style="margin:0">
             <label class="field-label">Vendedor</label>
-            <input id="usuarioVenta" placeholder="Escriba su nombre aquí">
+            <input id="usuarioVenta" placeholder="Opcional">
           </div>
         </div>
         <div class="field-group">
@@ -479,7 +479,7 @@ tr:last-child td{ border-bottom:none; }
         </div>
         <div class="field-group">
           <label class="field-label">Categoría</label>
-          <input id="categoriaCompra" placeholder="Libros, cartulinas, bolígrafos...">
+          <input id="categoriaCompra" placeholder="Ej: Bebidas, Snacks...">
         </div>
         <div class="row-2">
           <div class="field-group" style="margin:0">
@@ -559,18 +559,20 @@ tr:last-child td{ border-bottom:none; }
 
         <div class="field-group">
           <label class="field-label">Concepto</label>
-          <input id="gastoConcepto" placeholder="Ej: Refrigerios, gasolina, otros...">
+          <input id="gastoConcepto" placeholder="Ej: Pago luz, limpieza, flete...">
         </div>
         <div class="row-2">
           <div class="field-group" style="margin:0">
             <label class="field-label">Categoría</label>
             <select id="gastoCategoria">
               <option value="">Seleccionar...</option>
-              <option value="OPERATIVO">🛠️ Operativo</option>
-              <option value="ADMINISTRATIVO">📝 Administrativo</option>
-              <option value="FIJO">🏠 Fijo</option>
-              <option value="VARIABLE">💡 Variable</option>
-              <option value="VARIOS">👥 Varios o Imprevistos</option>              
+              <option value="SERVICIOS">💡 Servicios</option>
+              <option value="TRANSPORTE">🚚 Transporte</option>
+              <option value="PERSONAL">👥 Personal</option>
+              <option value="ALQUILER">🏠 Alquiler</option>
+              <option value="LIMPIEZA">🧹 Limpieza</option>
+              <option value="MARKETING">📣 Marketing</option>
+              <option value="OTRO">📌 Otro</option>
             </select>
           </div>
           <div class="field-group" style="margin:0">
@@ -594,7 +596,8 @@ tr:last-child td{ border-bottom:none; }
           <label class="field-label">Método de pago</label>
           <select id="metodoPagoGasto">
             <option value="EFECTIVO">💵 Efectivo</option>
-            <option value="TRANSFERENCIA">🏦 Transferencia</option>            
+            <option value="TRANSFERENCIA">🏦 Transferencia</option>
+            <option value="CREDITO">📝 Crédito</option>
           </select>
         </div>
 
@@ -613,10 +616,18 @@ tr:last-child td{ border-bottom:none; }
       <div id="seccion-CAJA" class="oculto">
         <div class="section-label">Gestión de caja diaria</div>
 
-        <!-- Estado actual de la caja (carga al entrar a esta sección) -->
-        <div id="cajEstadoCard" class="caja-card">
-          <div id="cajaEstadoTxt" class="caja-estado-err">⏳ Verificando estado...</div>
-          <div id="cajaEstadoDetalle" class="caja-detalle"></div>
+        <!-- Estado de caja: una tarjeta por sucursal [v3] -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div id="cajaCardEruditos" class="caja-card" style="margin:0">
+            <div class="sr-key" style="margin-bottom:6px">ERUDITOS</div>
+            <div id="cajaTxtEruditos" class="caja-estado-err">🔴 Cerrada</div>
+            <div id="cajaDetEruditos" class="caja-detalle"></div>
+          </div>
+          <div id="cajaCardCentral" class="caja-card" style="margin:0">
+            <div class="sr-key" style="margin-bottom:6px">CENTRAL</div>
+            <div id="cajaTxtCentral" class="caja-estado-err">🔴 Cerrada</div>
+            <div id="cajaDetCentral" class="caja-detalle"></div>
+          </div>
         </div>
 
         <!-- Sub-tabs: APERTURA | CIERRE | APORTES -->
@@ -630,7 +641,7 @@ tr:last-child td{ border-bottom:none; }
         <div id="caja-APERTURA">
           <div class="field-group">
             <label class="field-label">Sucursal</label>
-            <select id="aperturaSucursal" onchange="verificarEstadoCaja(this.value)">
+            <select id="aperturaSucursal">
               <option value="">🏪 Seleccionar</option>
               <option value="ERUDITOS">ERUDITOS</option>
               <option value="CENTRAL">CENTRAL</option>
@@ -651,9 +662,10 @@ tr:last-child td{ border-bottom:none; }
         <!-- Sub-sección CIERRE DE CAJA -->
         <div id="caja-CIERRE" class="oculto">
           <div class="field-group">
-            <label class="field-label">ID de caja (se carga automáticamente)</label>
-            <input id="cierreCajaId" placeholder="ID caja abierta" readonly
-                   style="opacity:0.5;cursor:not-allowed">
+            <label class="field-label">Sucursal a cerrar</label>
+            <select id="cierreCajaId">
+              <option value="">🏪 Seleccionar sucursal</option>
+            </select>
           </div>
           <div class="field-group">
             <label class="field-label">Saldo final contado (efectivo físico)</label>
@@ -1400,35 +1412,67 @@ async function registrarGasto(){
 // ══════════════════════════════════════════════
 
 // Consulta si hay caja abierta hoy y actualiza la UI de estado
-async function verificarEstadoCaja(sucursal){
+async function verificarEstadoCaja(){
   if(!sessionToken) return;
-  const suc = sucursal || document.getElementById("aperturaSucursal").value || "";
   try{
-    const res = await fetch(baseURL+"?ACCION=ESTADO_CAJA&SUCURSAL="+encodeURIComponent(suc)+"&TOKEN="+sessionToken, fetchOpts);
+    const res  = await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken, fetchOpts);
     const data = await res.json();
 
-    const estadoTxt    = document.getElementById("cajaEstadoTxt");
-    const estadoDet    = document.getElementById("cajaEstadoDetalle");
     const cajaBadge    = document.getElementById("cajaBadge");
-    const cierreInput  = document.getElementById("cierreCajaId");
+    const cierreSelect = document.getElementById("cierreCajaId");
 
-    if(data.ok&&data.abierta){
-      // Hay caja abierta — mostrar info y pre-llenar cierre
-      cajaActualId = data.cajaId;
-      estadoTxt.className = "caja-estado-ok";
-      estadoTxt.textContent = "🟢 Caja abierta";
-      estadoDet.textContent = (suc||data.sucursal||"")+" · Saldo inicial: Bs "+data.saldoInicial+
-        " · Apertura: "+data.usuarioApertura;
-      cajaBadge.style.display="inline-block"; // mostrar badge en header
-      cierreInput.value = cajaActualId;
-    } else {
-      cajaActualId = null;
-      estadoTxt.className = "caja-estado-err";
-      estadoTxt.textContent = "🔴 Sin caja abierta hoy";
-      estadoDet.textContent = "Debes aperturar la caja antes de operar";
-      cajaBadge.style.display="none";
-      cierreInput.value="";
-    }
+    // Resetear el select de cierre
+    cierreSelect.innerHTML = '<option value="">🏪 Seleccionar sucursal</option>';
+
+    // Configuración de las dos tarjetas fijas por sucursal
+    const tarjetas = {
+      "ERUDITOS": {
+        txt: document.getElementById("cajaTxtEruditos"),
+        det: document.getElementById("cajaDetEruditos"),
+        card: document.getElementById("cajaCardEruditos")
+      },
+      "CENTRAL": {
+        txt: document.getElementById("cajaTxtCentral"),
+        det: document.getElementById("cajaDetCentral"),
+        card: document.getElementById("cajaCardCentral")
+      }
+    };
+
+    // Resetear ambas tarjetas a "Cerrada"
+    Object.values(tarjetas).forEach(t => {
+      t.txt.className   = "caja-estado-err";
+      t.txt.textContent = "🔴 Cerrada";
+      t.det.textContent = "";
+      t.card.style.borderColor = "";
+    });
+
+    const cajasAbiertas = (data.cajas || []);
+    let hayAlgunaAbierta = false;
+
+    cajasAbiertas.forEach(c => {
+      const suc = (c.sucursal || "").toUpperCase();
+      const t   = tarjetas[suc];
+      if(!t) return;
+
+      hayAlgunaAbierta = true;
+      t.txt.className   = "caja-estado-ok";
+      t.txt.textContent = "🟢 Abierta";
+      t.det.textContent = "Bs " + c.saldoInicial + " · " + c.usuarioApertura;
+      t.card.style.borderColor = "var(--accent)";
+
+      // Añadir al select de cierre
+      const opt = document.createElement("option");
+      opt.value       = c.cajaId;
+      opt.textContent = suc + " · Bs " + c.saldoInicial;
+      cierreSelect.appendChild(opt);
+    });
+
+    // Badge en el header: visible si hay al menos una caja abierta
+    cajaBadge.style.display = hayAlgunaAbierta ? "inline-block" : "none";
+
+    // Si solo una caja abierta, preseleccionarla en cierre
+    if(cajasAbiertas.length === 1) cierreSelect.value = cajasAbiertas[0].cajaId;
+
   } catch(e){}
 }
 
@@ -1892,6 +1936,7 @@ document.getElementById("campoClienteCompra").classList.add("oculto");
 </script>
 </body>
 </html>
+
 
 
 
