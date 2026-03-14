@@ -9,7 +9,7 @@
 <style>
 
 /* ══════════════════════════════════════════════
-   VARIABLES Y RESET — sin cambios respecto v2
+   VARIABLES Y RESET
 ══════════════════════════════════════════════ */
 :root{
   --bg:#080b0f;
@@ -23,7 +23,7 @@
   --orange:#ff9800;
   --red:#ff4757;
   --blue:#2979ff;
-  --purple:#b388ff;      /* [v3] nuevo color para CAJA/CUENTAS */
+  --purple:#b388ff;
   --text:#dde6f0;
   --muted:#4a6278;
   --font:'Outfit',sans-serif;
@@ -81,7 +81,6 @@ body::before{
 .brand h1 span{ color:var(--accent); }
 .brand small{ font-size:11px; color:var(--muted); font-family:var(--mono); letter-spacing:1px; }
 
-/* [v3] badge con indicador de caja abierta */
 .user-badge{
   display:flex; align-items:center; gap:8px;
   background:var(--surface2); border:1px solid var(--border);
@@ -93,9 +92,8 @@ body::before{
 .user-badge .uname{ font-weight:600; color:#fff; }
 .user-badge .logout-hint{ color:var(--muted); font-size:10px; }
 
-/* [v3] indicador de caja abierta en header */
 .caja-badge{
-  display:none; /* se muestra al confirmar caja abierta */
+  display:none;
   font-size:9px; font-weight:700; letter-spacing:1px;
   font-family:var(--mono); padding:2px 7px; border-radius:20px;
   background:rgba(0,230,118,0.15); color:var(--accent);
@@ -153,16 +151,16 @@ textarea{ resize:vertical; min-height:70px; }
 .btn-blue{ background:var(--blue); color:#fff; }
 .btn-green{ background:#00c853; color:#000; }
 .btn-red{ background:var(--red); color:#fff; }
-.btn-purple{ background:var(--purple); color:#000; }  /* [v3] */
+.btn-purple{ background:var(--purple); color:#000; }
 .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--text); }
 .btn-ghost:hover{ border-color:var(--accent); color:var(--accent); }
-.btn-sm{ padding:7px 12px; font-size:12px; width:auto; }  /* [v3] botón compacto */
+.btn-sm{ padding:7px 12px; font-size:12px; width:auto; }
 
-/* ══ TABS PRINCIPALES — flex dinámico según rol ══ */
+/* ══ TABS PRINCIPALES ══ */
 .mode-tabs{
   display:flex; gap:4px; background:var(--surface2); border-radius:12px;
   padding:4px; margin-bottom:18px; border:1px solid var(--border);
-  flex-wrap:wrap; /* [v3] wrap para 5-6 tabs en ADMIN */
+  flex-wrap:wrap;
 }
 .mode-tab{
   flex:1; min-width:50px; padding:8px 4px; border-radius:8px; text-align:center;
@@ -173,7 +171,7 @@ textarea{ resize:vertical; min-height:70px; }
 .mode-tab .tab-icon{ display:block; font-size:15px; margin-bottom:2px; }
 .mode-tab.hidden-tab{ display:none; }
 
-/* [v3] Sub-tabs dentro de secciones (CUENTAS, CAJA) */
+/* Sub-tabs */
 .sub-tabs{
   display:flex; gap:4px; background:var(--surface3); border-radius:10px;
   padding:3px; margin-bottom:14px; border:1px solid var(--border);
@@ -242,7 +240,7 @@ tr:last-child td{ border-bottom:none; }
 .btn-del{ background:none; border:none; color:var(--red); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; transition:background 0.15s; }
 .btn-del:hover{ background:rgba(255,71,87,0.1); }
 
-/* [v3] Estado pills en tablas de cuentas */
+/* Estado pills en tablas de cuentas */
 .estado-pendiente{ color:var(--orange); font-weight:700; font-size:10px; }
 .estado-cancelado{ color:var(--accent); font-weight:700; font-size:10px; }
 
@@ -280,7 +278,7 @@ tr:last-child td{ border-bottom:none; }
 .sr-val.orange{ color:var(--orange); }
 .search-results-list{ margin-top:12px; }
 
-/* [v3] Card de resumen de caja */
+/* Card de resumen de caja */
 .caja-card{
   background:var(--surface2); border:1px solid var(--border); border-radius:12px;
   padding:14px; margin-bottom:14px;
@@ -289,7 +287,7 @@ tr:last-child td{ border-bottom:none; }
 .caja-card .caja-estado-err{ color:var(--red); font-weight:700; font-size:13px; }
 .caja-card .caja-detalle{ font-size:12px; color:var(--muted); margin-top:4px; font-family:var(--mono); }
 
-/* [v3] Inline abono form — oculto por defecto */
+/* Inline abono form */
 .abono-inline{
   background:var(--surface3); border:1px solid var(--border);
   border-radius:10px; padding:12px; margin-top:8px; display:none;
@@ -308,7 +306,7 @@ tr:last-child td{ border-bottom:none; }
 <div class="panel" id="mainPanel">
 
   <!-- ════════════════════════════════════════
-       LOGIN — sin cambios respecto v2
+       LOGIN
   ════════════════════════════════════════ -->
   <div id="loginScreen">
     <div class="login-logo">
@@ -337,7 +335,7 @@ tr:last-child td{ border-bottom:none; }
   ════════════════════════════════════════ -->
   <div id="appScreen" class="oculto">
 
-    <!-- HEADER — [v3] agrega caja-badge junto al rol -->
+    <!-- HEADER -->
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
@@ -348,7 +346,6 @@ tr:last-child td{ border-bottom:none; }
         <div>
           <div class="uname" id="badgeUser">-</div>
           <div id="badgeRol" class="rol-pill"></div>
-          <!-- [v3] indicador de caja abierta -->
           <div id="cajaBadge" class="caja-badge">🟢 CAJA ABIERTA</div>
           <div class="logout-hint" style="margin-top:2px">Cerrar sesión</div>
         </div>
@@ -357,10 +354,7 @@ tr:last-child td{ border-bottom:none; }
 
     <div class="panel-body">
 
-      <!-- ════ TABS PRINCIPALES ════
-           [v3] Se agregaron: CAJA (admin) y CUENTAS (todos)
-           La visibilidad se controla dinámicamente desde aplicarRol()
-      -->
+      <!-- ════ TABS PRINCIPALES ════ -->
       <div class="mode-tabs">
         <div class="mode-tab" onclick="setModo('VENTA')"    id="tab-VENTA">
           <span class="tab-icon">💰</span>Venta
@@ -371,11 +365,9 @@ tr:last-child td{ border-bottom:none; }
         <div class="mode-tab" onclick="setModo('GASTO')"    id="tab-GASTO">
           <span class="tab-icon">💸</span>Gastos
         </div>
-        <!-- [v3] Nueva tab CAJA — solo ADMIN -->
         <div class="mode-tab" onclick="setModo('CAJA')"     id="tab-CAJA">
           <span class="tab-icon">🏦</span>Caja
         </div>
-        <!-- [v3] Nueva tab CUENTAS — ADMIN, VENDEDOR, ALMACEN -->
         <div class="mode-tab" onclick="setModo('CUENTAS')"  id="tab-CUENTAS">
           <span class="tab-icon">📋</span>Cuentas
         </div>
@@ -386,9 +378,6 @@ tr:last-child td{ border-bottom:none; }
 
       <!-- ════════════════════════════════════════
            SECCIÓN VENTA
-           [v3] Cambios:
-             · Select METODO_PAGO agregado antes del botón COBRAR
-             · Campo CLIENTE aparece solo cuando METODO_PAGO = CREDITO
       ════════════════════════════════════════ -->
       <div id="seccion-VENTA" class="oculto">
         <div class="section-label">Registrar venta</div>
@@ -434,7 +423,7 @@ tr:last-child td{ border-bottom:none; }
           <span id="totalVenta">Bs 0.00</span>
         </div>
 
-        <!-- [v3] METODO_PAGO y CLIENTE para venta -->
+        <!-- [FIX-1] class unificado en un solo atributo: "field-group oculto" -->
         <div class="row-2 mb-12">
           <div class="field-group" style="margin:0">
             <label class="field-label">Método de pago</label>
@@ -444,8 +433,7 @@ tr:last-child td{ border-bottom:none; }
               <option value="CREDITO">📝 Crédito</option>
             </select>
           </div>
-          <!-- Campo CLIENTE: visible solo cuando CREDITO -->
-          <div class="field-group" style="margin:0" id="campoClienteVenta" class="oculto">
+          <div class="field-group oculto" style="margin:0" id="campoClienteVenta">
             <label class="field-label">Cliente</label>
             <input id="clienteVenta" placeholder="Nombre del cliente">
           </div>
@@ -457,9 +445,6 @@ tr:last-child td{ border-bottom:none; }
 
       <!-- ════════════════════════════════════════
            SECCIÓN COMPRA
-           [v3] Cambios:
-             · Select METODO_PAGO agregado
-             · Campo CLIENTE/PROVEEDOR visible cuando CREDITO
       ════════════════════════════════════════ -->
       <div id="seccion-COMPRA" class="oculto">
         <div class="section-label">Registrar compra</div>
@@ -516,7 +501,7 @@ tr:last-child td{ border-bottom:none; }
           </div>
         </div>
 
-        <!-- [v3] METODO_PAGO para compra -->
+        <!-- [FIX-1] class unificado en un solo atributo: "field-group oculto" -->
         <div class="row-2 mt-8">
           <div class="field-group" style="margin:0">
             <label class="field-label">Método de pago</label>
@@ -526,9 +511,7 @@ tr:last-child td{ border-bottom:none; }
               <option value="CREDITO">📝 Crédito (C×P)</option>
             </select>
           </div>
-          <!-- Visible solo cuando CREDITO — el proveedor ya actúa como acreedor,
-               pero se puede sobrescribir con un nombre diferente -->
-          <div class="field-group" style="margin:0" id="campoClienteCompra" class="oculto">
+          <div class="field-group oculto" style="margin:0" id="campoClienteCompra">
             <label class="field-label">Acreedor</label>
             <input id="clienteCompra" placeholder="Nombre del acreedor">
           </div>
@@ -540,14 +523,9 @@ tr:last-child td{ border-bottom:none; }
 
       <!-- ════════════════════════════════════════
            SECCIÓN GASTO
-           [v3] Cambios:
-             · Select SUCURSAL agregado (necesario para FLUJO_CAJA)
-             · Select METODO_PAGO agregado
       ════════════════════════════════════════ -->
       <div id="seccion-GASTO" class="oculto">
         <div class="section-label">Registrar gasto operativo</div>
-
-        <!-- [v3] Sucursal ahora requerida para vincular al flujo de caja correcto -->
         <div class="field-group">
           <label class="field-label">Sucursal</label>
           <select id="sucursalGasto">
@@ -556,7 +534,6 @@ tr:last-child td{ border-bottom:none; }
             <option value="CENTRAL">CENTRAL</option>
           </select>
         </div>
-
         <div class="field-group">
           <label class="field-label">Concepto</label>
           <input id="gastoConcepto" placeholder="Ej: Mantenimiento, servicios básicos...">
@@ -571,7 +548,6 @@ tr:last-child td{ border-bottom:none; }
               <option value="ADMINISTRATIVO">📝 Administrativo</option>
               <option value="VARIABLE">🔀 Variable</option>
               <option value="VARIOS O IMPREVISTOS">❓ Varios o imprevistos</option>
-
             </select>
           </div>
           <div class="field-group" style="margin:0">
@@ -589,16 +565,13 @@ tr:last-child td{ border-bottom:none; }
             <input id="gastoFecha" type="date">
           </div>
         </div>
-
-        <!-- [v3] Método de pago del gasto -->
         <div class="field-group mt-8">
           <label class="field-label">Método de pago</label>
           <select id="metodoPagoGasto">
             <option value="EFECTIVO">💵 Efectivo</option>
             <option value="TRANSFERENCIA">🏦 Transferencia</option>
-           </select>
+          </select>
         </div>
-
         <div class="field-group">
           <label class="field-label">Notas</label>
           <textarea id="gastoNotas" placeholder="Detalles adicionales (opcional)"></textarea>
@@ -608,13 +581,11 @@ tr:last-child td{ border-bottom:none; }
       </div>
 
       <!-- ════════════════════════════════════════
-           SECCIÓN CAJA — [v3] NUEVO, solo ADMIN
-           Sub-secciones: APERTURA | CIERRE | APORTES
+           SECCIÓN CAJA — solo ADMIN
       ════════════════════════════════════════ -->
       <div id="seccion-CAJA" class="oculto">
         <div class="section-label">Gestión de caja diaria</div>
 
-        <!-- Estado de caja: una tarjeta por sucursal [v3] -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div id="cajaCardEruditos" class="caja-card" style="margin:0">
             <div class="sr-key" style="margin-bottom:6px">ERUDITOS</div>
@@ -628,14 +599,14 @@ tr:last-child td{ border-bottom:none; }
           </div>
         </div>
 
-        <!-- Sub-tabs: APERTURA | CIERRE | APORTES -->
+        <!-- Sub-tabs CAJA: APERTURA inicia con active -->
         <div class="sub-tabs">
           <div class="sub-tab active" onclick="setSubModoCaja('APERTURA')" id="subtab-caja-APERTURA">🔓 Apertura</div>
           <div class="sub-tab"        onclick="setSubModoCaja('CIERRE')"   id="subtab-caja-CIERRE">🔒 Cierre</div>
           <div class="sub-tab"        onclick="setSubModoCaja('APORTES')"  id="subtab-caja-APORTES">💼 Aportes</div>
         </div>
 
-        <!-- Sub-sección APERTURA DE CAJA -->
+        <!-- APERTURA -->
         <div id="caja-APERTURA">
           <div class="field-group">
             <label class="field-label">Sucursal</label>
@@ -657,7 +628,7 @@ tr:last-child td{ border-bottom:none; }
           <button class="btn btn-primary" onclick="abrirCaja()">🔓 Abrir Caja</button>
         </div>
 
-        <!-- Sub-sección CIERRE DE CAJA -->
+        <!-- CIERRE -->
         <div id="caja-CIERRE" class="oculto">
           <div class="field-group">
             <label class="field-label">Sucursal a cerrar</label>
@@ -677,7 +648,7 @@ tr:last-child td{ border-bottom:none; }
           <button class="btn btn-red" onclick="cerrarCaja()">🔒 Cerrar Caja</button>
         </div>
 
-        <!-- Sub-sección APORTES Y RETIROS -->
+        <!-- APORTES Y RETIROS -->
         <div id="caja-APORTES" class="oculto">
           <div class="row-2">
             <div class="field-group" style="margin:0">
@@ -723,23 +694,20 @@ tr:last-child td{ border-bottom:none; }
       </div>
 
       <!-- ════════════════════════════════════════
-           SECCIÓN CUENTAS — [v3] NUEVO
-           Sub-tabs: COBRAR | PAGAR
-           Visibilidad de sub-tabs controlada por aplicarRol()
+           SECCIÓN CUENTAS
+           [FIX-4] Sub-tab COBRAR inicia con clase active
       ════════════════════════════════════════ -->
       <div id="seccion-CUENTAS" class="oculto">
         <div class="section-label">Cuentas por cobrar / pagar</div>
 
-        <!-- Sub-tabs COBRAR | PAGAR — el rol controla cuáles se muestran -->
         <div class="sub-tabs">
-          <div class="sub-tab" onclick="setSubModoCuentas('COBRAR')" id="subtab-cuentas-COBRAR">📥 Por cobrar</div>
-          <div class="sub-tab" onclick="setSubModoCuentas('PAGAR')"  id="subtab-cuentas-PAGAR">📤 Por pagar</div>
+          <div class="sub-tab active" onclick="setSubModoCuentas('COBRAR')" id="subtab-cuentas-COBRAR">📥 Por cobrar</div>
+          <div class="sub-tab"        onclick="setSubModoCuentas('PAGAR')"  id="subtab-cuentas-PAGAR">📤 Por pagar</div>
         </div>
 
         <!-- ─── COBRAR ─── -->
-        <div id="cuentas-COBRAR" class="oculto">
+        <div id="cuentas-COBRAR">
 
-          <!-- Filtros y botón listar -->
           <div class="row-2 mb-12">
             <div class="field-group" style="margin:0">
               <label class="field-label">Sucursal</label>
@@ -762,7 +730,6 @@ tr:last-child td{ border-bottom:none; }
           <div class="loader" id="loaderCobrar"></div>
           <div id="tablaCobrar"></div>
 
-          <!-- Formulario abonar (se muestra al presionar ABONAR en la tabla) -->
           <div id="formAbonarCobrar" class="abono-inline">
             <div class="section-label" style="margin-bottom:10px">Registrar abono</div>
             <input type="hidden" id="abonarCobrarId">
@@ -790,7 +757,6 @@ tr:last-child td{ border-bottom:none; }
             </div>
           </div>
 
-          <!-- Formulario nueva cuenta manual -->
           <div class="divider"></div>
           <div class="section-label">Registrar nueva cuenta</div>
           <div class="row-2">
@@ -849,7 +815,6 @@ tr:last-child td{ border-bottom:none; }
           <div class="loader" id="loaderPagar"></div>
           <div id="tablaPagar"></div>
 
-          <!-- Formulario abonar pagar -->
           <div id="formAbonarPagar" class="abono-inline">
             <div class="section-label" style="margin-bottom:10px">Registrar pago</div>
             <input type="hidden" id="abonarPagarId">
@@ -877,7 +842,6 @@ tr:last-child td{ border-bottom:none; }
             </div>
           </div>
 
-          <!-- Formulario nueva cuenta pagar manual -->
           <div class="divider"></div>
           <div class="section-label">Registrar nueva cuenta</div>
           <div class="row-2">
@@ -914,7 +878,7 @@ tr:last-child td{ border-bottom:none; }
       </div>
 
       <!-- ════════════════════════════════════════
-           SECCIÓN BÚSQUEDA — sin cambios respecto v2
+           SECCIÓN BÚSQUEDA
       ════════════════════════════════════════ -->
       <div id="seccion-BUSQUEDA" class="oculto">
         <div class="section-label">Búsqueda de producto</div>
@@ -952,11 +916,10 @@ let sessionUser      = null;
 let sessionRol       = null;
 let inventarioGlobal = [];
 let carrito          = [];
-let cajaActualId     = null;  // [v3] ID de la caja abierta hoy
+// [FIX-3] cajaActualId eliminado — era variable declarada pero nunca asignada (código muerto)
 
 function sonidoCaja() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  // Primer "ding"
   const o1 = ctx.createOscillator();
   const g1 = ctx.createGain();
   o1.connect(g1); g1.connect(ctx.destination);
@@ -964,7 +927,6 @@ function sonidoCaja() {
   g1.gain.setValueAtTime(0.3, ctx.currentTime);
   g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
   o1.start(ctx.currentTime); o1.stop(ctx.currentTime + 0.3);
-  // Segundo "ding"
   const o2 = ctx.createOscillator();
   const g2 = ctx.createGain();
   o2.connect(g2); g2.connect(ctx.destination);
@@ -975,14 +937,13 @@ function sonidoCaja() {
 }
 
 // ══════════════════════════════════════════════
-//  PERMISOS POR ROL — [v3] ampliados con CAJA y CUENTAS
+//  PERMISOS POR ROL
 // ══════════════════════════════════════════════
 
 const PERMISOS = {
-  //          tabs visibles                                    tab inicial
-  ADMIN:    { tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"], inicio:"VENTA"   },
-  VENDEDOR: { tabs:["VENTA",                      "CUENTAS","BUSQUEDA"],  inicio:"VENTA"   },
-  ALMACEN:  { tabs:[        "COMPRA",             "CUENTAS","BUSQUEDA"],  inicio:"COMPRA"  },
+  ADMIN:    { tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"], inicio:"VENTA"  },
+  VENDEDOR: { tabs:["VENTA",                      "CUENTAS","BUSQUEDA"],  inicio:"VENTA"  },
+  ALMACEN:  { tabs:[        "COMPRA",             "CUENTAS","BUSQUEDA"],  inicio:"COMPRA" },
 };
 const PERMISOS_DEFAULT = { tabs:["BUSQUEDA"], inicio:"BUSQUEDA" };
 
@@ -990,7 +951,6 @@ function obtenerPermisos(rol){
   return PERMISOS[(rol||"").toUpperCase()] || PERMISOS_DEFAULT;
 }
 
-// [v3] Aplica tabs principales + sub-tabs de CUENTAS según el rol
 function aplicarRol(rol){
   const { tabs, inicio } = obtenerPermisos(rol);
   const todasTabs = ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"];
@@ -999,17 +959,15 @@ function aplicarRol(rol){
     document.getElementById("tab-"+t).classList.toggle("hidden-tab", !tabs.includes(t));
   });
 
-  // Sub-tabs CUENTAS: COBRAR visible para ADMIN y VENDEDOR; PAGAR para ADMIN y ALMACEN
   const rolUp = (rol||"").toUpperCase();
   document.getElementById("subtab-cuentas-COBRAR").classList.toggle("hidden-tab",
     !["ADMIN","VENDEDOR"].includes(rolUp));
   document.getElementById("subtab-cuentas-PAGAR").classList.toggle("hidden-tab",
     !["ADMIN","ALMACEN"].includes(rolUp));
 
-  // Activar la sub-tab correcta en CUENTAS según el rol
-  if (rolUp === "VENDEDOR") setSubModoCuentas("COBRAR");
+  if (rolUp === "VENDEDOR")     setSubModoCuentas("COBRAR");
   else if (rolUp === "ALMACEN") setSubModoCuentas("PAGAR");
-  else setSubModoCuentas("COBRAR"); // ADMIN default
+  else                          setSubModoCuentas("COBRAR"); // ADMIN default
 
   setModo(inicio);
 }
@@ -1045,16 +1003,22 @@ async function loginSubmit(){
       document.getElementById("loginScreen").classList.add("oculto");
       document.getElementById("appScreen").classList.remove("oculto");
 
-      // Valores por defecto de fecha
-      document.getElementById("gastoFecha").value  = hoy();
-      document.getElementById("aporteFecha").value = hoy();
-      document.getElementById("abonarCobrarFecha").value = hoy();
-      document.getElementById("abonarPagarFecha").value  = hoy();
+      // [FIX-2] Inicializar todos los campos de fecha, incluido fechaCompra
+      const fechaHoy = hoy();
+      document.getElementById("gastoFecha").value         = fechaHoy;
+      document.getElementById("aporteFecha").value        = fechaHoy;
+      document.getElementById("abonarCobrarFecha").value  = fechaHoy;
+      document.getElementById("abonarPagarFecha").value   = fechaHoy;
+      document.getElementById("fechaCompra").value        = fechaHoy; // [FIX-2] faltaba
+
+      // [FIX-5] Llamar a las funciones de toggle para sincronizar visibilidad
+      // de los campos crédito según el valor inicial de cada select
+      toggleClienteVenta();
+      toggleClienteCompra();
 
       aplicarRol(sessionRol);
       cargarInventario();
 
-      // [v3] Verificar si hay caja abierta (solo relevante para ADMIN)
       if(sessionRol==="ADMIN") verificarEstadoCaja();
 
     } else {
@@ -1077,7 +1041,6 @@ function cerrarSesion(){
   if(!confirm("¿Cerrar sesión?")) return;
   if(sessionToken) fetch(baseURL+"?ACCION=LOGOUT&TOKEN="+sessionToken,fetchOpts).catch(()=>{});
   sessionToken=sessionUser=sessionRol=null;
-  cajaActualId=null;
   inventarioGlobal=[]; carrito=[];
   document.getElementById("loginUser").value="";
   document.getElementById("loginPass").value="";
@@ -1099,17 +1062,14 @@ function mostrarMsg(txt,tipo){
   setTimeout(()=>m.style.display="none",3500);
 }
 
-// Navegación de tabs principales
 function setModo(modo){
   ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"].forEach(m=>{
     document.getElementById("seccion-"+m).classList.toggle("oculto",m!==modo);
     document.getElementById("tab-"+m).classList.toggle("active",m===modo);
   });
-  // [v3] Al entrar a CAJA, verificar estado automáticamente
   if(modo==="CAJA" && sessionToken) verificarEstadoCaja();
 }
 
-// [v3] Sub-navegación dentro de CAJA
 function setSubModoCaja(sub){
   ["APERTURA","CIERRE","APORTES"].forEach(s=>{
     document.getElementById("caja-"+s).classList.toggle("oculto",s!==sub);
@@ -1117,7 +1077,6 @@ function setSubModoCaja(sub){
   });
 }
 
-// [v3] Sub-navegación dentro de CUENTAS
 function setSubModoCuentas(sub){
   ["COBRAR","PAGAR"].forEach(s=>{
     document.getElementById("cuentas-"+s).classList.toggle("oculto",s!==sub);
@@ -1129,7 +1088,6 @@ function verInventario(){
   window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit","_blank");
 }
 
-// Manejo centralizado de errores de autorización (sin cambios)
 function manejarRespuesta(data){
   if(!data.ok&&(data.error==="NO_AUTORIZADO"||data.error==="PERMISO_DENEGADO")){
     mostrarMsg("⛔ Sin permisos para esta acción","err");
@@ -1138,14 +1096,14 @@ function manejarRespuesta(data){
   return true;
 }
 
-// [v3] Muestra/oculta campo CLIENTE en VENTA según método de pago
+// [FIX-5] toggleClienteVenta y toggleClienteCompra son la fuente de verdad
+// para la visibilidad de los campos crédito. Se llaman desde onchange Y desde loginSubmit.
 function toggleClienteVenta(){
   const metodo = document.getElementById("metodoPagoVenta").value;
   const campo  = document.getElementById("campoClienteVenta");
   metodo==="CREDITO" ? campo.classList.remove("oculto") : campo.classList.add("oculto");
 }
 
-// [v3] Muestra/oculta campo ACREEDOR en COMPRA según método de pago
 function toggleClienteCompra(){
   const metodo = document.getElementById("metodoPagoCompra").value;
   const campo  = document.getElementById("campoClienteCompra");
@@ -1153,7 +1111,7 @@ function toggleClienteCompra(){
 }
 
 // ══════════════════════════════════════════════
-//  INVENTARIO — TOKEN requerido
+//  INVENTARIO
 // ══════════════════════════════════════════════
 
 async function cargarInventario(){
@@ -1167,7 +1125,7 @@ async function cargarInventario(){
 setInterval(()=>{ if(sessionToken) cargarInventario(); },15000);
 
 // ══════════════════════════════════════════════
-//  AUTOCOMPLETE HELPER — sin cambios
+//  AUTOCOMPLETE HELPER
 // ══════════════════════════════════════════════
 
 function construirAC(lista,items,onSelect){
@@ -1184,7 +1142,7 @@ function construirAC(lista,items,onSelect){
 }
 
 // ══════════════════════════════════════════════
-//  VENTA — [v3] agrega METODO_PAGO y CLIENTE
+//  VENTA
 // ══════════════════════════════════════════════
 
 function buscarProductoVenta(){
@@ -1241,18 +1199,16 @@ function renderCarrito(){
 
 function eliminarItem(i){ carrito.splice(i,1); renderCarrito(); }
 
-// [v3] cobrar() incluye METODO_PAGO y CLIENTE
 async function cobrar(){
   if(!sessionToken){ mostrarMsg("Sesión expirada. Vuelve a iniciar sesión.","err"); return; }
   if(carrito.length===0){ mostrarMsg("El carrito está vacío","err"); return; }
 
   const sucursal   = document.getElementById("sucursalVenta").value;
   const usuario    = document.getElementById("usuarioVenta").value||sessionUser;
-  const metodoPago = document.getElementById("metodoPagoVenta").value;        // [v3]
-  const cliente    = document.getElementById("clienteVenta").value||"MOSTRADOR"; // [v3]
+  const metodoPago = document.getElementById("metodoPagoVenta").value;
+  const cliente    = document.getElementById("clienteVenta").value||"MOSTRADOR";
 
   if(!sucursal){ mostrarMsg("Selecciona una sucursal","err"); return; }
-  // [v3] Si es crédito, exigir nombre de cliente
   if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){
     mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err"); return;
   }
@@ -1267,8 +1223,8 @@ async function cobrar(){
       +"&CARRITO="+encodeURIComponent(JSON.stringify(carrito.map(i=>({producto:i.producto,cantidad:i.cantidad}))))
       +"&SUCURSAL="+encodeURIComponent(sucursal)
       +"&USUARIO="+encodeURIComponent(usuario)
-      +"&METODO_PAGO="+metodoPago      // [v3]
-      +"&CLIENTE="+encodeURIComponent(cliente)  // [v3]
+      +"&METODO_PAGO="+metodoPago
+      +"&CLIENTE="+encodeURIComponent(cliente)
       +"&TOKEN="+sessionToken;
 
     const res  = await fetch(url,fetchOpts);
@@ -1278,7 +1234,6 @@ async function cobrar(){
 
     if(data.ok){
       sonidoCaja();
-      // [v3] Mensaje diferenciado para venta a crédito
       const msg = metodoPago==="CREDITO"
         ? "📝 Venta a crédito registrada (cuenta por cobrar creada)"
         : "✅ Venta registrada correctamente";
@@ -1298,7 +1253,7 @@ async function cobrar(){
 }
 
 // ══════════════════════════════════════════════
-//  COMPRA — [v3] agrega METODO_PAGO y CLIENTE
+//  COMPRA
 // ══════════════════════════════════════════════
 
 function buscarProductoCompra(){
@@ -1320,11 +1275,10 @@ function buscarProductoCompra(){
 async function registrarCompra(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
 
-  const metodoPago = document.getElementById("metodoPagoCompra").value;  // [v3]
+  const metodoPago = document.getElementById("metodoPagoCompra").value;
   const cliente    = document.getElementById("clienteCompra").value||
-                     document.getElementById("proveedorCompra").value;    // [v3] fallback a proveedor
+                     document.getElementById("proveedorCompra").value;
 
-  // [v3] Si es crédito, el proveedor actúa como acreedor
   if(metodoPago==="CREDITO"&&!document.getElementById("proveedorCompra").value.trim()){
     mostrarMsg("Ingresa el nombre del proveedor/acreedor para compras a crédito","err"); return;
   }
@@ -1344,8 +1298,8 @@ async function registrarCompra(){
     +"&FECHA_ENTRADA="+document.getElementById("fechaCompra").value
     +"&UBICACION_PRODUCTO="+encodeURIComponent(document.getElementById("ubicacionCompra").value)
     +"&SUCURSAL="+document.getElementById("sucursalCompra").value
-    +"&METODO_PAGO="+metodoPago       // [v3]
-    +"&CLIENTE="+encodeURIComponent(cliente)  // [v3]
+    +"&METODO_PAGO="+metodoPago
+    +"&CLIENTE="+encodeURIComponent(cliente)
     +"&TOKEN="+sessionToken;
 
   try{
@@ -1360,7 +1314,8 @@ async function registrarCompra(){
       document.querySelectorAll("#seccion-COMPRA input").forEach(i=>i.value="");
       document.getElementById("categoriaCompra").value="";
       document.getElementById("metodoPagoCompra").value="EFECTIVO";
-      document.getElementById("campoClienteCompra").classList.add("oculto");
+      toggleClienteCompra(); // [FIX-5] usar la función en lugar de manipular classList directamente
+      document.getElementById("fechaCompra").value=hoy(); // [FIX-2] restaurar fecha al limpiar
       cargarInventario();
     } else {
       mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
@@ -1370,7 +1325,7 @@ async function registrarCompra(){
 }
 
 // ══════════════════════════════════════════════
-//  GASTO — [v3] agrega SUCURSAL y METODO_PAGO
+//  GASTO
 // ══════════════════════════════════════════════
 
 async function registrarGasto(){
@@ -1382,8 +1337,8 @@ async function registrarGasto(){
   const persona    = document.getElementById("gastoPersona").value.trim();
   const fecha      = document.getElementById("gastoFecha").value;
   const notas      = document.getElementById("gastoNotas").value.trim();
-  const sucursal   = document.getElementById("sucursalGasto").value;    // [v3]
-  const metodoPago = document.getElementById("metodoPagoGasto").value;  // [v3]
+  const sucursal   = document.getElementById("sucursalGasto").value;
+  const metodoPago = document.getElementById("metodoPagoGasto").value;
 
   if(!concepto)  { mostrarMsg("Ingresa el concepto del gasto","err"); return; }
   if(!categoria) { mostrarMsg("Selecciona una categoría","err"); return; }
@@ -1402,8 +1357,8 @@ async function registrarGasto(){
       +"&PERSONA="+encodeURIComponent(persona)
       +"&FECHA="+fecha
       +"&NOTAS="+encodeURIComponent(notas)
-      +"&SUCURSAL="+encodeURIComponent(sucursal)   // [v3]
-      +"&METODO_PAGO="+metodoPago                  // [v3]
+      +"&SUCURSAL="+encodeURIComponent(sucursal)
+      +"&METODO_PAGO="+metodoPago
       +"&TOKEN="+sessionToken;
 
     const res=await fetch(url,fetchOpts);
@@ -1424,37 +1379,33 @@ async function registrarGasto(){
 }
 
 // ══════════════════════════════════════════════
-//  CAJA — [v3] NUEVO
+//  CAJA
 // ══════════════════════════════════════════════
 
-// Consulta si hay caja abierta hoy y actualiza la UI de estado
 async function verificarEstadoCaja(){
   if(!sessionToken) return;
   try{
     const res  = await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken, fetchOpts);
     const data = await res.json();
-    
+
     const cajaBadge    = document.getElementById("cajaBadge");
     const cierreSelect = document.getElementById("cierreCajaId");
 
-    // Resetear el select de cierre
     cierreSelect.innerHTML = '<option value="">🏪 Seleccionar sucursal</option>';
 
-    // Configuración de las dos tarjetas fijas por sucursal
     const tarjetas = {
       "ERUDITOS": {
-        txt: document.getElementById("cajaTxtEruditos"),
-        det: document.getElementById("cajaDetEruditos"),
+        txt:  document.getElementById("cajaTxtEruditos"),
+        det:  document.getElementById("cajaDetEruditos"),
         card: document.getElementById("cajaCardEruditos")
       },
       "CENTRAL": {
-        txt: document.getElementById("cajaTxtCentral"),
-        det: document.getElementById("cajaDetCentral"),
+        txt:  document.getElementById("cajaTxtCentral"),
+        det:  document.getElementById("cajaDetCentral"),
         card: document.getElementById("cajaCardCentral")
       }
     };
 
-    // Resetear ambas tarjetas a "Cerrada"
     Object.values(tarjetas).forEach(t => {
       t.txt.className   = "caja-estado-err";
       t.txt.textContent = "🔴 Cerrada";
@@ -1476,29 +1427,25 @@ async function verificarEstadoCaja(){
       t.det.textContent = "Bs " + c.saldoInicial + " · " + c.usuarioApertura;
       t.card.style.borderColor = "var(--accent)";
 
-      // Añadir al select de cierre
       const opt = document.createElement("option");
       opt.value       = c.cajaId;
       opt.textContent = suc + " · Bs " + c.saldoInicial;
       cierreSelect.appendChild(opt);
     });
 
-    // Badge en el header: visible si hay al menos una caja abierta
     cajaBadge.style.display = hayAlgunaAbierta ? "inline-block" : "none";
 
-    // Si solo una caja abierta, preseleccionarla en cierre
     if(cajasAbiertas.length === 1) cierreSelect.value = cajasAbiertas[0].cajaId;
 
   } catch(e){}
 }
 
-// Apertura de caja
 async function abrirCaja(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
 
-  const sucursal    = document.getElementById("aperturaSucursal").value;
+  const sucursal     = document.getElementById("aperturaSucursal").value;
   const saldoInicial = Number(document.getElementById("aperturaSaldo").value);
-  const notas       = document.getElementById("aperturaNotas").value;
+  const notas        = document.getElementById("aperturaNotas").value;
 
   if(!sucursal){ mostrarMsg("Selecciona una sucursal","err"); return; }
   if(isNaN(saldoInicial)||saldoInicial<0){ mostrarMsg("Ingresa un saldo inicial válido","err"); return; }
@@ -1521,7 +1468,7 @@ async function abrirCaja(){
       mostrarMsg("🔓 Caja abierta correctamente · "+data.sucursal,"ok");
       document.getElementById("aperturaSaldo").value="";
       document.getElementById("aperturaNotas").value="";
-      await verificarEstadoCaja(); // actualizar el card de estado
+      await verificarEstadoCaja();
     } else {
       mostrarMsg("Error: "+(data.error||data.mensaje||JSON.stringify(data)),"err");
     }
@@ -1529,11 +1476,10 @@ async function abrirCaja(){
   loader.style.display="none";
 }
 
-// Cierre de caja
 async function cerrarCaja(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
 
-  const cajaId    = document.getElementById("cierreCajaId").value;
+  const cajaId     = document.getElementById("cierreCajaId").value;
   const saldoFinal = Number(document.getElementById("cierreSaldo").value);
   const notas      = document.getElementById("cierreNotas").value;
 
@@ -1568,7 +1514,6 @@ async function cerrarCaja(){
   loader.style.display="none";
 }
 
-// Aporte / Retiro de capital
 async function registrarAporteRetiro(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
 
@@ -1612,7 +1557,7 @@ async function registrarAporteRetiro(){
 }
 
 // ══════════════════════════════════════════════
-//  CUENTAS POR COBRAR — [v3] NUEVO
+//  CUENTAS POR COBRAR
 // ══════════════════════════════════════════════
 
 async function listarCuentasCobrar(){
@@ -1637,7 +1582,6 @@ async function listarCuentasCobrar(){
     if(!data.datos||data.datos.length===0){
       tabla.innerHTML=`<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin cuentas encontradas</div>`;
     } else {
-      // Construir tabla de resultados con botón ABONAR por fila
       let html=`<table><thead><tr>
         <th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th>
       </tr></thead><tbody>`;
@@ -1693,7 +1637,7 @@ async function confirmarAbonoCobrar(){
     if(data.ok){
       mostrarMsg("✅ Abono registrado · Saldo restante: Bs "+data.nuevoSaldo,"ok");
       document.getElementById("formAbonarCobrar").classList.remove("show");
-      await listarCuentasCobrar(); // recargar la tabla
+      await listarCuentasCobrar();
     } else {
       mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
     }
@@ -1740,7 +1684,7 @@ async function registrarCuentaCobrar(){
 }
 
 // ══════════════════════════════════════════════
-//  CUENTAS POR PAGAR — [v3] NUEVO
+//  CUENTAS POR PAGAR
 // ══════════════════════════════════════════════
 
 async function listarCuentasPagar(){
@@ -1867,7 +1811,7 @@ async function registrarCuentaPagar(){
 }
 
 // ══════════════════════════════════════════════
-//  BÚSQUEDA DETALLADA — sin cambios respecto v2
+//  BÚSQUEDA DETALLADA
 // ══════════════════════════════════════════════
 
 let busquedaTimer=null;
@@ -1945,55 +1889,9 @@ document.addEventListener("click",e=>{
   }
 });
 
-// Inicializar campos de toggle en estado correcto
-document.getElementById("campoClienteVenta").classList.add("oculto");
-document.getElementById("campoClienteCompra").classList.add("oculto");
+// [FIX-5] Los campos de crédito ya tienen class="field-group oculto" correctamente en el HTML.
+// No se necesita parche aquí — los toggles se llaman desde loginSubmit() al cargar.
 
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
