@@ -8,9 +8,6 @@
 
 <style>
 
-/* ══════════════════════════════════════════════
-   VARIABLES Y RESET
-══════════════════════════════════════════════ */
 :root{
   --bg:#080b0f;
   --surface:#0f1318;
@@ -24,6 +21,7 @@
   --red:#ff4757;
   --blue:#2979ff;
   --purple:#b388ff;
+  --teal:#00bcd4;
   --text:#dde6f0;
   --muted:#4a6278;
   --font:'Outfit',sans-serif;
@@ -100,7 +98,6 @@ body::before{
   border:1px solid rgba(0,230,118,0.3); margin-top:2px;
 }
 
-/* PILLS DE ROL */
 .rol-pill{
   display:inline-block; font-size:9px; font-weight:700;
   letter-spacing:1px; text-transform:uppercase; padding:2px 7px;
@@ -110,7 +107,6 @@ body::before{
 .rol-VENDEDOR{ background:rgba(255,152,0,0.15);  color:var(--orange); border:1px solid rgba(255,152,0,0.3); }
 .rol-ALMACEN { background:rgba(41,121,255,0.15); color:#6eb4ff;       border:1px solid rgba(41,121,255,0.3); }
 
-/* ══ PANEL BODY ══ */
 .panel-body{ padding:20px 24px; }
 
 /* ══ LOGIN ══ */
@@ -152,6 +148,7 @@ textarea{ resize:vertical; min-height:70px; }
 .btn-green{ background:#00c853; color:#000; }
 .btn-red{ background:var(--red); color:#fff; }
 .btn-purple{ background:var(--purple); color:#000; }
+.btn-teal{ background:var(--teal); color:#000; }
 .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--text); }
 .btn-ghost:hover{ border-color:var(--accent); color:var(--accent); }
 .btn-sm{ padding:7px 12px; font-size:12px; width:auto; }
@@ -163,12 +160,12 @@ textarea{ resize:vertical; min-height:70px; }
   flex-wrap:wrap;
 }
 .mode-tab{
-  flex:1; min-width:50px; padding:8px 4px; border-radius:8px; text-align:center;
-  cursor:pointer; font-size:11px; font-weight:600; color:var(--muted);
+  flex:1; min-width:44px; padding:8px 2px; border-radius:8px; text-align:center;
+  cursor:pointer; font-size:10px; font-weight:600; color:var(--muted);
   transition:all 0.2s; line-height:1.3;
 }
 .mode-tab.active{ background:var(--accent); color:#000; }
-.mode-tab .tab-icon{ display:block; font-size:15px; margin-bottom:2px; }
+.mode-tab .tab-icon{ display:block; font-size:14px; margin-bottom:2px; }
 .mode-tab.hidden-tab{ display:none; }
 
 /* Sub-tabs */
@@ -240,9 +237,27 @@ tr:last-child td{ border-bottom:none; }
 .btn-del{ background:none; border:none; color:var(--red); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; transition:background 0.15s; }
 .btn-del:hover{ background:rgba(255,71,87,0.1); }
 
-/* Estado pills en tablas de cuentas */
+/* Estado pills */
 .estado-pendiente{ color:var(--orange); font-weight:700; font-size:10px; }
 .estado-cancelado{ color:var(--accent); font-weight:700; font-size:10px; }
+
+/* ══ RANKING BARS — para reportes ══ */
+.rank-bar-wrap{ background:var(--surface3); border-radius:6px; height:6px; width:100%; margin-top:4px; }
+.rank-bar{ background:var(--accent); border-radius:6px; height:6px; transition:width 0.5s ease; }
+.rank-bar.orange{ background:var(--orange); }
+.rank-num{ font-family:var(--mono); font-size:11px; color:var(--muted); }
+
+/* ══ REPORTE TOTALES CARD ══ */
+.reporte-totales{
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px; margin-bottom:14px;
+}
+.reporte-total-card{
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px;
+}
+.reporte-total-card .rtc-label{ font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.reporte-total-card .rtc-val{ font-family:var(--mono); font-size:16px; font-weight:700; color:var(--accent); }
 
 /* ══ MENSAJES ══ */
 .mensaje{
@@ -278,7 +293,7 @@ tr:last-child td{ border-bottom:none; }
 .sr-val.orange{ color:var(--orange); }
 .search-results-list{ margin-top:12px; }
 
-/* Card de resumen de caja */
+/* Card de caja */
 .caja-card{
   background:var(--surface2); border:1px solid var(--border); border-radius:12px;
   padding:14px; margin-bottom:14px;
@@ -294,20 +309,22 @@ tr:last-child td{ border-bottom:none; }
 }
 .abono-inline.show{ display:block; animation:fadeIn 0.2s ease; }
 
+/* ══ TIPO DEVOLUCION BADGE ══ */
+.tipo-venta{ color:var(--orange); font-weight:700; font-size:10px; }
+.tipo-compra{ color:#6eb4ff; font-weight:700; font-size:10px; }
+
 .oculto{ display:none !important; }
 .divider{ height:1px; background:var(--border); margin:16px 0; }
 .access-notice{ font-size:11px; color:var(--muted); text-align:center; margin-top:8px; }
+.empty-state{ color:var(--muted); text-align:center; padding:20px; font-size:13px; }
 
 </style>
 </head>
 
 <body>
-
 <div class="panel" id="mainPanel">
 
-  <!-- ════════════════════════════════════════
-       LOGIN
-  ════════════════════════════════════════ -->
+  <!-- ════ LOGIN ════ -->
   <div id="loginScreen">
     <div class="login-logo">
       <span class="logo-icon">📦</span>
@@ -330,16 +347,13 @@ tr:last-child td{ border-bottom:none; }
     <p class="access-notice">Acceso solo para usuarios autorizados</p>
   </div>
 
-  <!-- ════════════════════════════════════════
-       APP SCREEN
-  ════════════════════════════════════════ -->
+  <!-- ════ APP SCREEN ════ -->
   <div id="appScreen" class="oculto">
 
-    <!-- HEADER -->
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
-        <small>INVENTARIO v3</small>
+        <small>INVENTARIO v4</small>
       </div>
       <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar">👤</div>
@@ -356,29 +370,35 @@ tr:last-child td{ border-bottom:none; }
 
       <!-- ════ TABS PRINCIPALES ════ -->
       <div class="mode-tabs">
-        <div class="mode-tab" onclick="setModo('VENTA')"    id="tab-VENTA">
+        <div class="mode-tab" onclick="setModo('VENTA')"       id="tab-VENTA">
           <span class="tab-icon">💰</span>Venta
         </div>
-        <div class="mode-tab" onclick="setModo('COMPRA')"   id="tab-COMPRA">
+        <div class="mode-tab" onclick="setModo('COMPRA')"      id="tab-COMPRA">
           <span class="tab-icon">🛒</span>Compra
         </div>
-        <div class="mode-tab" onclick="setModo('GASTO')"    id="tab-GASTO">
+        <div class="mode-tab" onclick="setModo('GASTO')"       id="tab-GASTO">
           <span class="tab-icon">💸</span>Gastos
         </div>
-        <div class="mode-tab" onclick="setModo('CAJA')"     id="tab-CAJA">
+        <div class="mode-tab" onclick="setModo('CAJA')"        id="tab-CAJA">
           <span class="tab-icon">🏦</span>Caja
         </div>
-        <div class="mode-tab" onclick="setModo('CUENTAS')"  id="tab-CUENTAS">
+        <div class="mode-tab" onclick="setModo('CUENTAS')"     id="tab-CUENTAS">
           <span class="tab-icon">📋</span>Cuentas
         </div>
-        <div class="mode-tab" onclick="setModo('BUSQUEDA')" id="tab-BUSQUEDA">
+        <div class="mode-tab" onclick="setModo('DEVOLUCIONES')" id="tab-DEVOLUCIONES">
+          <span class="tab-icon">↩</span>Devol.
+        </div>
+        <div class="mode-tab" onclick="setModo('REPORTES')"    id="tab-REPORTES">
+          <span class="tab-icon">📊</span>Report.
+        </div>
+        <div class="mode-tab" onclick="setModo('BUSQUEDA')"    id="tab-BUSQUEDA">
           <span class="tab-icon">🔎</span>Buscar
         </div>
       </div>
 
-      <!-- ════════════════════════════════════════
+      <!-- ════════════════════════════
            SECCIÓN VENTA
-      ════════════════════════════════════════ -->
+      ════════════════════════════ -->
       <div id="seccion-VENTA" class="oculto">
         <div class="section-label">Registrar venta</div>
         <div class="row-2 mb-12">
@@ -406,24 +426,17 @@ tr:last-child td{ border-bottom:none; }
           <input id="cantidadVenta" type="number" min="1" placeholder="0">
         </div>
         <button class="btn btn-green mb-12" onclick="agregarCarrito()">+ Agregar al carrito</button>
-
         <div class="carrito-header">
           <h3 id="tituloCarrito">🛒 Carrito <span style="color:var(--muted)">(0)</span></h3>
         </div>
         <table>
-          <thead>
-            <tr>
-              <th class="col-prod">Producto</th><th>Cant</th><th>Precio</th><th>Total</th><th></th>
-            </tr>
-          </thead>
+          <thead><tr><th class="col-prod">Producto</th><th>Cant</th><th>Precio</th><th>Total</th><th></th></tr></thead>
           <tbody id="carritoBody"></tbody>
         </table>
         <div class="carrito-total">
           <small>TOTAL A COBRAR</small><br>
           <span id="totalVenta">Bs 0.00</span>
         </div>
-
-        <!-- [FIX-1] class unificado en un solo atributo: "field-group oculto" -->
         <div class="row-2 mb-12">
           <div class="field-group" style="margin:0">
             <label class="field-label">Método de pago</label>
@@ -438,14 +451,13 @@ tr:last-child td{ border-bottom:none; }
             <input id="clienteVenta" placeholder="Nombre del cliente">
           </div>
         </div>
-
         <div class="loader" id="loaderVenta"></div>
         <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()">⚡ COBRAR</button>
       </div>
 
-      <!-- ════════════════════════════════════════
+      <!-- ════════════════════════════
            SECCIÓN COMPRA
-      ════════════════════════════════════════ -->
+      ════════════════════════════ -->
       <div id="seccion-COMPRA" class="oculto">
         <div class="section-label">Registrar compra</div>
         <div class="field-group">
@@ -500,8 +512,6 @@ tr:last-child td{ border-bottom:none; }
             <input id="ubicacionCompra" placeholder="Ej: Mostrador">
           </div>
         </div>
-
-        <!-- [FIX-1] class unificado en un solo atributo: "field-group oculto" -->
         <div class="row-2 mt-8">
           <div class="field-group" style="margin:0">
             <label class="field-label">Método de pago</label>
@@ -516,14 +526,13 @@ tr:last-child td{ border-bottom:none; }
             <input id="clienteCompra" placeholder="Nombre del acreedor">
           </div>
         </div>
-
         <div class="loader" id="loaderCompra"></div>
         <button class="btn btn-green mt-8" onclick="registrarCompra()">✅ Registrar Compra</button>
       </div>
 
-      <!-- ════════════════════════════════════════
+      <!-- ════════════════════════════
            SECCIÓN GASTO
-      ════════════════════════════════════════ -->
+      ════════════════════════════ -->
       <div id="seccion-GASTO" class="oculto">
         <div class="section-label">Registrar gasto operativo</div>
         <div class="field-group">
@@ -580,12 +589,11 @@ tr:last-child td{ border-bottom:none; }
         <button class="btn btn-primary mt-8" onclick="registrarGasto()">💸 Registrar Gasto</button>
       </div>
 
-      <!-- ════════════════════════════════════════
+      <!-- ════════════════════════════
            SECCIÓN CAJA — solo ADMIN
-      ════════════════════════════════════════ -->
+      ════════════════════════════ -->
       <div id="seccion-CAJA" class="oculto">
         <div class="section-label">Gestión de caja diaria</div>
-
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div id="cajaCardEruditos" class="caja-card" style="margin:0">
             <div class="sr-key" style="margin-bottom:6px">ERUDITOS</div>
@@ -598,15 +606,11 @@ tr:last-child td{ border-bottom:none; }
             <div id="cajaDetCentral" class="caja-detalle"></div>
           </div>
         </div>
-
-        <!-- Sub-tabs CAJA: APERTURA inicia con active -->
         <div class="sub-tabs">
           <div class="sub-tab active" onclick="setSubModoCaja('APERTURA')" id="subtab-caja-APERTURA">🔓 Apertura</div>
           <div class="sub-tab"        onclick="setSubModoCaja('CIERRE')"   id="subtab-caja-CIERRE">🔒 Cierre</div>
           <div class="sub-tab"        onclick="setSubModoCaja('APORTES')"  id="subtab-caja-APORTES">💼 Aportes</div>
         </div>
-
-        <!-- APERTURA -->
         <div id="caja-APERTURA">
           <div class="field-group">
             <label class="field-label">Sucursal</label>
@@ -627,14 +631,10 @@ tr:last-child td{ border-bottom:none; }
           <div class="loader" id="loaderApertura"></div>
           <button class="btn btn-primary" onclick="abrirCaja()">🔓 Abrir Caja</button>
         </div>
-
-        <!-- CIERRE -->
         <div id="caja-CIERRE" class="oculto">
           <div class="field-group">
             <label class="field-label">Sucursal a cerrar</label>
-            <select id="cierreCajaId">
-              <option value="">🏪 Seleccionar sucursal</option>
-            </select>
+            <select id="cierreCajaId"><option value="">🏪 Seleccionar sucursal</option></select>
           </div>
           <div class="field-group">
             <label class="field-label">Saldo final contado (efectivo físico)</label>
@@ -647,8 +647,6 @@ tr:last-child td{ border-bottom:none; }
           <div class="loader" id="loaderCierre"></div>
           <button class="btn btn-red" onclick="cerrarCaja()">🔒 Cerrar Caja</button>
         </div>
-
-        <!-- APORTES Y RETIROS -->
         <div id="caja-APORTES" class="oculto">
           <div class="row-2">
             <div class="field-group" style="margin:0">
@@ -693,21 +691,17 @@ tr:last-child td{ border-bottom:none; }
         </div>
       </div>
 
-      <!-- ════════════════════════════════════════
+      <!-- ════════════════════════════
            SECCIÓN CUENTAS
-           [FIX-4] Sub-tab COBRAR inicia con clase active
-      ════════════════════════════════════════ -->
+      ════════════════════════════ -->
       <div id="seccion-CUENTAS" class="oculto">
         <div class="section-label">Cuentas por cobrar / pagar</div>
-
         <div class="sub-tabs">
           <div class="sub-tab active" onclick="setSubModoCuentas('COBRAR')" id="subtab-cuentas-COBRAR">📥 Por cobrar</div>
           <div class="sub-tab"        onclick="setSubModoCuentas('PAGAR')"  id="subtab-cuentas-PAGAR">📤 Por pagar</div>
         </div>
-
-        <!-- ─── COBRAR ─── -->
+        <!-- COBRAR -->
         <div id="cuentas-COBRAR">
-
           <div class="row-2 mb-12">
             <div class="field-group" style="margin:0">
               <label class="field-label">Sucursal</label>
@@ -729,7 +723,6 @@ tr:last-child td{ border-bottom:none; }
           <button class="btn btn-ghost mb-12" onclick="listarCuentasCobrar()">🔄 Cargar cuentas</button>
           <div class="loader" id="loaderCobrar"></div>
           <div id="tablaCobrar"></div>
-
           <div id="formAbonarCobrar" class="abono-inline">
             <div class="section-label" style="margin-bottom:10px">Registrar abono</div>
             <input type="hidden" id="abonarCobrarId">
@@ -756,7 +749,6 @@ tr:last-child td{ border-bottom:none; }
               <button class="btn btn-ghost" onclick="document.getElementById('formAbonarCobrar').classList.remove('show')">✕ Cancelar</button>
             </div>
           </div>
-
           <div class="divider"></div>
           <div class="section-label">Registrar nueva cuenta</div>
           <div class="row-2">
@@ -789,10 +781,8 @@ tr:last-child td{ border-bottom:none; }
           <div class="loader" id="loaderNuevaCobrar"></div>
           <button class="btn btn-blue mt-8" onclick="registrarCuentaCobrar()">➕ Registrar cuenta</button>
         </div>
-
-        <!-- ─── PAGAR ─── -->
+        <!-- PAGAR -->
         <div id="cuentas-PAGAR" class="oculto">
-
           <div class="row-2 mb-12">
             <div class="field-group" style="margin:0">
               <label class="field-label">Sucursal</label>
@@ -814,7 +804,6 @@ tr:last-child td{ border-bottom:none; }
           <button class="btn btn-ghost mb-12" onclick="listarCuentasPagar()">🔄 Cargar cuentas</button>
           <div class="loader" id="loaderPagar"></div>
           <div id="tablaPagar"></div>
-
           <div id="formAbonarPagar" class="abono-inline">
             <div class="section-label" style="margin-bottom:10px">Registrar pago</div>
             <input type="hidden" id="abonarPagarId">
@@ -841,7 +830,6 @@ tr:last-child td{ border-bottom:none; }
               <button class="btn btn-ghost" onclick="document.getElementById('formAbonarPagar').classList.remove('show')">✕ Cancelar</button>
             </div>
           </div>
-
           <div class="divider"></div>
           <div class="section-label">Registrar nueva cuenta</div>
           <div class="row-2">
@@ -874,12 +862,176 @@ tr:last-child td{ border-bottom:none; }
           <div class="loader" id="loaderNuevaPagar"></div>
           <button class="btn btn-blue mt-8" onclick="registrarCuentaPagar()">➕ Registrar cuenta</button>
         </div>
-
       </div>
 
       <!-- ════════════════════════════════════════
-           SECCIÓN BÚSQUEDA
+           SECCIÓN DEVOLUCIONES — ADMIN, VENDEDOR, ALMACEN
       ════════════════════════════════════════ -->
+      <div id="seccion-DEVOLUCIONES" class="oculto">
+        <div class="section-label">Devoluciones</div>
+        <div class="sub-tabs">
+          <div class="sub-tab active" onclick="setSubModoDevol('REGISTRAR')" id="subtab-devol-REGISTRAR">📝 Registrar</div>
+          <div class="sub-tab"        onclick="setSubModoDevol('LISTAR')"    id="subtab-devol-LISTAR">📋 Historial</div>
+        </div>
+
+        <!-- REGISTRAR DEVOLUCIÓN -->
+        <div id="devol-REGISTRAR">
+          <div class="row-2">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Sucursal</label>
+              <select id="devolSucursal">
+                <option value="">🏪 Seleccionar</option>
+                <option value="ERUDITOS">ERUDITOS</option>
+                <option value="CENTRAL">CENTRAL</option>
+              </select>
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Tipo</label>
+              <select id="devolTipo">
+                <option value="VENTA">↩ Devolución de Venta</option>
+                <option value="COMPRA">↪ Devolución de Compra</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group mt-8">
+            <label class="field-label">ID de referencia (Venta o Compra)</label>
+            <input id="devolReferenciaId" placeholder="Ej: VEN-1234567-abcd1234">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">
+              Puedes encontrar el ID en la hoja VENTAS o COMPRAS del Google Sheet
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Producto</label>
+            <input id="devolProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDevol()">
+            <div id="listaDevol" class="autocomplete"></div>
+          </div>
+          <div class="row-2">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Cantidad</label>
+              <input id="devolCantidad" type="number" min="1" placeholder="0">
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Precio unitario (Bs)</label>
+              <input id="devolPrecio" type="number" min="0.01" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+          <div class="field-group mt-8">
+            <label class="field-label">Motivo</label>
+            <select id="devolMotivo">
+              <option value="PRODUCTO_DEFECTUOSO">🔧 Producto defectuoso</option>
+              <option value="ERROR_FACTURACION">📄 Error de facturación</option>
+              <option value="PRODUCTO_INCORRECTO">📦 Producto incorrecto</option>
+              <option value="EXCESO_STOCK">📊 Exceso de stock</option>
+              <option value="OTRO">❓ Otro</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Cliente / Proveedor (opcional)</label>
+            <input id="devolClienteProveedor" placeholder="Nombre de quien devuelve">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Notas (opcional)</label>
+            <textarea id="devolNotas" placeholder="Observaciones adicionales..."></textarea>
+          </div>
+          <div class="loader" id="loaderDevol"></div>
+          <button class="btn btn-teal" onclick="registrarDevolucion()">↩ Registrar Devolución</button>
+        </div>
+
+        <!-- LISTAR DEVOLUCIONES -->
+        <div id="devol-LISTAR" class="oculto">
+          <div class="row-2 mb-12">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Sucursal</label>
+              <select id="filtroDevSucursal">
+                <option value="">Todas</option>
+                <option value="ERUDITOS">ERUDITOS</option>
+                <option value="CENTRAL">CENTRAL</option>
+              </select>
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Tipo</label>
+              <select id="filtroDevTipo">
+                <option value="">Todos</option>
+                <option value="VENTA">Devolución venta</option>
+                <option value="COMPRA">Devolución compra</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-ghost mb-12" onclick="listarDevoluciones()">🔄 Cargar historial</button>
+          <div class="loader" id="loaderListarDevol"></div>
+          <div id="tablaDevol"></div>
+          <!-- Paginación -->
+          <div id="paginDevol" style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;display:none">
+            <button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(-1)">← Anterior</button>
+            <span id="paginDevol-info" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
+            <button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(1)">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           SECCIÓN REPORTES — solo ADMIN
+      ════════════════════════════════════════ -->
+      <div id="seccion-REPORTES" class="oculto">
+        <div class="section-label">Reportes de ventas</div>
+        <div class="sub-tabs">
+          <div class="sub-tab active" onclick="setSubModoReportes('MAS')"   id="subtab-rep-MAS">🏆 Más vendidos</div>
+          <div class="sub-tab"        onclick="setSubModoReportes('MENOS')" id="subtab-rep-MENOS">📉 Menos vendidos</div>
+        </div>
+
+        <!-- Filtros compartidos para ambos sub-tabs -->
+        <div id="reportes-filtros">
+          <div class="row-2">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Sucursal</label>
+              <select id="repSucursal">
+                <option value="">Todas</option>
+                <option value="ERUDITOS">ERUDITOS</option>
+                <option value="CENTRAL">CENTRAL</option>
+              </select>
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Top N productos</label>
+              <select id="repLimite">
+                <option value="5">Top 5</option>
+                <option value="10" selected>Top 10</option>
+                <option value="20">Top 20</option>
+                <option value="50">Top 50</option>
+              </select>
+            </div>
+          </div>
+          <div class="row-2 mt-8">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Fecha desde</label>
+              <input id="repFechaDesde" type="date">
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Fecha hasta</label>
+              <input id="repFechaHasta" type="date">
+            </div>
+          </div>
+        </div>
+
+        <!-- MÁS VENDIDOS -->
+        <div id="rep-MAS">
+          <div class="loader" id="loaderRepMas"></div>
+          <button class="btn btn-primary mt-8 mb-12" onclick="cargarMasVendidos()">📊 Generar reporte</button>
+          <div id="totalesMas" class="reporte-totales" style="display:none"></div>
+          <div id="tablaRepMas"></div>
+        </div>
+
+        <!-- MENOS VENDIDOS -->
+        <div id="rep-MENOS" class="oculto">
+          <div class="loader" id="loaderRepMenos"></div>
+          <button class="btn btn-orange mt-8 mb-12" onclick="cargarMenosVendidos()">📉 Generar reporte</button>
+          <div id="totalesMenos" class="reporte-totales" style="display:none"></div>
+          <div id="tablaRepMenos"></div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           SECCIÓN BÚSQUEDA
+      ════════════════════════════ -->
       <div id="seccion-BUSQUEDA" class="oculto">
         <div class="section-label">Búsqueda de producto</div>
         <div class="field-group">
@@ -893,7 +1045,6 @@ tr:last-child td{ border-bottom:none; }
 
       <!-- Mensaje global -->
       <div id="mensajeApp" class="mensaje"></div>
-
       <div class="divider"></div>
       <button class="btn btn-ghost" onclick="verInventario()">📊 Ver Google Sheet</button>
 
@@ -907,7 +1058,6 @@ tr:last-child td{ border-bottom:none; }
 // ══════════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════════
-
 const baseURL   = "/api/proxy";
 const fetchOpts = { redirect: 'follow' };
 
@@ -916,34 +1066,36 @@ let sessionUser      = null;
 let sessionRol       = null;
 let inventarioGlobal = [];
 let carrito          = [];
-// [FIX-3] cajaActualId eliminado — era variable declarada pero nunca asignada (código muerto)
+
+// Paginación devoluciones
+let devolPaginaActual = 1;
+const DEVOL_LIMITE    = 20;
 
 function sonidoCaja() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const o1 = ctx.createOscillator();
-  const g1 = ctx.createGain();
-  o1.connect(g1); g1.connect(ctx.destination);
-  o1.frequency.value = 1200;
-  g1.gain.setValueAtTime(0.3, ctx.currentTime);
-  g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-  o1.start(ctx.currentTime); o1.stop(ctx.currentTime + 0.3);
-  const o2 = ctx.createOscillator();
-  const g2 = ctx.createGain();
-  o2.connect(g2); g2.connect(ctx.destination);
-  o2.frequency.value = 800;
-  g2.gain.setValueAtTime(0.2, ctx.currentTime + 0.15);
-  g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-  o2.start(ctx.currentTime + 0.15); o2.stop(ctx.currentTime + 0.5);
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+    o1.connect(g1); g1.connect(ctx.destination);
+    o1.frequency.value = 1200;
+    g1.gain.setValueAtTime(0.3, ctx.currentTime);
+    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    o1.start(ctx.currentTime); o1.stop(ctx.currentTime + 0.3);
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.frequency.value = 800;
+    g2.gain.setValueAtTime(0.2, ctx.currentTime + 0.15);
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    o2.start(ctx.currentTime + 0.15); o2.stop(ctx.currentTime + 0.5);
+  } catch(e){}
 }
 
 // ══════════════════════════════════════════════
-//  PERMISOS POR ROL
+//  PERMISOS POR ROL — v4 con DEVOLUCIONES y REPORTES
 // ══════════════════════════════════════════════
-
 const PERMISOS = {
-  ADMIN:    { tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"], inicio:"VENTA"  },
-  VENDEDOR: { tabs:["VENTA",                      "CUENTAS","BUSQUEDA"],  inicio:"VENTA"  },
-  ALMACEN:  { tabs:[        "COMPRA",             "CUENTAS","BUSQUEDA"],  inicio:"COMPRA" },
+  ADMIN:    { tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"], inicio:"VENTA"  },
+  VENDEDOR: { tabs:["VENTA",                      "CUENTAS","DEVOLUCIONES",             "BUSQUEDA"], inicio:"VENTA"  },
+  ALMACEN:  { tabs:[        "COMPRA",             "CUENTAS","DEVOLUCIONES",             "BUSQUEDA"], inicio:"COMPRA" },
 };
 const PERMISOS_DEFAULT = { tabs:["BUSQUEDA"], inicio:"BUSQUEDA" };
 
@@ -953,8 +1105,7 @@ function obtenerPermisos(rol){
 
 function aplicarRol(rol){
   const { tabs, inicio } = obtenerPermisos(rol);
-  const todasTabs = ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"];
-
+  const todasTabs = ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"];
   todasTabs.forEach(t => {
     document.getElementById("tab-"+t).classList.toggle("hidden-tab", !tabs.includes(t));
   });
@@ -965,9 +1116,9 @@ function aplicarRol(rol){
   document.getElementById("subtab-cuentas-PAGAR").classList.toggle("hidden-tab",
     !["ADMIN","ALMACEN"].includes(rolUp));
 
-  if (rolUp === "VENDEDOR")     setSubModoCuentas("COBRAR");
-  else if (rolUp === "ALMACEN") setSubModoCuentas("PAGAR");
-  else                          setSubModoCuentas("COBRAR"); // ADMIN default
+  if(rolUp==="VENDEDOR")     setSubModoCuentas("COBRAR");
+  else if(rolUp==="ALMACEN") setSubModoCuentas("PAGAR");
+  else                       setSubModoCuentas("COBRAR");
 
   setModo(inicio);
 }
@@ -975,7 +1126,6 @@ function aplicarRol(rol){
 // ══════════════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════════════
-
 async function loginSubmit(){
   const usuario  = document.getElementById("loginUser").value.trim();
   const password = document.getElementById("loginPass").value;
@@ -1003,22 +1153,22 @@ async function loginSubmit(){
       document.getElementById("loginScreen").classList.add("oculto");
       document.getElementById("appScreen").classList.remove("oculto");
 
-      // [FIX-2] Inicializar todos los campos de fecha, incluido fechaCompra
       const fechaHoy = hoy();
-      document.getElementById("gastoFecha").value         = fechaHoy;
-      document.getElementById("aporteFecha").value        = fechaHoy;
-      document.getElementById("abonarCobrarFecha").value  = fechaHoy;
-      document.getElementById("abonarPagarFecha").value   = fechaHoy;
-      document.getElementById("fechaCompra").value        = fechaHoy; // [FIX-2] faltaba
+      document.getElementById("gastoFecha").value        = fechaHoy;
+      document.getElementById("aporteFecha").value       = fechaHoy;
+      document.getElementById("abonarCobrarFecha").value = fechaHoy;
+      document.getElementById("abonarPagarFecha").value  = fechaHoy;
+      document.getElementById("fechaCompra").value       = fechaHoy;
+      document.getElementById("repFechaHasta").value     = fechaHoy;
 
-      // [FIX-5] Llamar a las funciones de toggle para sincronizar visibilidad
-      // de los campos crédito según el valor inicial de cada select
+      // Fecha desde = primer día del mes actual
+      const primerDia = fechaHoy.slice(0,7) + "-01";
+      document.getElementById("repFechaDesde").value = primerDia;
+
       toggleClienteVenta();
       toggleClienteCompra();
-
       aplicarRol(sessionRol);
       cargarInventario();
-
       if(sessionRol==="ADMIN") verificarEstadoCaja();
 
     } else {
@@ -1052,7 +1202,6 @@ function cerrarSesion(){
 // ══════════════════════════════════════════════
 //  UTILIDADES
 // ══════════════════════════════════════════════
-
 function hoy(){ return new Date().toISOString().slice(0,10); }
 
 function mostrarMsg(txt,tipo){
@@ -1063,11 +1212,13 @@ function mostrarMsg(txt,tipo){
 }
 
 function setModo(modo){
-  ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","BUSQUEDA"].forEach(m=>{
+  ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"].forEach(m=>{
     document.getElementById("seccion-"+m).classList.toggle("oculto",m!==modo);
     document.getElementById("tab-"+m).classList.toggle("active",m===modo);
   });
-  if(modo==="CAJA" && sessionToken) verificarEstadoCaja();
+  if(modo==="CAJA"        && sessionToken) verificarEstadoCaja();
+  if(modo==="DEVOLUCIONES") setSubModoDevol("REGISTRAR");
+  if(modo==="REPORTES")     setSubModoReportes("MAS");
 }
 
 function setSubModoCaja(sub){
@@ -1084,6 +1235,20 @@ function setSubModoCuentas(sub){
   });
 }
 
+function setSubModoDevol(sub){
+  ["REGISTRAR","LISTAR"].forEach(s=>{
+    document.getElementById("devol-"+s).classList.toggle("oculto",s!==sub);
+    document.getElementById("subtab-devol-"+s).classList.toggle("active",s===sub);
+  });
+}
+
+function setSubModoReportes(sub){
+  ["MAS","MENOS"].forEach(s=>{
+    document.getElementById("rep-"+s).classList.toggle("oculto",s!==sub);
+    document.getElementById("subtab-rep-"+s).classList.toggle("active",s===sub);
+  });
+}
+
 function verInventario(){
   window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit","_blank");
 }
@@ -1096,24 +1261,18 @@ function manejarRespuesta(data){
   return true;
 }
 
-// [FIX-5] toggleClienteVenta y toggleClienteCompra son la fuente de verdad
-// para la visibilidad de los campos crédito. Se llaman desde onchange Y desde loginSubmit.
 function toggleClienteVenta(){
-  const metodo = document.getElementById("metodoPagoVenta").value;
-  const campo  = document.getElementById("campoClienteVenta");
-  metodo==="CREDITO" ? campo.classList.remove("oculto") : campo.classList.add("oculto");
+  const m=document.getElementById("metodoPagoVenta").value;
+  document.getElementById("campoClienteVenta").classList.toggle("oculto",m!=="CREDITO");
 }
-
 function toggleClienteCompra(){
-  const metodo = document.getElementById("metodoPagoCompra").value;
-  const campo  = document.getElementById("campoClienteCompra");
-  metodo==="CREDITO" ? campo.classList.remove("oculto") : campo.classList.add("oculto");
+  const m=document.getElementById("metodoPagoCompra").value;
+  document.getElementById("campoClienteCompra").classList.toggle("oculto",m!=="CREDITO");
 }
 
 // ══════════════════════════════════════════════
 //  INVENTARIO
 // ══════════════════════════════════════════════
-
 async function cargarInventario(){
   if(!sessionToken) return;
   try{
@@ -1127,7 +1286,6 @@ setInterval(()=>{ if(sessionToken) cargarInventario(); },15000);
 // ══════════════════════════════════════════════
 //  AUTOCOMPLETE HELPER
 // ══════════════════════════════════════════════
-
 function construirAC(lista,items,onSelect){
   lista.innerHTML="";
   if(items.length===0){ lista.classList.remove("show"); return; }
@@ -1144,18 +1302,14 @@ function construirAC(lista,items,onSelect){
 // ══════════════════════════════════════════════
 //  VENTA
 // ══════════════════════════════════════════════
-
 function buscarProductoVenta(){
-  const texto    = document.getElementById("productoVenta").value.toLowerCase();
-  const sucursal = document.getElementById("sucursalVenta").value;
-  const lista    = document.getElementById("listaVenta");
-  const info     = document.getElementById("infoProductoVenta");
+  const texto=document.getElementById("productoVenta").value.toLowerCase();
+  const sucursal=document.getElementById("sucursalVenta").value;
+  const lista=document.getElementById("listaVenta");
+  const info=document.getElementById("infoProductoVenta");
   info.classList.remove("show");
   if(texto.length<1){ lista.classList.remove("show"); return; }
-  const filtrados = inventarioGlobal.filter(p=>
-    p.producto.toLowerCase().includes(texto)&&p.sucursal===sucursal
-  );
-  construirAC(lista,filtrados,p=>{
+  construirAC(lista,inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto)&&p.sucursal===sucursal),p=>{
     document.getElementById("productoVenta").value=p.producto;
     info.innerHTML=`Stock disponible: <b>${p.stock}</b> | Precio: <b>Bs ${p.precio}</b>`+
       (p.stock<=5?`<br><span class="stock-bajo">⚠ Stock bajo</span>`:"");
@@ -1164,9 +1318,9 @@ function buscarProductoVenta(){
 }
 
 function agregarCarrito(){
-  const producto = document.getElementById("productoVenta").value.trim();
-  const cantidad = Number(document.getElementById("cantidadVenta").value);
-  const sucursal = document.getElementById("sucursalVenta").value;
+  const producto=document.getElementById("productoVenta").value.trim();
+  const cantidad=Number(document.getElementById("cantidadVenta").value);
+  const sucursal=document.getElementById("sucursalVenta").value;
   if(!producto||!cantidad||cantidad<=0){ mostrarMsg("Completa producto y cantidad","err"); return; }
   if(!sucursal){ mostrarMsg("Selecciona una sucursal","err"); return; }
   const prod=inventarioGlobal.find(p=>p.producto===producto&&p.sucursal===sucursal);
@@ -1200,25 +1354,21 @@ function renderCarrito(){
 function eliminarItem(i){ carrito.splice(i,1); renderCarrito(); }
 
 async function cobrar(){
-  if(!sessionToken){ mostrarMsg("Sesión expirada. Vuelve a iniciar sesión.","err"); return; }
+  if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
   if(carrito.length===0){ mostrarMsg("El carrito está vacío","err"); return; }
-
-  const sucursal   = document.getElementById("sucursalVenta").value;
-  const usuario    = document.getElementById("usuarioVenta").value||sessionUser;
-  const metodoPago = document.getElementById("metodoPagoVenta").value;
-  const cliente    = document.getElementById("clienteVenta").value||"MOSTRADOR";
-
+  const sucursal  =document.getElementById("sucursalVenta").value;
+  const usuario   =document.getElementById("usuarioVenta").value||sessionUser;
+  const metodoPago=document.getElementById("metodoPagoVenta").value;
+  const cliente   =document.getElementById("clienteVenta").value||"MOSTRADOR";
   if(!sucursal){ mostrarMsg("Selecciona una sucursal","err"); return; }
   if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){
     mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err"); return;
   }
-
   const loader=document.getElementById("loaderVenta");
   const btn=document.getElementById("btnCobrar");
   loader.style.display="block"; btn.disabled=true;
-
   try{
-    const url = baseURL
+    const url=baseURL
       +"?ACCION=VENTA_POS"
       +"&CARRITO="+encodeURIComponent(JSON.stringify(carrito.map(i=>({producto:i.producto,cantidad:i.cantidad}))))
       +"&SUCURSAL="+encodeURIComponent(sucursal)
@@ -1226,18 +1376,12 @@ async function cobrar(){
       +"&METODO_PAGO="+metodoPago
       +"&CLIENTE="+encodeURIComponent(cliente)
       +"&TOKEN="+sessionToken;
-
-    const res  = await fetch(url,fetchOpts);
-    const data = await res.json();
-
+    const res=await fetch(url,fetchOpts);
+    const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; btn.disabled=false; return; }
-
     if(data.ok){
       sonidoCaja();
-      const msg = metodoPago==="CREDITO"
-        ? "📝 Venta a crédito registrada (cuenta por cobrar creada)"
-        : "✅ Venta registrada correctamente";
-      mostrarMsg(msg,"ok");
+      mostrarMsg(metodoPago==="CREDITO"?"📝 Venta a crédito registrada":"✅ Venta registrada correctamente","ok");
       document.getElementById("mainPanel").classList.add("ok");
       setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);
       carrito=[]; renderCarrito();
@@ -1255,16 +1399,14 @@ async function cobrar(){
 // ══════════════════════════════════════════════
 //  COMPRA
 // ══════════════════════════════════════════════
-
 function buscarProductoCompra(){
-  const texto    = document.getElementById("productoCompra").value.toLowerCase();
-  const sucursal = document.getElementById("sucursalCompra").value;
-  const lista    = document.getElementById("listaCompra");
-  const info     = document.getElementById("infoCompra");
+  const texto=document.getElementById("productoCompra").value.toLowerCase();
+  const sucursal=document.getElementById("sucursalCompra").value;
+  const lista=document.getElementById("listaCompra");
+  const info=document.getElementById("infoCompra");
   info.classList.remove("show");
   if(texto.length<1){ lista.classList.remove("show"); return; }
-  const filtrados=inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto)&&p.sucursal===sucursal);
-  construirAC(lista,filtrados,p=>{
+  construirAC(lista,inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto)&&p.sucursal===sucursal),p=>{
     document.getElementById("productoCompra").value=p.producto;
     document.getElementById("categoriaCompra").value=p.categoria||"";
     document.getElementById("precioVentaCompra").value=p.precio;
@@ -1274,19 +1416,14 @@ function buscarProductoCompra(){
 
 async function registrarCompra(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
-
-  const metodoPago = document.getElementById("metodoPagoCompra").value;
-  const cliente    = document.getElementById("clienteCompra").value||
-                     document.getElementById("proveedorCompra").value;
-
+  const metodoPago=document.getElementById("metodoPagoCompra").value;
+  const cliente=document.getElementById("clienteCompra").value||document.getElementById("proveedorCompra").value;
   if(metodoPago==="CREDITO"&&!document.getElementById("proveedorCompra").value.trim()){
     mostrarMsg("Ingresa el nombre del proveedor/acreedor para compras a crédito","err"); return;
   }
-
   const loader=document.getElementById("loaderCompra");
   loader.style.display="block";
-
-  const url = baseURL
+  const url=baseURL
     +"?ACCION=COMPRA"
     +"&PRODUCTO="+encodeURIComponent(document.getElementById("productoCompra").value)
     +"&CATEGORIA="+encodeURIComponent(document.getElementById("categoriaCompra").value)
@@ -1301,21 +1438,17 @@ async function registrarCompra(){
     +"&METODO_PAGO="+metodoPago
     +"&CLIENTE="+encodeURIComponent(cliente)
     +"&TOKEN="+sessionToken;
-
   try{
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
-      const msg = metodoPago==="CREDITO"
-        ? "📝 Compra a crédito registrada (cuenta por pagar creada)"
-        : "✅ Compra registrada";
-      mostrarMsg(msg,"ok");
+      mostrarMsg(metodoPago==="CREDITO"?"📝 Compra a crédito registrada":"✅ Compra registrada","ok");
       document.querySelectorAll("#seccion-COMPRA input").forEach(i=>i.value="");
       document.getElementById("categoriaCompra").value="";
       document.getElementById("metodoPagoCompra").value="EFECTIVO";
-      toggleClienteCompra(); // [FIX-5] usar la función en lugar de manipular classList directamente
-      document.getElementById("fechaCompra").value=hoy(); // [FIX-2] restaurar fecha al limpiar
+      toggleClienteCompra();
+      document.getElementById("fechaCompra").value=hoy();
       cargarInventario();
     } else {
       mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
@@ -1327,40 +1460,31 @@ async function registrarCompra(){
 // ══════════════════════════════════════════════
 //  GASTO
 // ══════════════════════════════════════════════
-
 async function registrarGasto(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
-
-  const concepto   = document.getElementById("gastoConcepto").value.trim();
-  const categoria  = document.getElementById("gastoCategoria").value;
-  const importe    = document.getElementById("gastoImporte").value;
-  const persona    = document.getElementById("gastoPersona").value.trim();
-  const fecha      = document.getElementById("gastoFecha").value;
-  const notas      = document.getElementById("gastoNotas").value.trim();
-  const sucursal   = document.getElementById("sucursalGasto").value;
-  const metodoPago = document.getElementById("metodoPagoGasto").value;
-
+  const concepto  =document.getElementById("gastoConcepto").value.trim();
+  const categoria =document.getElementById("gastoCategoria").value;
+  const importe   =document.getElementById("gastoImporte").value;
+  const sucursal  =document.getElementById("sucursalGasto").value;
+  const metodoPago=document.getElementById("metodoPagoGasto").value;
   if(!concepto)  { mostrarMsg("Ingresa el concepto del gasto","err"); return; }
   if(!categoria) { mostrarMsg("Selecciona una categoría","err"); return; }
   if(!sucursal)  { mostrarMsg("Selecciona una sucursal","err"); return; }
   if(!importe||Number(importe)<=0){ mostrarMsg("Ingresa un importe válido","err"); return; }
-
   const loader=document.getElementById("loaderGasto");
   loader.style.display="block";
-
   try{
-    const url = baseURL
+    const url=baseURL
       +"?ACCION=REGISTRAR_GASTO"
       +"&CONCEPTO="+encodeURIComponent(concepto)
       +"&CATEGORIA="+encodeURIComponent(categoria)
       +"&IMPORTE="+Number(importe)
-      +"&PERSONA="+encodeURIComponent(persona)
-      +"&FECHA="+fecha
-      +"&NOTAS="+encodeURIComponent(notas)
+      +"&PERSONA="+encodeURIComponent(document.getElementById("gastoPersona").value.trim())
+      +"&FECHA="+document.getElementById("gastoFecha").value
+      +"&NOTAS="+encodeURIComponent(document.getElementById("gastoNotas").value.trim())
       +"&SUCURSAL="+encodeURIComponent(sucursal)
       +"&METODO_PAGO="+metodoPago
       +"&TOKEN="+sessionToken;
-
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
@@ -1381,86 +1505,47 @@ async function registrarGasto(){
 // ══════════════════════════════════════════════
 //  CAJA
 // ══════════════════════════════════════════════
-
 async function verificarEstadoCaja(){
   if(!sessionToken) return;
   try{
-    const res  = await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken, fetchOpts);
-    const data = await res.json();
-
-    const cajaBadge    = document.getElementById("cajaBadge");
-    const cierreSelect = document.getElementById("cierreCajaId");
-
-    cierreSelect.innerHTML = '<option value="">🏪 Seleccionar sucursal</option>';
-
-    const tarjetas = {
-      "ERUDITOS": {
-        txt:  document.getElementById("cajaTxtEruditos"),
-        det:  document.getElementById("cajaDetEruditos"),
-        card: document.getElementById("cajaCardEruditos")
-      },
-      "CENTRAL": {
-        txt:  document.getElementById("cajaTxtCentral"),
-        det:  document.getElementById("cajaDetCentral"),
-        card: document.getElementById("cajaCardCentral")
-      }
+    const res=await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken,fetchOpts);
+    const data=await res.json();
+    const cajaBadge=document.getElementById("cajaBadge");
+    const cierreSelect=document.getElementById("cierreCajaId");
+    cierreSelect.innerHTML='<option value="">🏪 Seleccionar sucursal</option>';
+    const tarjetas={
+      "ERUDITOS":{ txt:document.getElementById("cajaTxtEruditos"), det:document.getElementById("cajaDetEruditos"), card:document.getElementById("cajaCardEruditos") },
+      "CENTRAL":{ txt:document.getElementById("cajaTxtCentral"),  det:document.getElementById("cajaDetCentral"),  card:document.getElementById("cajaCardCentral") }
     };
-
-    Object.values(tarjetas).forEach(t => {
-      t.txt.className   = "caja-estado-err";
-      t.txt.textContent = "🔴 Cerrada";
-      t.det.textContent = "";
-      t.card.style.borderColor = "";
-    });
-
-    const cajasAbiertas = (data.cajas || []);
-    let hayAlgunaAbierta = false;
-
-    cajasAbiertas.forEach(c => {
-      const suc = (c.sucursal || "").toUpperCase();
-      const t   = tarjetas[suc];
-      if(!t) return;
-
-      hayAlgunaAbierta = true;
-      t.txt.className   = "caja-estado-ok";
-      t.txt.textContent = "🟢 Abierta";
-      t.det.textContent = "Bs " + c.saldoInicial + " · " + c.usuarioApertura;
-      t.card.style.borderColor = "var(--accent)";
-
-      const opt = document.createElement("option");
-      opt.value       = c.cajaId;
-      opt.textContent = suc + " · Bs " + c.saldoInicial;
+    Object.values(tarjetas).forEach(t=>{ t.txt.className="caja-estado-err"; t.txt.textContent="🔴 Cerrada"; t.det.textContent=""; t.card.style.borderColor=""; });
+    const cajasAbiertas=(data.cajas||[]);
+    let hayAlgunaAbierta=false;
+    cajasAbiertas.forEach(c=>{
+      const suc=(c.sucursal||"").toUpperCase();
+      const t=tarjetas[suc]; if(!t) return;
+      hayAlgunaAbierta=true;
+      t.txt.className="caja-estado-ok"; t.txt.textContent="🟢 Abierta";
+      t.det.textContent="Bs "+c.saldoInicial+" · "+c.usuarioApertura;
+      t.card.style.borderColor="var(--accent)";
+      const opt=document.createElement("option");
+      opt.value=c.cajaId; opt.textContent=suc+" · Bs "+c.saldoInicial;
       cierreSelect.appendChild(opt);
     });
-
-    cajaBadge.style.display = hayAlgunaAbierta ? "inline-block" : "none";
-
-    if(cajasAbiertas.length === 1) cierreSelect.value = cajasAbiertas[0].cajaId;
-
+    cajaBadge.style.display=hayAlgunaAbierta?"inline-block":"none";
+    if(cajasAbiertas.length===1) cierreSelect.value=cajasAbiertas[0].cajaId;
   } catch(e){}
 }
 
 async function abrirCaja(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
-
-  const sucursal     = document.getElementById("aperturaSucursal").value;
-  const saldoInicial = Number(document.getElementById("aperturaSaldo").value);
-  const notas        = document.getElementById("aperturaNotas").value;
-
+  const sucursal=document.getElementById("aperturaSucursal").value;
+  const saldoInicial=Number(document.getElementById("aperturaSaldo").value);
   if(!sucursal){ mostrarMsg("Selecciona una sucursal","err"); return; }
   if(isNaN(saldoInicial)||saldoInicial<0){ mostrarMsg("Ingresa un saldo inicial válido","err"); return; }
-
   const loader=document.getElementById("loaderApertura");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=APERTURA_CAJA"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&SALDO_INICIAL="+saldoInicial
-      +"&NOTAS="+encodeURIComponent(notas)
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=APERTURA_CAJA&SUCURSAL="+encodeURIComponent(sucursal)+"&SALDO_INICIAL="+saldoInicial+"&NOTAS="+encodeURIComponent(document.getElementById("aperturaNotas").value)+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
@@ -1469,79 +1554,51 @@ async function abrirCaja(){
       document.getElementById("aperturaSaldo").value="";
       document.getElementById("aperturaNotas").value="";
       await verificarEstadoCaja();
-    } else {
-      mostrarMsg("Error: "+(data.error||data.mensaje||JSON.stringify(data)),"err");
-    }
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
   } catch(e){ mostrarMsg("Error de conexión","err"); }
   loader.style.display="none";
 }
 
 async function cerrarCaja(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
-
-  const cajaId     = document.getElementById("cierreCajaId").value;
-  const saldoFinal = Number(document.getElementById("cierreSaldo").value);
-  const notas      = document.getElementById("cierreNotas").value;
-
+  const cajaId=document.getElementById("cierreCajaId").value;
+  const saldoFinal=Number(document.getElementById("cierreSaldo").value);
   if(!cajaId){ mostrarMsg("No hay caja abierta para cerrar","err"); return; }
   if(isNaN(saldoFinal)||saldoFinal<0){ mostrarMsg("Ingresa el saldo final contado","err"); return; }
   if(!confirm("¿Confirmar cierre de caja con saldo final Bs "+saldoFinal+"?")) return;
-
   const loader=document.getElementById("loaderCierre");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=CIERRE_CAJA"
-      +"&ID="+encodeURIComponent(cajaId)
-      +"&SALDO_FINAL="+saldoFinal
-      +"&NOTAS="+encodeURIComponent(notas)
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=CIERRE_CAJA&ID="+encodeURIComponent(cajaId)+"&SALDO_FINAL="+saldoFinal+"&NOTAS="+encodeURIComponent(document.getElementById("cierreNotas").value)+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
-      const dif = data.diferencia>=0 ? "+Bs "+data.diferencia : "-Bs "+Math.abs(data.diferencia);
+      const dif=data.diferencia>=0?"+Bs "+data.diferencia:"-Bs "+Math.abs(data.diferencia);
       mostrarMsg("🔒 Caja cerrada · Diferencia: "+dif,"ok");
       document.getElementById("cierreSaldo").value="";
       document.getElementById("cierreNotas").value="";
       await verificarEstadoCaja();
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
   } catch(e){ mostrarMsg("Error de conexión","err"); }
   loader.style.display="none";
 }
 
 async function registrarAporteRetiro(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
-
-  const sucursal = document.getElementById("aporteSucursal").value;
-  const tipo     = document.getElementById("aporteTipo").value;
-  const concepto = document.getElementById("aporteConcepto").value.trim();
-  const monto    = Number(document.getElementById("aporteMonto").value);
-  const metodo   = document.getElementById("aporteMetodo").value;
-  const fecha    = document.getElementById("aporteFecha").value;
-
+  const sucursal=document.getElementById("aporteSucursal").value;
+  const tipo=document.getElementById("aporteTipo").value;
+  const concepto=document.getElementById("aporteConcepto").value.trim();
+  const monto=Number(document.getElementById("aporteMonto").value);
+  const metodo=document.getElementById("aporteMetodo").value;
+  const fecha=document.getElementById("aporteFecha").value;
   if(!sucursal){ mostrarMsg("Selecciona una sucursal","err"); return; }
   if(!concepto){ mostrarMsg("Ingresa el concepto","err"); return; }
   if(isNaN(monto)||monto<=0){ mostrarMsg("Ingresa un monto válido","err"); return; }
-
   const loader=document.getElementById("loaderAporte");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=REGISTRAR_APORTE_RETIRO"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&TIPO="+tipo
-      +"&CONCEPTO="+encodeURIComponent(concepto)
-      +"&MONTO="+monto
-      +"&METODO_GASTO="+metodo
-      +"&FECHA="+fecha
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=REGISTRAR_APORTE_RETIRO&SUCURSAL="+encodeURIComponent(sucursal)+"&TIPO="+tipo+"&CONCEPTO="+encodeURIComponent(concepto)+"&MONTO="+monto+"&METODO_GASTO="+metodo+"&FECHA="+fecha+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
@@ -1549,9 +1606,7 @@ async function registrarAporteRetiro(){
       mostrarMsg("💼 "+tipo+" registrado correctamente","ok");
       document.getElementById("aporteConcepto").value="";
       document.getElementById("aporteMonto").value="";
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
   } catch(e){ mostrarMsg("Error de conexión","err"); }
   loader.style.display="none";
 }
@@ -1559,44 +1614,24 @@ async function registrarAporteRetiro(){
 // ══════════════════════════════════════════════
 //  CUENTAS POR COBRAR
 // ══════════════════════════════════════════════
-
 async function listarCuentasCobrar(){
-  const loader   = document.getElementById("loaderCobrar");
-  const tabla    = document.getElementById("tablaCobrar");
-  const sucursal = document.getElementById("filtroCobrarSucursal").value;
-  const estado   = document.getElementById("filtroCobrarEstado").value;
-
+  const loader=document.getElementById("loaderCobrar");
+  const tabla=document.getElementById("tablaCobrar");
   loader.style.display="block"; tabla.innerHTML="";
-
   try{
-    const url = baseURL
-      +"?ACCION=LISTAR_CUENTAS_COBRAR"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&ESTADO="+encodeURIComponent(estado)
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=LISTAR_CUENTAS_COBRAR&SUCURSAL="+encodeURIComponent(document.getElementById("filtroCobrarSucursal").value)+"&ESTADO="+encodeURIComponent(document.getElementById("filtroCobrarEstado").value)+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
-
     if(!data.datos||data.datos.length===0){
-      tabla.innerHTML=`<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin cuentas encontradas</div>`;
+      tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`;
     } else {
-      let html=`<table><thead><tr>
-        <th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th>
-      </tr></thead><tbody>`;
+      let html=`<table><thead><tr><th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;
       data.datos.forEach(c=>{
-        const esCancelado=c.estado==="CANCELADO";
-        html+=`<tr>
-          <td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td>
-          <td>Bs ${Number(c.totalVenta).toFixed(2)}</td>
-          <td>Bs ${Number(c.saldo).toFixed(2)}</td>
-          <td class="${esCancelado?"estado-cancelado":"estado-pendiente"}">${c.estado}</td>
-          <td>${!esCancelado?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoCobrar('${c.id}')">💰</button>`:""}</td>
-        </tr>`;
+        const ok=c.estado==="CANCELADO";
+        html+=`<tr><td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalVenta).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoCobrar('${c.id}')">💰</button>`:""}</td></tr>`;
       });
-      html+=`</tbody></table>`;
-      tabla.innerHTML=html;
+      tabla.innerHTML=html+"</tbody></table>";
     }
   } catch(e){ tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
   loader.style.display="none";
@@ -1611,64 +1646,41 @@ function abrirFormAbonoCobrar(id){
 }
 
 async function confirmarAbonoCobrar(){
-  const id     = document.getElementById("abonarCobrarId").value;
-  const monto  = Number(document.getElementById("abonarCobrarMonto").value);
-  const metodo = document.getElementById("abonarCobrarMetodo").value;
-  const fecha  = document.getElementById("abonarCobrarFecha").value;
-
-  if(!id){ mostrarMsg("ID de cuenta no encontrado","err"); return; }
+  const id=document.getElementById("abonarCobrarId").value;
+  const monto=Number(document.getElementById("abonarCobrarMonto").value);
+  const metodo=document.getElementById("abonarCobrarMetodo").value;
+  const fecha=document.getElementById("abonarCobrarFecha").value;
+  if(!id){ mostrarMsg("ID no encontrado","err"); return; }
   if(isNaN(monto)||monto<=0){ mostrarMsg("Ingresa un monto válido","err"); return; }
-
   const loader=document.getElementById("loaderAbonarCobrar");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=ABONAR_CUENTA_COBRAR"
-      +"&ID="+encodeURIComponent(id)
-      +"&ABONO="+monto
-      +"&METODO_PAGO="+metodo
-      +"&FECHA_PAGO="+fecha
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=ABONAR_CUENTA_COBRAR&ID="+encodeURIComponent(id)+"&ABONO="+monto+"&METODO_PAGO="+metodo+"&FECHA_PAGO="+fecha+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
-      mostrarMsg("✅ Abono registrado · Saldo restante: Bs "+data.nuevoSaldo,"ok");
+      mostrarMsg("✅ Abono registrado · Saldo: Bs "+data.nuevoSaldo,"ok");
       document.getElementById("formAbonarCobrar").classList.remove("show");
       await listarCuentasCobrar();
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
   } catch(e){ mostrarMsg("Error de conexión","err"); }
   loader.style.display="none";
 }
 
 async function registrarCuentaCobrar(){
-  const sucursal = document.getElementById("nuevaCobrarSucursal").value;
-  const cliente  = document.getElementById("nuevaCobrarCliente").value.trim();
-  const concepto = document.getElementById("nuevaCobrarConcepto").value.trim();
-  const total    = Number(document.getElementById("nuevaCobrarTotal").value);
-  const abono    = Number(document.getElementById("nuevaCobrarAbono").value)||0;
-
+  const sucursal=document.getElementById("nuevaCobrarSucursal").value;
+  const cliente=document.getElementById("nuevaCobrarCliente").value.trim();
+  const concepto=document.getElementById("nuevaCobrarConcepto").value.trim();
+  const total=Number(document.getElementById("nuevaCobrarTotal").value);
+  const abono=Number(document.getElementById("nuevaCobrarAbono").value)||0;
   if(!cliente){ mostrarMsg("Ingresa el nombre del cliente","err"); return; }
   if(!concepto){ mostrarMsg("Ingresa el concepto","err"); return; }
   if(isNaN(total)||total<=0){ mostrarMsg("Ingresa el total","err"); return; }
-
   const loader=document.getElementById("loaderNuevaCobrar");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=REGISTRAR_CUENTA_COBRAR"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&CLIENTE="+encodeURIComponent(cliente)
-      +"&CONCEPTO="+encodeURIComponent(concepto)
-      +"&TOTAL_VENTA="+total
-      +"&ABONO="+abono
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=REGISTRAR_CUENTA_COBRAR&SUCURSAL="+encodeURIComponent(sucursal)+"&CLIENTE="+encodeURIComponent(cliente)+"&CONCEPTO="+encodeURIComponent(concepto)+"&TOTAL_VENTA="+total+"&ABONO="+abono+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
@@ -1676,9 +1688,7 @@ async function registrarCuentaCobrar(){
       mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");
       ["nuevaCobrarCliente","nuevaCobrarConcepto","nuevaCobrarTotal","nuevaCobrarAbono"].forEach(id=>document.getElementById(id).value="");
       await listarCuentasCobrar();
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
   } catch(e){ mostrarMsg("Error de conexión","err"); }
   loader.style.display="none";
 }
@@ -1686,44 +1696,24 @@ async function registrarCuentaCobrar(){
 // ══════════════════════════════════════════════
 //  CUENTAS POR PAGAR
 // ══════════════════════════════════════════════
-
 async function listarCuentasPagar(){
-  const loader   = document.getElementById("loaderPagar");
-  const tabla    = document.getElementById("tablaPagar");
-  const sucursal = document.getElementById("filtroPagarSucursal").value;
-  const estado   = document.getElementById("filtroPagarEstado").value;
-
+  const loader=document.getElementById("loaderPagar");
+  const tabla=document.getElementById("tablaPagar");
   loader.style.display="block"; tabla.innerHTML="";
-
   try{
-    const url = baseURL
-      +"?ACCION=LISTAR_CUENTAS_PAGAR"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&ESTADO="+encodeURIComponent(estado)
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=LISTAR_CUENTAS_PAGAR&SUCURSAL="+encodeURIComponent(document.getElementById("filtroPagarSucursal").value)+"&ESTADO="+encodeURIComponent(document.getElementById("filtroPagarEstado").value)+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
-
     if(!data.datos||data.datos.length===0){
-      tabla.innerHTML=`<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin cuentas encontradas</div>`;
+      tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`;
     } else {
-      let html=`<table><thead><tr>
-        <th class="col-prod">Proveedor</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th>
-      </tr></thead><tbody>`;
+      let html=`<table><thead><tr><th class="col-prod">Proveedor</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;
       data.datos.forEach(c=>{
-        const esCancelado=c.estado==="CANCELADO";
-        html+=`<tr>
-          <td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td>
-          <td>Bs ${Number(c.totalCompra).toFixed(2)}</td>
-          <td>Bs ${Number(c.saldo).toFixed(2)}</td>
-          <td class="${esCancelado?"estado-cancelado":"estado-pendiente"}">${c.estado}</td>
-          <td>${!esCancelado?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoPagar('${c.id}')">💳</button>`:""}</td>
-        </tr>`;
+        const ok=c.estado==="CANCELADO";
+        html+=`<tr><td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalCompra).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoPagar('${c.id}')">💳</button>`:""}</td></tr>`;
       });
-      html+=`</tbody></table>`;
-      tabla.innerHTML=html;
+      tabla.innerHTML=html+"</tbody></table>";
     }
   } catch(e){ tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
   loader.style.display="none";
@@ -1738,64 +1728,41 @@ function abrirFormAbonoPagar(id){
 }
 
 async function confirmarAbonoPagar(){
-  const id     = document.getElementById("abonarPagarId").value;
-  const monto  = Number(document.getElementById("abonarPagarMonto").value);
-  const metodo = document.getElementById("abonarPagarMetodo").value;
-  const fecha  = document.getElementById("abonarPagarFecha").value;
-
-  if(!id){ mostrarMsg("ID de cuenta no encontrado","err"); return; }
+  const id=document.getElementById("abonarPagarId").value;
+  const monto=Number(document.getElementById("abonarPagarMonto").value);
+  const metodo=document.getElementById("abonarPagarMetodo").value;
+  const fecha=document.getElementById("abonarPagarFecha").value;
+  if(!id){ mostrarMsg("ID no encontrado","err"); return; }
   if(isNaN(monto)||monto<=0){ mostrarMsg("Ingresa un monto válido","err"); return; }
-
   const loader=document.getElementById("loaderAbonarPagar");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=ABONAR_CUENTA_PAGAR"
-      +"&ID="+encodeURIComponent(id)
-      +"&ABONO="+monto
-      +"&METODO_PAGO="+metodo
-      +"&FECHA_PAGO="+fecha
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=ABONAR_CUENTA_PAGAR&ID="+encodeURIComponent(id)+"&ABONO="+monto+"&METODO_PAGO="+metodo+"&FECHA_PAGO="+fecha+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
-      mostrarMsg("✅ Pago registrado · Saldo restante: Bs "+data.nuevoSaldo,"ok");
+      mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");
       document.getElementById("formAbonarPagar").classList.remove("show");
       await listarCuentasPagar();
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
   } catch(e){ mostrarMsg("Error de conexión","err"); }
   loader.style.display="none";
 }
 
 async function registrarCuentaPagar(){
-  const sucursal  = document.getElementById("nuevaPagarSucursal").value;
-  const proveedor = document.getElementById("nuevaPagarProveedor").value.trim();
-  const concepto  = document.getElementById("nuevaPagarConcepto").value.trim();
-  const total     = Number(document.getElementById("nuevaPagarTotal").value);
-  const abono     = Number(document.getElementById("nuevaPagarAbono").value)||0;
-
+  const sucursal=document.getElementById("nuevaPagarSucursal").value;
+  const proveedor=document.getElementById("nuevaPagarProveedor").value.trim();
+  const concepto=document.getElementById("nuevaPagarConcepto").value.trim();
+  const total=Number(document.getElementById("nuevaPagarTotal").value);
+  const abono=Number(document.getElementById("nuevaPagarAbono").value)||0;
   if(!proveedor){ mostrarMsg("Ingresa el nombre del proveedor","err"); return; }
   if(!concepto){ mostrarMsg("Ingresa el concepto","err"); return; }
   if(isNaN(total)||total<=0){ mostrarMsg("Ingresa el total","err"); return; }
-
   const loader=document.getElementById("loaderNuevaPagar");
   loader.style.display="block";
-
   try{
-    const url = baseURL
-      +"?ACCION=REGISTRAR_CUENTA_PAGAR"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&PROVEEDOR="+encodeURIComponent(proveedor)
-      +"&CONCEPTO="+encodeURIComponent(concepto)
-      +"&TOTAL_COMPRA="+total
-      +"&ABONO="+abono
-      +"&TOKEN="+sessionToken;
-
+    const url=baseURL+"?ACCION=REGISTRAR_CUENTA_PAGAR&SUCURSAL="+encodeURIComponent(sucursal)+"&PROVEEDOR="+encodeURIComponent(proveedor)+"&CONCEPTO="+encodeURIComponent(concepto)+"&TOTAL_COMPRA="+total+"&ABONO="+abono+"&TOKEN="+sessionToken;
     const res=await fetch(url,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
@@ -1803,6 +1770,81 @@ async function registrarCuentaPagar(){
       mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");
       ["nuevaPagarProveedor","nuevaPagarConcepto","nuevaPagarTotal","nuevaPagarAbono"].forEach(id=>document.getElementById(id).value="");
       await listarCuentasPagar();
+    } else { mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err"); }
+  } catch(e){ mostrarMsg("Error de conexión","err"); }
+  loader.style.display="none";
+}
+
+// ══════════════════════════════════════════════
+//  DEVOLUCIONES
+// ══════════════════════════════════════════════
+
+// Autocomplete para el formulario de devolución
+function buscarProductoDevol(){
+  const texto=document.getElementById("devolProducto").value.toLowerCase();
+  const lista=document.getElementById("listaDevol");
+  if(texto.length<1){ lista.classList.remove("show"); return; }
+  const filtrados=inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto));
+  construirAC(lista,filtrados,p=>{
+    document.getElementById("devolProducto").value=p.producto;
+    // Pre-rellenar precio con el precio de venta del inventario
+    document.getElementById("devolPrecio").value=p.precio;
+  });
+}
+
+async function registrarDevolucion(){
+  if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
+
+  const sucursal        = document.getElementById("devolSucursal").value;
+  const tipo            = document.getElementById("devolTipo").value;
+  const referenciaId    = document.getElementById("devolReferenciaId").value.trim();
+  const producto        = document.getElementById("devolProducto").value.trim();
+  const cantidad        = Number(document.getElementById("devolCantidad").value);
+  const precio          = Number(document.getElementById("devolPrecio").value);
+  const motivo          = document.getElementById("devolMotivo").value;
+  const clienteProveedor= document.getElementById("devolClienteProveedor").value.trim();
+  const notas           = document.getElementById("devolNotas").value.trim();
+
+  if(!sucursal)      { mostrarMsg("Selecciona una sucursal","err"); return; }
+  if(!referenciaId)  { mostrarMsg("Ingresa el ID de referencia (venta o compra)","err"); return; }
+  if(!producto)      { mostrarMsg("Ingresa el nombre del producto","err"); return; }
+  if(isNaN(cantidad)||cantidad<=0){ mostrarMsg("Ingresa una cantidad válida","err"); return; }
+  if(isNaN(precio)||precio<=0)    { mostrarMsg("Ingresa un precio unitario válido","err"); return; }
+
+  if(!confirm(`¿Confirmar devolución de ${cantidad} ud. de "${producto}" por Bs ${(cantidad*precio).toFixed(2)}?`)) return;
+
+  const loader=document.getElementById("loaderDevol");
+  loader.style.display="block";
+
+  try{
+    const url=baseURL
+      +"?ACCION=REGISTRAR_DEVOLUCION"
+      +"&SUCURSAL="+encodeURIComponent(sucursal)
+      +"&TIPO_DEVOLUCION="+tipo
+      +"&REFERENCIA_ID="+encodeURIComponent(referenciaId)
+      +"&PRODUCTO="+encodeURIComponent(producto)
+      +"&CANTIDAD="+cantidad
+      +"&PRECIO_UNITARIO="+precio
+      +"&MOTIVO="+encodeURIComponent(motivo)
+      +"&CLIENTE_PROVEEDOR="+encodeURIComponent(clienteProveedor)
+      +"&NOTAS="+encodeURIComponent(notas)
+      +"&TOKEN="+sessionToken;
+
+    const res=await fetch(url,fetchOpts);
+    const data=await res.json();
+    if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
+
+    if(data.ok){
+      mostrarMsg("↩ Devolución registrada · Total: Bs "+data.total,"ok");
+      // Limpiar formulario
+      ["devolReferenciaId","devolProducto","devolCantidad","devolPrecio",
+       "devolClienteProveedor","devolNotas"].forEach(id=>document.getElementById(id).value="");
+      document.getElementById("devolSucursal").value="";
+      document.getElementById("devolTipo").value="VENTA";
+      document.getElementById("devolMotivo").value="PRODUCTO_DEFECTUOSO";
+      cargarInventario();
+    } else if(data.error==="REFERENCIA_NO_ENCONTRADA"){
+      mostrarMsg("⚠ "+data.motivo,"err");
     } else {
       mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
     }
@@ -1810,30 +1852,200 @@ async function registrarCuentaPagar(){
   loader.style.display="none";
 }
 
+async function listarDevoluciones(pagina){
+  if(!sessionToken) return;
+  if(pagina===undefined) pagina=1;
+  devolPaginaActual=pagina;
+
+  const loader=document.getElementById("loaderListarDevol");
+  const tabla=document.getElementById("tablaDevol");
+  const paginDiv=document.getElementById("paginDevol");
+  loader.style.display="block"; tabla.innerHTML="";
+
+  try{
+    const sucursal=document.getElementById("filtroDevSucursal").value;
+    const tipo=document.getElementById("filtroDevTipo").value;
+    const url=baseURL
+      +"?ACCION=LISTAR_DEVOLUCIONES"
+      +"&SUCURSAL="+encodeURIComponent(sucursal)
+      +"&TIPO_DEVOLUCION="+encodeURIComponent(tipo)
+      +"&PAGINA="+pagina
+      +"&LIMITE="+DEVOL_LIMITE
+      +"&TOKEN="+sessionToken;
+
+    const res=await fetch(url,fetchOpts);
+    const data=await res.json();
+    if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
+
+    if(!data.datos||data.datos.length===0){
+      tabla.innerHTML=`<div class="empty-state">Sin devoluciones encontradas</div>`;
+      paginDiv.style.display="none";
+    } else {
+      let html=`<table><thead><tr>
+        <th class="col-prod">Producto</th>
+        <th>Fecha / Sucursal</th>
+        <th>Tipo</th>
+        <th>Cant · Total</th>
+        <th>Motivo</th>
+      </tr></thead><tbody>`;
+
+      data.datos.forEach(d=>{
+        const esVenta=d.tipoDevolucion==="VENTA";
+        const fechaCorta=String(d.fecha).slice(0,10);
+        const motivoCorto=d.motivo.replace(/_/g," ");
+        html+=`<tr>
+          <td class="col-prod">${d.producto}</td>
+          <td style="font-size:11px;color:var(--muted)">${fechaCorta}<br>${d.sucursal}</td>
+          <td class="${esVenta?"tipo-venta":"tipo-compra"}">${esVenta?"↩ VENTA":"↪ COMPRA"}</td>
+          <td style="font-family:var(--mono);font-size:11px">${d.cantidad} ud.<br>Bs ${Number(d.total).toFixed(2)}</td>
+          <td style="font-size:10px;color:var(--muted)">${motivoCorto}</td>
+        </tr>`;
+      });
+      html+=`</tbody></table>`;
+      tabla.innerHTML=html;
+
+      // Paginación
+      if(data.paginas>1){
+        paginDiv.style.display="flex";
+        document.getElementById("paginDevol-info").textContent=
+          "Pág "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";
+        paginDiv.querySelector("button:first-child").disabled=(pagina<=1);
+        paginDiv.querySelector("button:last-child").disabled=(pagina>=data.paginas);
+      } else {
+        paginDiv.style.display="none";
+      }
+    }
+  } catch(e){ tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
+  loader.style.display="none";
+}
+
+function cambiarPaginaDevol(delta){
+  listarDevoluciones(devolPaginaActual+delta);
+}
+
+// ══════════════════════════════════════════════
+//  REPORTES — MÁS Y MENOS VENDIDOS
+// ══════════════════════════════════════════════
+
+function obtenerFiltrosReporte(){
+  return {
+    sucursal  : document.getElementById("repSucursal").value,
+    limite    : document.getElementById("repLimite").value,
+    fechaDesde: document.getElementById("repFechaDesde").value,
+    fechaHasta: document.getElementById("repFechaHasta").value,
+  };
+}
+
+function renderTablaReporte(containerId, totalesId, datos, totales, colorBarra){
+  const cont=document.getElementById(containerId);
+  const totDiv=document.getElementById(totalesId);
+
+  if(!datos||datos.length===0){
+    cont.innerHTML=`<div class="empty-state">Sin datos para el período seleccionado</div>`;
+    totDiv.style.display="none";
+    return;
+  }
+
+  // Tarjetas de totales
+  totDiv.style.display="grid";
+  totDiv.innerHTML=`
+    <div class="reporte-total-card">
+      <div class="rtc-label">Unidades vendidas</div>
+      <div class="rtc-val">${totales.cantidad.toLocaleString()}</div>
+    </div>
+    <div class="reporte-total-card">
+      <div class="rtc-label">Ingresos totales</div>
+      <div class="rtc-val">Bs ${Number(totales.ingresos).toFixed(2)}</div>
+    </div>`;
+
+  // Tabla con barra de ranking visual
+  const maxCant = Math.max(...datos.map(d=>d.cantidad), 1);
+  let html=`<table><thead><tr>
+    <th style="width:32px">#</th>
+    <th class="col-prod">Producto</th>
+    <th>Uds</th>
+    <th>Ingresos</th>
+  </tr></thead><tbody>`;
+
+  datos.forEach((d,i)=>{
+    const pct=Math.round((d.cantidad/maxCant)*100);
+    html+=`<tr>
+      <td class="rank-num">${i+1}</td>
+      <td class="col-prod" style="padding-right:8px">
+        ${d.producto}
+        <div class="rank-bar-wrap"><div class="rank-bar ${colorBarra}" style="width:${pct}%"></div></div>
+      </td>
+      <td style="font-family:var(--mono);font-size:12px">${d.cantidad}</td>
+      <td style="font-family:var(--mono);font-size:12px">Bs ${Number(d.ingresos).toFixed(2)}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table>`;
+  cont.innerHTML=html;
+}
+
+async function cargarMasVendidos(){
+  if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
+  const { sucursal, limite, fechaDesde, fechaHasta } = obtenerFiltrosReporte();
+  const loader=document.getElementById("loaderRepMas");
+  loader.style.display="block";
+  document.getElementById("tablaRepMas").innerHTML="";
+  try{
+    const url=baseURL
+      +"?ACCION=PRODUCTOS_MAS_VENDIDOS"
+      +"&SUCURSAL="+encodeURIComponent(sucursal)
+      +"&LIMITE="+limite
+      +"&FECHA_DESDE="+fechaDesde
+      +"&FECHA_HASTA="+fechaHasta
+      +"&TOKEN="+sessionToken;
+    const res=await fetch(url,fetchOpts);
+    const data=await res.json();
+    if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
+    renderTablaReporte("tablaRepMas","totalesMas",data.datos,data.totales,"");
+  } catch(e){ document.getElementById("tablaRepMas").innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
+  loader.style.display="none";
+}
+
+async function cargarMenosVendidos(){
+  if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
+  const { sucursal, limite, fechaDesde, fechaHasta } = obtenerFiltrosReporte();
+  const loader=document.getElementById("loaderRepMenos");
+  loader.style.display="block";
+  document.getElementById("tablaRepMenos").innerHTML="";
+  try{
+    const url=baseURL
+      +"?ACCION=PRODUCTOS_MENOS_VENDIDOS"
+      +"&SUCURSAL="+encodeURIComponent(sucursal)
+      +"&LIMITE="+limite
+      +"&FECHA_DESDE="+fechaDesde
+      +"&FECHA_HASTA="+fechaHasta
+      +"&TOKEN="+sessionToken;
+    const res=await fetch(url,fetchOpts);
+    const data=await res.json();
+    if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
+    renderTablaReporte("tablaRepMenos","totalesMenos",data.datos,data.totales,"orange");
+  } catch(e){ document.getElementById("tablaRepMenos").innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
+  loader.style.display="none";
+}
+
 // ══════════════════════════════════════════════
 //  BÚSQUEDA DETALLADA
 // ══════════════════════════════════════════════
-
 let busquedaTimer=null;
 
 function buscarProductoDetalle(){
-  const texto = document.getElementById("busquedaInput").value.trim();
-  const lista  = document.getElementById("listaBusqueda");
+  const texto=document.getElementById("busquedaInput").value.trim();
+  const lista=document.getElementById("listaBusqueda");
   clearTimeout(busquedaTimer);
   document.getElementById("searchResultsList").innerHTML="";
   if(texto.length<2){ lista.classList.remove("show"); return; }
-  const sugerencias=inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto.toLowerCase()));
+  const sug=inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto.toLowerCase()));
   lista.innerHTML="";
-  if(sugerencias.length>0){
-    sugerencias.slice(0,8).forEach(p=>{
+  if(sug.length>0){
+    sug.slice(0,8).forEach(p=>{
       const div=document.createElement("div");
       div.className="ac-item";
       div.innerHTML=`<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
-      div.onclick=()=>{
-        document.getElementById("busquedaInput").value=p.producto;
-        lista.classList.remove("show");
-        ejecutarBusquedaDetalle(p.producto);
-      };
+      div.onclick=()=>{ document.getElementById("busquedaInput").value=p.producto; lista.classList.remove("show"); ejecutarBusquedaDetalle(p.producto); };
       lista.appendChild(div);
     });
     lista.classList.add("show");
@@ -1848,13 +2060,12 @@ async function ejecutarBusquedaDetalle(texto){
   const cont=document.getElementById("searchResultsList");
   lista.classList.remove("show"); loader.style.display="block"; cont.innerHTML="";
   try{
-    const url=baseURL+"?ACCION=BUSCAR_PRODUCTO_DETALLE&PRODUCTO="+encodeURIComponent(texto)+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
+    const res=await fetch(baseURL+"?ACCION=BUSCAR_PRODUCTO_DETALLE&PRODUCTO="+encodeURIComponent(texto)+"&TOKEN="+sessionToken,fetchOpts);
     const data=await res.json();
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     const resultados=data.datos||[];
     if(resultados.length===0){
-      cont.innerHTML=`<div style="color:var(--muted);text-align:center;padding:20px;font-size:13px">Sin resultados para "<b style="color:var(--text)">${texto}</b>"</div>`;
+      cont.innerHTML=`<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${texto}</b>"</div>`;
     } else {
       resultados.forEach(p=>cont.appendChild(renderSearchCard(p)));
     }
@@ -1865,15 +2076,15 @@ async function ejecutarBusquedaDetalle(texto){
 function renderSearchCard(p){
   const div=document.createElement("div");
   div.className="search-result show";
-  const stockColor=p.stock<=0?"warn":p.stock<=5?"orange":"ok";
-  const stockLabel=p.stock<=0?"⛔ Sin stock":p.stock<=5?"⚠ Stock bajo":"✅ En stock";
+  const sc=p.stock<=0?"warn":p.stock<=5?"orange":"ok";
+  const sl=p.stock<=0?"⛔ Sin stock":p.stock<=5?"⚠ Stock bajo":"✅ En stock";
   div.innerHTML=`
     <div class="sr-name">📦 ${p.producto}</div>
     <div class="sr-grid">
       <div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">Bs ${p.precioVenta??'—'}</div></div>
       <div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">Bs ${p.precioUnidad??'—'}</div></div>
-      <div class="sr-field ${stockColor==='warn'?'red':stockColor==='orange'?'orange':'accent'}">
-        <div class="sr-key">Stock Actual</div><div class="sr-val ${stockColor}">${p.stock} ud. · ${stockLabel}</div>
+      <div class="sr-field ${sc==='warn'?'red':sc==='orange'?'orange':'accent'}">
+        <div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud. · ${sl}</div>
       </div>
       <div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:#6eb4ff">${p.sucursal??'—'}</div></div>
       <div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${p.ubicacion||'—'}</div></div>
@@ -1889,9 +2100,7 @@ document.addEventListener("click",e=>{
   }
 });
 
-// [FIX-5] Los campos de crédito ya tienen class="field-group oculto" correctamente en el HTML.
-// No se necesita parche aquí — los toggles se llaman desde loginSubmit() al cargar.
-
 </script>
 </body>
 </html>
+
