@@ -1410,8 +1410,8 @@ function buscarProductoCompra(){
     document.getElementById("productoCompra").value=p.producto;
     document.getElementById("categoriaCompra").value=p.categoria||"";
     document.getElementById("precioVentaCompra").value=p.precio;
-    document.getElementById("proveedorCompra").value=p.proveedor;
-    document.getElementById("ubicacionProductoCompra").value=p.ubicacion;
+    document.getElementById("proveedorCompra").value = p.proveedor || "";
+    document.getElementById("ubicacionCompra").value = p.ubicacion || "";
     info.textContent="Stock actual: "+p.stock; info.classList.add("show");
   });
 }
