@@ -353,7 +353,7 @@ tr:last-child td{ border-bottom:none; }
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
-        <small>INVENTARIO v4</small>
+        <small>INVENTARIO v4.1</small>
       </div>
       <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar">👤</div>
@@ -531,7 +531,7 @@ tr:last-child td{ border-bottom:none; }
       </div>
 
       <!-- ════════════════════════════
-           SECCIÓN GASTO
+           SECCIÓN GASTO — [MOD-2] ahora con CREDITO
       ════════════════════════════ -->
       <div id="seccion-GASTO" class="oculto">
         <div class="section-label">Registrar gasto operativo</div>
@@ -574,14 +574,22 @@ tr:last-child td{ border-bottom:none; }
             <input id="gastoFecha" type="date">
           </div>
         </div>
-        <div class="field-group mt-8">
-          <label class="field-label">Método de pago</label>
-          <select id="metodoPagoGasto">
-            <option value="EFECTIVO">💵 Efectivo</option>
-            <option value="TRANSFERENCIA">🏦 Transferencia</option>
-          </select>
+        <!-- [MOD-2] Método de pago ahora incluye CREDITO -->
+        <div class="row-2 mt-8">
+          <div class="field-group" style="margin:0">
+            <label class="field-label">Método de pago</label>
+            <select id="metodoPagoGasto" onchange="toggleAcreedorGasto()">
+              <option value="EFECTIVO">💵 Efectivo</option>
+              <option value="TRANSFERENCIA">🏦 Transferencia</option>
+              <option value="CREDITO">📝 Crédito (C×P)</option>
+            </select>
+          </div>
+          <div class="field-group oculto" style="margin:0" id="campoAcreedorGasto">
+            <label class="field-label">Acreedor</label>
+            <input id="gastoAcreedor" placeholder="Nombre del acreedor">
+          </div>
         </div>
-        <div class="field-group">
+        <div class="field-group mt-8">
           <label class="field-label">Notas</label>
           <textarea id="gastoNotas" placeholder="Detalles adicionales (opcional)"></textarea>
         </div>
@@ -865,7 +873,7 @@ tr:last-child td{ border-bottom:none; }
       </div>
 
       <!-- ════════════════════════════════════════
-           SECCIÓN DEVOLUCIONES — ADMIN, VENDEDOR, ALMACEN
+           SECCIÓN DEVOLUCIONES
       ════════════════════════════════════════ -->
       <div id="seccion-DEVOLUCIONES" class="oculto">
         <div class="section-label">Devoluciones</div>
@@ -960,7 +968,6 @@ tr:last-child td{ border-bottom:none; }
           <button class="btn btn-ghost mb-12" onclick="listarDevoluciones()">🔄 Cargar historial</button>
           <div class="loader" id="loaderListarDevol"></div>
           <div id="tablaDevol"></div>
-          <!-- Paginación -->
           <div id="paginDevol" style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;display:none">
             <button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(-1)">← Anterior</button>
             <span id="paginDevol-info" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
@@ -978,8 +985,6 @@ tr:last-child td{ border-bottom:none; }
           <div class="sub-tab active" onclick="setSubModoReportes('MAS')"   id="subtab-rep-MAS">🏆 Más vendidos</div>
           <div class="sub-tab"        onclick="setSubModoReportes('MENOS')" id="subtab-rep-MENOS">📉 Menos vendidos</div>
         </div>
-
-        <!-- Filtros compartidos para ambos sub-tabs -->
         <div id="reportes-filtros">
           <div class="row-2">
             <div class="field-group" style="margin:0">
@@ -1011,16 +1016,12 @@ tr:last-child td{ border-bottom:none; }
             </div>
           </div>
         </div>
-
-        <!-- MÁS VENDIDOS -->
         <div id="rep-MAS">
           <div class="loader" id="loaderRepMas"></div>
           <button class="btn btn-primary mt-8 mb-12" onclick="cargarMasVendidos()">📊 Generar reporte</button>
           <div id="totalesMas" class="reporte-totales" style="display:none"></div>
           <div id="tablaRepMas"></div>
         </div>
-
-        <!-- MENOS VENDIDOS -->
         <div id="rep-MENOS" class="oculto">
           <div class="loader" id="loaderRepMenos"></div>
           <button class="btn btn-orange mt-8 mb-12" onclick="cargarMenosVendidos()">📉 Generar reporte</button>
@@ -1056,10 +1057,9 @@ tr:last-child td{ border-bottom:none; }
 <script>
 
 // ══════════════════════════════════════════════
-//  CONFIG
+//  CONFIG — v2.1 compatible (POST para escrituras)
 // ══════════════════════════════════════════════
-const baseURL   = "/api/proxy";
-const fetchOpts = { redirect: 'follow' };
+const baseURL = "/api/proxy";
 
 let sessionToken     = null;
 let sessionUser      = null;
@@ -1070,6 +1070,31 @@ let carrito          = [];
 // Paginación devoluciones
 let devolPaginaActual = 1;
 const DEVOL_LIMITE    = 20;
+
+// ══════════════════════════════════════════════
+//  HELPERS DE FETCH — GET para lecturas, POST para escrituras
+// ══════════════════════════════════════════════
+
+// GET con parámetros en URL (lecturas + login/logout)
+async function fetchGET(params) {
+  const qs = Object.entries(params)
+    .filter(([_,v]) => v !== undefined && v !== null && v !== "")
+    .map(([k,v]) => k + "=" + encodeURIComponent(v))
+    .join("&");
+  const res = await fetch(baseURL + "?" + qs, { redirect: 'follow' });
+  return res.json();
+}
+
+// POST con JSON body (escrituras)
+async function fetchPOST(params) {
+  const res = await fetch(baseURL, {
+    method: "POST",
+    redirect: 'follow',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params)
+  });
+  return res.json();
+}
 
 function sonidoCaja() {
   try {
@@ -1090,7 +1115,7 @@ function sonidoCaja() {
 }
 
 // ══════════════════════════════════════════════
-//  PERMISOS POR ROL — v4 con DEVOLUCIONES y REPORTES
+//  PERMISOS POR ROL
 // ══════════════════════════════════════════════
 const PERMISOS = {
   ADMIN:    { tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"], inicio:"VENTA"  },
@@ -1124,7 +1149,7 @@ function aplicarRol(rol){
 }
 
 // ══════════════════════════════════════════════
-//  LOGIN
+//  LOGIN (GET — el backend lo acepta por GET)
 // ══════════════════════════════════════════════
 async function loginSubmit(){
   const usuario  = document.getElementById("loginUser").value.trim();
@@ -1136,9 +1161,7 @@ async function loginSubmit(){
   loader.style.display="block"; btn.disabled=true;
 
   try{
-    const url  = baseURL+"?ACCION=LOGIN&USUARIO="+encodeURIComponent(usuario)+"&PASSWORD="+encodeURIComponent(password);
-    const res  = await fetch(url,fetchOpts);
-    const data = await res.json();
+    const data = await fetchGET({ ACCION:"LOGIN", USUARIO:usuario, PASSWORD:password });
 
     if(data.ok){
       sessionToken = data.token;
@@ -1161,18 +1184,18 @@ async function loginSubmit(){
       document.getElementById("fechaCompra").value       = fechaHoy;
       document.getElementById("repFechaHasta").value     = fechaHoy;
 
-      // Fecha desde = primer día del mes actual
       const primerDia = fechaHoy.slice(0,7) + "-01";
       document.getElementById("repFechaDesde").value = primerDia;
 
       toggleClienteVenta();
       toggleClienteCompra();
+      toggleAcreedorGasto();
       aplicarRol(sessionRol);
       cargarInventario();
       if(sessionRol==="ADMIN") verificarEstadoCaja();
 
     } else {
-      mostrarMensajeLogin("Usuario o contraseña incorrectos","err");
+      mostrarMensajeLogin(data.motivo || "Usuario o contraseña incorrectos","err");
     }
   } catch(err){
     mostrarMensajeLogin("Error de conexión. Intenta de nuevo.","err");
@@ -1189,7 +1212,7 @@ function mostrarMensajeLogin(txt,tipo){
 
 function cerrarSesion(){
   if(!confirm("¿Cerrar sesión?")) return;
-  if(sessionToken) fetch(baseURL+"?ACCION=LOGOUT&TOKEN="+sessionToken,fetchOpts).catch(()=>{});
+  if(sessionToken) fetchGET({ ACCION:"LOGOUT", TOKEN:sessionToken }).catch(()=>{});
   sessionToken=sessionUser=sessionRol=null;
   inventarioGlobal=[]; carrito=[];
   document.getElementById("loginUser").value="";
@@ -1269,15 +1292,19 @@ function toggleClienteCompra(){
   const m=document.getElementById("metodoPagoCompra").value;
   document.getElementById("campoClienteCompra").classList.toggle("oculto",m!=="CREDITO");
 }
+// [MOD-2] Toggle acreedor para gastos a crédito
+function toggleAcreedorGasto(){
+  const m=document.getElementById("metodoPagoGasto").value;
+  document.getElementById("campoAcreedorGasto").classList.toggle("oculto",m!=="CREDITO");
+}
 
 // ══════════════════════════════════════════════
-//  INVENTARIO
+//  INVENTARIO (GET — lectura)
 // ══════════════════════════════════════════════
 async function cargarInventario(){
   if(!sessionToken) return;
   try{
-    const res  = await fetch(baseURL+"?ACCION=LISTAR_INVENTARIO&LIMITE=200&TOKEN="+sessionToken,fetchOpts);
-    const data = await res.json();
+    const data = await fetchGET({ ACCION:"LISTAR_INVENTARIO", LIMITE:200, TOKEN:sessionToken });
     inventarioGlobal = data.datos||[];
   } catch(e){}
 }
@@ -1353,6 +1380,7 @@ function renderCarrito(){
 
 function eliminarItem(i){ carrito.splice(i,1); renderCarrito(); }
 
+// ── COBRAR — ahora usa POST ──
 async function cobrar(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
   if(carrito.length===0){ mostrarMsg("El carrito está vacío","err"); return; }
@@ -1368,16 +1396,15 @@ async function cobrar(){
   const btn=document.getElementById("btnCobrar");
   loader.style.display="block"; btn.disabled=true;
   try{
-    const url=baseURL
-      +"?ACCION=VENTA_POS"
-      +"&CARRITO="+encodeURIComponent(JSON.stringify(carrito.map(i=>({producto:i.producto,cantidad:i.cantidad}))))
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&USUARIO="+encodeURIComponent(usuario)
-      +"&METODO_PAGO="+metodoPago
-      +"&CLIENTE="+encodeURIComponent(cliente)
-      +"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "VENTA_POS",
+      CARRITO: carrito.map(i=>({producto:i.producto,cantidad:i.cantidad})),
+      SUCURSAL: sucursal,
+      USUARIO: usuario,
+      METODO_PAGO: metodoPago,
+      CLIENTE: cliente,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; btn.disabled=false; return; }
     if(data.ok){
       sonidoCaja();
@@ -1397,7 +1424,7 @@ async function cobrar(){
 }
 
 // ══════════════════════════════════════════════
-//  COMPRA
+//  COMPRA — ahora usa POST
 // ══════════════════════════════════════════════
 function buscarProductoCompra(){
   const texto=document.getElementById("productoCompra").value.toLowerCase();
@@ -1425,24 +1452,23 @@ async function registrarCompra(){
   }
   const loader=document.getElementById("loaderCompra");
   loader.style.display="block";
-  const url=baseURL
-    +"?ACCION=COMPRA"
-    +"&PRODUCTO="+encodeURIComponent(document.getElementById("productoCompra").value)
-    +"&CATEGORIA="+encodeURIComponent(document.getElementById("categoriaCompra").value)
-    +"&COSTO_PAQUETE="+document.getElementById("costoCompra").value
-    +"&CANTIDAD_PAQUETE="+document.getElementById("cantidadCompra").value
-    +"&UNIDADES_PAQUETE="+document.getElementById("unidadesCompra").value
-    +"&PRECIO_VENTA="+document.getElementById("precioVentaCompra").value
-    +"&PROVEEDOR="+encodeURIComponent(document.getElementById("proveedorCompra").value)
-    +"&FECHA_ENTRADA="+document.getElementById("fechaCompra").value
-    +"&UBICACION_PRODUCTO="+encodeURIComponent(document.getElementById("ubicacionCompra").value)
-    +"&SUCURSAL="+document.getElementById("sucursalCompra").value
-    +"&METODO_PAGO="+metodoPago
-    +"&CLIENTE="+encodeURIComponent(cliente)
-    +"&TOKEN="+sessionToken;
   try{
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "COMPRA",
+      PRODUCTO: document.getElementById("productoCompra").value,
+      CATEGORIA: document.getElementById("categoriaCompra").value,
+      COSTO_PAQUETE: document.getElementById("costoCompra").value,
+      CANTIDAD_PAQUETE: document.getElementById("cantidadCompra").value,
+      UNIDADES_PAQUETE: document.getElementById("unidadesCompra").value,
+      PRECIO_VENTA: document.getElementById("precioVentaCompra").value,
+      PROVEEDOR: document.getElementById("proveedorCompra").value,
+      FECHA_ENTRADA: document.getElementById("fechaCompra").value,
+      UBICACION_PRODUCTO: document.getElementById("ubicacionCompra").value,
+      SUCURSAL: document.getElementById("sucursalCompra").value,
+      METODO_PAGO: metodoPago,
+      CLIENTE: cliente,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg(metodoPago==="CREDITO"?"📝 Compra a crédito registrada":"✅ Compra registrada","ok");
@@ -1460,7 +1486,7 @@ async function registrarCompra(){
 }
 
 // ══════════════════════════════════════════════
-//  GASTO
+//  GASTO — ahora usa POST + soporta CREDITO
 // ══════════════════════════════════════════════
 async function registrarGasto(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
@@ -1469,33 +1495,41 @@ async function registrarGasto(){
   const importe   =document.getElementById("gastoImporte").value;
   const sucursal  =document.getElementById("sucursalGasto").value;
   const metodoPago=document.getElementById("metodoPagoGasto").value;
+  const persona   =document.getElementById("gastoPersona").value.trim();
+  const acreedor  =document.getElementById("gastoAcreedor").value.trim();
   if(!concepto)  { mostrarMsg("Ingresa el concepto del gasto","err"); return; }
   if(!categoria) { mostrarMsg("Selecciona una categoría","err"); return; }
   if(!sucursal)  { mostrarMsg("Selecciona una sucursal","err"); return; }
   if(!importe||Number(importe)<=0){ mostrarMsg("Ingresa un importe válido","err"); return; }
+  if(metodoPago==="CREDITO"&&!persona&&!acreedor){
+    mostrarMsg("Ingresa el nombre del responsable o acreedor para gastos a crédito","err"); return;
+  }
   const loader=document.getElementById("loaderGasto");
   loader.style.display="block";
   try{
-    const url=baseURL
-      +"?ACCION=REGISTRAR_GASTO"
-      +"&CONCEPTO="+encodeURIComponent(concepto)
-      +"&CATEGORIA="+encodeURIComponent(categoria)
-      +"&IMPORTE="+Number(importe)
-      +"&PERSONA="+encodeURIComponent(document.getElementById("gastoPersona").value.trim())
-      +"&FECHA="+document.getElementById("gastoFecha").value
-      +"&NOTAS="+encodeURIComponent(document.getElementById("gastoNotas").value.trim())
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&METODO_PAGO="+metodoPago
-      +"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "REGISTRAR_GASTO",
+      CONCEPTO: concepto,
+      CATEGORIA: categoria,
+      IMPORTE: Number(importe),
+      PERSONA: acreedor || persona,
+      FECHA: document.getElementById("gastoFecha").value,
+      NOTAS: document.getElementById("gastoNotas").value.trim(),
+      SUCURSAL: sucursal,
+      METODO_PAGO: metodoPago,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
-      mostrarMsg("💸 Gasto registrado correctamente","ok");
-      ["gastoConcepto","gastoImporte","gastoPersona","gastoNotas"].forEach(id=>document.getElementById(id).value="");
+      const msgCredito = metodoPago==="CREDITO" ? "📝 Gasto a crédito registrado" : "💸 Gasto registrado correctamente";
+      mostrarMsg(msgCredito,"ok");
+      ["gastoConcepto","gastoImporte","gastoPersona","gastoNotas","gastoAcreedor"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value="";
+      });
       document.getElementById("gastoCategoria").value="";
       document.getElementById("sucursalGasto").value="";
       document.getElementById("metodoPagoGasto").value="EFECTIVO";
+      toggleAcreedorGasto();
       document.getElementById("gastoFecha").value=hoy();
     } else {
       mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
@@ -1505,13 +1539,12 @@ async function registrarGasto(){
 }
 
 // ══════════════════════════════════════════════
-//  CAJA
+//  CAJA — Apertura y Aportes usan POST, Estado usa GET
 // ══════════════════════════════════════════════
 async function verificarEstadoCaja(){
   if(!sessionToken) return;
   try{
-    const res=await fetch(baseURL+"?ACCION=ESTADO_CAJA&TOKEN="+sessionToken,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({ ACCION:"ESTADO_CAJA", TOKEN:sessionToken });
     const cajaBadge=document.getElementById("cajaBadge");
     const cierreSelect=document.getElementById("cierreCajaId");
     cierreSelect.innerHTML='<option value="">🏪 Seleccionar sucursal</option>';
@@ -1538,6 +1571,7 @@ async function verificarEstadoCaja(){
   } catch(e){}
 }
 
+// Apertura — POST
 async function abrirCaja(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
   const sucursal=document.getElementById("aperturaSucursal").value;
@@ -1547,9 +1581,13 @@ async function abrirCaja(){
   const loader=document.getElementById("loaderApertura");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=APERTURA_CAJA&SUCURSAL="+encodeURIComponent(sucursal)+"&SALDO_INICIAL="+saldoInicial+"&NOTAS="+encodeURIComponent(document.getElementById("aperturaNotas").value)+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "APERTURA_CAJA",
+      SUCURSAL: sucursal,
+      SALDO_INICIAL: saldoInicial,
+      NOTAS: document.getElementById("aperturaNotas").value,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg("🔓 Caja abierta correctamente · "+data.sucursal,"ok");
@@ -1561,6 +1599,7 @@ async function abrirCaja(){
   loader.style.display="none";
 }
 
+// Cierre — POST
 async function cerrarCaja(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
   const cajaId=document.getElementById("cierreCajaId").value;
@@ -1571,9 +1610,13 @@ async function cerrarCaja(){
   const loader=document.getElementById("loaderCierre");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=CIERRE_CAJA&ID="+encodeURIComponent(cajaId)+"&SALDO_FINAL="+saldoFinal+"&NOTAS="+encodeURIComponent(document.getElementById("cierreNotas").value)+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "CIERRE_CAJA",
+      ID: cajaId,
+      SALDO_FINAL: saldoFinal,
+      NOTAS: document.getElementById("cierreNotas").value,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       const dif=data.diferencia>=0?"+Bs "+data.diferencia:"-Bs "+Math.abs(data.diferencia);
@@ -1586,6 +1629,7 @@ async function cerrarCaja(){
   loader.style.display="none";
 }
 
+// Aportes/Retiros — POST
 async function registrarAporteRetiro(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
   const sucursal=document.getElementById("aporteSucursal").value;
@@ -1600,9 +1644,16 @@ async function registrarAporteRetiro(){
   const loader=document.getElementById("loaderAporte");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=REGISTRAR_APORTE_RETIRO&SUCURSAL="+encodeURIComponent(sucursal)+"&TIPO="+tipo+"&CONCEPTO="+encodeURIComponent(concepto)+"&MONTO="+monto+"&METODO_GASTO="+metodo+"&FECHA="+fecha+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "REGISTRAR_APORTE_RETIRO",
+      SUCURSAL: sucursal,
+      TIPO: tipo,
+      CONCEPTO: concepto,
+      MONTO: monto,
+      METODO_GASTO: metodo,
+      FECHA: fecha,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg("💼 "+tipo+" registrado correctamente","ok");
@@ -1614,16 +1665,19 @@ async function registrarAporteRetiro(){
 }
 
 // ══════════════════════════════════════════════
-//  CUENTAS POR COBRAR
+//  CUENTAS POR COBRAR — Listar=GET, Abonar/Registrar=POST
 // ══════════════════════════════════════════════
 async function listarCuentasCobrar(){
   const loader=document.getElementById("loaderCobrar");
   const tabla=document.getElementById("tablaCobrar");
   loader.style.display="block"; tabla.innerHTML="";
   try{
-    const url=baseURL+"?ACCION=LISTAR_CUENTAS_COBRAR&SUCURSAL="+encodeURIComponent(document.getElementById("filtroCobrarSucursal").value)+"&ESTADO="+encodeURIComponent(document.getElementById("filtroCobrarEstado").value)+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({
+      ACCION: "LISTAR_CUENTAS_COBRAR",
+      SUCURSAL: document.getElementById("filtroCobrarSucursal").value,
+      ESTADO: document.getElementById("filtroCobrarEstado").value,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(!data.datos||data.datos.length===0){
       tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`;
@@ -1647,6 +1701,7 @@ function abrirFormAbonoCobrar(id){
   document.getElementById("formAbonarCobrar").scrollIntoView({behavior:"smooth"});
 }
 
+// POST
 async function confirmarAbonoCobrar(){
   const id=document.getElementById("abonarCobrarId").value;
   const monto=Number(document.getElementById("abonarCobrarMonto").value);
@@ -1657,9 +1712,14 @@ async function confirmarAbonoCobrar(){
   const loader=document.getElementById("loaderAbonarCobrar");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=ABONAR_CUENTA_COBRAR&ID="+encodeURIComponent(id)+"&ABONO="+monto+"&METODO_PAGO="+metodo+"&FECHA_PAGO="+fecha+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "ABONAR_CUENTA_COBRAR",
+      ID: id,
+      ABONO: monto,
+      METODO_PAGO: metodo,
+      FECHA_PAGO: fecha,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg("✅ Abono registrado · Saldo: Bs "+data.nuevoSaldo,"ok");
@@ -1670,6 +1730,7 @@ async function confirmarAbonoCobrar(){
   loader.style.display="none";
 }
 
+// POST
 async function registrarCuentaCobrar(){
   const sucursal=document.getElementById("nuevaCobrarSucursal").value;
   const cliente=document.getElementById("nuevaCobrarCliente").value.trim();
@@ -1682,9 +1743,15 @@ async function registrarCuentaCobrar(){
   const loader=document.getElementById("loaderNuevaCobrar");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=REGISTRAR_CUENTA_COBRAR&SUCURSAL="+encodeURIComponent(sucursal)+"&CLIENTE="+encodeURIComponent(cliente)+"&CONCEPTO="+encodeURIComponent(concepto)+"&TOTAL_VENTA="+total+"&ABONO="+abono+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "REGISTRAR_CUENTA_COBRAR",
+      SUCURSAL: sucursal,
+      CLIENTE: cliente,
+      CONCEPTO: concepto,
+      TOTAL_VENTA: total,
+      ABONO: abono,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");
@@ -1696,16 +1763,19 @@ async function registrarCuentaCobrar(){
 }
 
 // ══════════════════════════════════════════════
-//  CUENTAS POR PAGAR
+//  CUENTAS POR PAGAR — Listar=GET, Abonar/Registrar=POST
 // ══════════════════════════════════════════════
 async function listarCuentasPagar(){
   const loader=document.getElementById("loaderPagar");
   const tabla=document.getElementById("tablaPagar");
   loader.style.display="block"; tabla.innerHTML="";
   try{
-    const url=baseURL+"?ACCION=LISTAR_CUENTAS_PAGAR&SUCURSAL="+encodeURIComponent(document.getElementById("filtroPagarSucursal").value)+"&ESTADO="+encodeURIComponent(document.getElementById("filtroPagarEstado").value)+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({
+      ACCION: "LISTAR_CUENTAS_PAGAR",
+      SUCURSAL: document.getElementById("filtroPagarSucursal").value,
+      ESTADO: document.getElementById("filtroPagarEstado").value,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(!data.datos||data.datos.length===0){
       tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`;
@@ -1729,6 +1799,7 @@ function abrirFormAbonoPagar(id){
   document.getElementById("formAbonarPagar").scrollIntoView({behavior:"smooth"});
 }
 
+// POST
 async function confirmarAbonoPagar(){
   const id=document.getElementById("abonarPagarId").value;
   const monto=Number(document.getElementById("abonarPagarMonto").value);
@@ -1739,9 +1810,14 @@ async function confirmarAbonoPagar(){
   const loader=document.getElementById("loaderAbonarPagar");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=ABONAR_CUENTA_PAGAR&ID="+encodeURIComponent(id)+"&ABONO="+monto+"&METODO_PAGO="+metodo+"&FECHA_PAGO="+fecha+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "ABONAR_CUENTA_PAGAR",
+      ID: id,
+      ABONO: monto,
+      METODO_PAGO: metodo,
+      FECHA_PAGO: fecha,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");
@@ -1752,6 +1828,7 @@ async function confirmarAbonoPagar(){
   loader.style.display="none";
 }
 
+// POST
 async function registrarCuentaPagar(){
   const sucursal=document.getElementById("nuevaPagarSucursal").value;
   const proveedor=document.getElementById("nuevaPagarProveedor").value.trim();
@@ -1764,9 +1841,15 @@ async function registrarCuentaPagar(){
   const loader=document.getElementById("loaderNuevaPagar");
   loader.style.display="block";
   try{
-    const url=baseURL+"?ACCION=REGISTRAR_CUENTA_PAGAR&SUCURSAL="+encodeURIComponent(sucursal)+"&PROVEEDOR="+encodeURIComponent(proveedor)+"&CONCEPTO="+encodeURIComponent(concepto)+"&TOTAL_COMPRA="+total+"&ABONO="+abono+"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "REGISTRAR_CUENTA_PAGAR",
+      SUCURSAL: sucursal,
+      PROVEEDOR: proveedor,
+      CONCEPTO: concepto,
+      TOTAL_COMPRA: total,
+      ABONO: abono,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     if(data.ok){
       mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");
@@ -1778,10 +1861,8 @@ async function registrarCuentaPagar(){
 }
 
 // ══════════════════════════════════════════════
-//  DEVOLUCIONES
+//  DEVOLUCIONES — Registrar=POST, Listar=GET
 // ══════════════════════════════════════════════
-
-// Autocomplete para el formulario de devolución
 function buscarProductoDevol(){
   const texto=document.getElementById("devolProducto").value.toLowerCase();
   const lista=document.getElementById("listaDevol");
@@ -1789,11 +1870,11 @@ function buscarProductoDevol(){
   const filtrados=inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(texto));
   construirAC(lista,filtrados,p=>{
     document.getElementById("devolProducto").value=p.producto;
-    // Pre-rellenar precio con el precio de venta del inventario
     document.getElementById("devolPrecio").value=p.precio;
   });
 }
 
+// POST
 async function registrarDevolucion(){
   if(!sessionToken){ mostrarMsg("Sesión expirada","err"); return; }
 
@@ -1819,26 +1900,23 @@ async function registrarDevolucion(){
   loader.style.display="block";
 
   try{
-    const url=baseURL
-      +"?ACCION=REGISTRAR_DEVOLUCION"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&TIPO_DEVOLUCION="+tipo
-      +"&REFERENCIA_ID="+encodeURIComponent(referenciaId)
-      +"&PRODUCTO="+encodeURIComponent(producto)
-      +"&CANTIDAD="+cantidad
-      +"&PRECIO_UNITARIO="+precio
-      +"&MOTIVO="+encodeURIComponent(motivo)
-      +"&CLIENTE_PROVEEDOR="+encodeURIComponent(clienteProveedor)
-      +"&NOTAS="+encodeURIComponent(notas)
-      +"&TOKEN="+sessionToken;
-
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchPOST({
+      ACCION: "REGISTRAR_DEVOLUCION",
+      SUCURSAL: sucursal,
+      TIPO_DEVOLUCION: tipo,
+      REFERENCIA_ID: referenciaId,
+      PRODUCTO: producto,
+      CANTIDAD: cantidad,
+      PRECIO_UNITARIO: precio,
+      MOTIVO: motivo,
+      CLIENTE_PROVEEDOR: clienteProveedor,
+      NOTAS: notas,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
 
     if(data.ok){
       mostrarMsg("↩ Devolución registrada · Total: Bs "+data.total,"ok");
-      // Limpiar formulario
       ["devolReferenciaId","devolProducto","devolCantidad","devolPrecio",
        "devolClienteProveedor","devolNotas"].forEach(id=>document.getElementById(id).value="");
       document.getElementById("devolSucursal").value="";
@@ -1854,6 +1932,7 @@ async function registrarDevolucion(){
   loader.style.display="none";
 }
 
+// GET
 async function listarDevoluciones(pagina){
   if(!sessionToken) return;
   if(pagina===undefined) pagina=1;
@@ -1865,18 +1944,14 @@ async function listarDevoluciones(pagina){
   loader.style.display="block"; tabla.innerHTML="";
 
   try{
-    const sucursal=document.getElementById("filtroDevSucursal").value;
-    const tipo=document.getElementById("filtroDevTipo").value;
-    const url=baseURL
-      +"?ACCION=LISTAR_DEVOLUCIONES"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&TIPO_DEVOLUCION="+encodeURIComponent(tipo)
-      +"&PAGINA="+pagina
-      +"&LIMITE="+DEVOL_LIMITE
-      +"&TOKEN="+sessionToken;
-
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({
+      ACCION: "LISTAR_DEVOLUCIONES",
+      SUCURSAL: document.getElementById("filtroDevSucursal").value,
+      TIPO_DEVOLUCION: document.getElementById("filtroDevTipo").value,
+      PAGINA: pagina,
+      LIMITE: DEVOL_LIMITE,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
 
     if(!data.datos||data.datos.length===0){
@@ -1906,7 +1981,6 @@ async function listarDevoluciones(pagina){
       html+=`</tbody></table>`;
       tabla.innerHTML=html;
 
-      // Paginación
       if(data.paginas>1){
         paginDiv.style.display="flex";
         document.getElementById("paginDevol-info").textContent=
@@ -1926,7 +2000,7 @@ function cambiarPaginaDevol(delta){
 }
 
 // ══════════════════════════════════════════════
-//  REPORTES — MÁS Y MENOS VENDIDOS
+//  REPORTES — GET (solo lectura)
 // ══════════════════════════════════════════════
 
 function obtenerFiltrosReporte(){
@@ -1948,7 +2022,6 @@ function renderTablaReporte(containerId, totalesId, datos, totales, colorBarra){
     return;
   }
 
-  // Tarjetas de totales
   totDiv.style.display="grid";
   totDiv.innerHTML=`
     <div class="reporte-total-card">
@@ -1960,7 +2033,6 @@ function renderTablaReporte(containerId, totalesId, datos, totales, colorBarra){
       <div class="rtc-val">Bs ${Number(totales.ingresos).toFixed(2)}</div>
     </div>`;
 
-  // Tabla con barra de ranking visual
   const maxCant = Math.max(...datos.map(d=>d.cantidad), 1);
   let html=`<table><thead><tr>
     <th style="width:32px">#</th>
@@ -1992,15 +2064,14 @@ async function cargarMasVendidos(){
   loader.style.display="block";
   document.getElementById("tablaRepMas").innerHTML="";
   try{
-    const url=baseURL
-      +"?ACCION=PRODUCTOS_MAS_VENDIDOS"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&LIMITE="+limite
-      +"&FECHA_DESDE="+fechaDesde
-      +"&FECHA_HASTA="+fechaHasta
-      +"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({
+      ACCION: "PRODUCTOS_MAS_VENDIDOS",
+      SUCURSAL: sucursal,
+      LIMITE: limite,
+      FECHA_DESDE: fechaDesde,
+      FECHA_HASTA: fechaHasta,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     renderTablaReporte("tablaRepMas","totalesMas",data.datos,data.totales,"");
   } catch(e){ document.getElementById("tablaRepMas").innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
@@ -2014,15 +2085,14 @@ async function cargarMenosVendidos(){
   loader.style.display="block";
   document.getElementById("tablaRepMenos").innerHTML="";
   try{
-    const url=baseURL
-      +"?ACCION=PRODUCTOS_MENOS_VENDIDOS"
-      +"&SUCURSAL="+encodeURIComponent(sucursal)
-      +"&LIMITE="+limite
-      +"&FECHA_DESDE="+fechaDesde
-      +"&FECHA_HASTA="+fechaHasta
-      +"&TOKEN="+sessionToken;
-    const res=await fetch(url,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({
+      ACCION: "PRODUCTOS_MENOS_VENDIDOS",
+      SUCURSAL: sucursal,
+      LIMITE: limite,
+      FECHA_DESDE: fechaDesde,
+      FECHA_HASTA: fechaHasta,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     renderTablaReporte("tablaRepMenos","totalesMenos",data.datos,data.totales,"orange");
   } catch(e){ document.getElementById("tablaRepMenos").innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
@@ -2030,7 +2100,7 @@ async function cargarMenosVendidos(){
 }
 
 // ══════════════════════════════════════════════
-//  BÚSQUEDA DETALLADA
+//  BÚSQUEDA DETALLADA (GET)
 // ══════════════════════════════════════════════
 let busquedaTimer=null;
 
@@ -2062,8 +2132,11 @@ async function ejecutarBusquedaDetalle(texto){
   const cont=document.getElementById("searchResultsList");
   lista.classList.remove("show"); loader.style.display="block"; cont.innerHTML="";
   try{
-    const res=await fetch(baseURL+"?ACCION=BUSCAR_PRODUCTO_DETALLE&PRODUCTO="+encodeURIComponent(texto)+"&TOKEN="+sessionToken,fetchOpts);
-    const data=await res.json();
+    const data = await fetchGET({
+      ACCION: "BUSCAR_PRODUCTO_DETALLE",
+      PRODUCTO: texto,
+      TOKEN: sessionToken
+    });
     if(!manejarRespuesta(data)){ loader.style.display="none"; return; }
     const resultados=data.datos||[];
     if(resultados.length===0){
