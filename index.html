@@ -626,10 +626,103 @@ async function registrarAporteRetiro(){
 }
 
 // ══ CUENTAS COBRAR ══
-async function listarCuentasCobrar(){const loader=document.getElementById("loaderCobrar"),tabla=document.getElementById("tablaCobrar");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_CUENTAS_COBRAR",SUCURSAL:document.getElementById("filtroCobrarSucursal").value,ESTADO:document.getElementById("filtroCobrarEstado").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`}else{let h=`<table><thead><tr><th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;data.datos.forEach(c=>{const ok=c.estado==="CANCELADO";h+=`<tr><td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalVenta).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoCobrar('${c.id}')">💰</button>`:""}</td></tr>`});tabla.innerHTML=h+"</tbody></table>"}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
-function abrirFormAbonoCobrar(id){document.getElementById("abonarCobrarId").value=id;document.getElementById("abonarCobrarMonto").value="";document.getElementById("abonarCobrarFecha").value=hoy();document.getElementById("formAbonarCobrar").classList.add("show");document.getElementById("formAbonarCobrar").scrollIntoView({behavior:"smooth"})}
-async function confirmarAbonoCobrar(){const id=document.getElementById("abonarCobrarId").value,mo=Number(document.getElementById("abonarCobrarMonto").value),me=document.getElementById("abonarCobrarMetodo").value,fe=document.getElementById("abonarCobrarFecha").value;if(!id){mostrarMsg("ID no encontrado","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}const loader=document.getElementById("loaderAbonarCobrar");loader.style.display="block";try{const data=await api({ACCION:"ABONAR_CUENTA_COBRAR",ID:id,ABONO:mo,METODO_PAGO:me,FECHA_PAGO:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Abono registrado · Saldo: Bs "+data.nuevoSaldo,"ok");document.getElementById("formAbonarCobrar").classList.remove("show");await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
-async function registrarCuentaCobrar(){const su=document.getElementById("nuevaCobrarSucursal").value,cl=document.getElementById("nuevaCobrarCliente").value.trim(),co=document.getElementById("nuevaCobrarConcepto").value.trim(),to=Number(document.getElementById("nuevaCobrarTotal").value),ab=Number(document.getElementById("nuevaCobrarAbono").value)||0;if(!cl){mostrarMsg("Ingresa el nombre del cliente","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(to)||to<=0){mostrarMsg("Ingresa el total","err");return}const loader=document.getElementById("loaderNuevaCobrar");loader.style.display="block";try{const data=await api({ACCION:"REGISTRAR_CUENTA_COBRAR",SUCURSAL:su,CLIENTE:cl,CONCEPTO:co,TOTAL_VENTA:to,ABONO:ab,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");["nuevaCobrarCliente","nuevaCobrarConcepto","nuevaCobrarTotal","nuevaCobrarAbono"].forEach(id=>document.getElementById(id).value="");await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
+// ══════════════════════════════════════════════
+//  COBRAR — con chunking automático para carritos grandes
+//  Reemplaza la función cobrar() existente
+// ══════════════════════════════════════════════
+
+const CARRITO_CHUNK_SIZE = 10; // items por chunk (seguro para URL)
+
+async function cobrar(){
+  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
+  if(carrito.length===0){mostrarMsg("El carrito está vacío","err");return}
+
+  const sucursal  = document.getElementById("sucursalVenta").value;
+  const usuario   = document.getElementById("usuarioVenta").value||sessionUser;
+  const metodoPago= document.getElementById("metodoPagoVenta").value;
+  const cliente   = document.getElementById("clienteVenta").value||"MOSTRADOR";
+
+  if(!sucursal){mostrarMsg("Selecciona una sucursal","err");return}
+  if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){
+    mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err");return;
+  }
+
+  const loader = document.getElementById("loaderVenta");
+  const btn    = document.getElementById("btnCobrar");
+  loader.style.display="block"; btn.disabled=true;
+
+  try {
+    const items = carrito.map(i=>({producto:i.producto, cantidad:i.cantidad}));
+
+    // ── Decidir: directo o por chunks ──
+    let carritoParam = {};
+
+    if(items.length <= CARRITO_CHUNK_SIZE) {
+      // Carrito pequeño → enviar directo como antes
+      carritoParam = { CARRITO: JSON.stringify(items) };
+    } else {
+      // Carrito grande → guardar en servidor por chunks
+      let carritoId = null;
+
+      for(let i = 0; i < items.length; i += CARRITO_CHUNK_SIZE) {
+        const chunk = items.slice(i, i + CARRITO_CHUNK_SIZE);
+        const params = {
+          ACCION: "CARRITO_GUARDAR",
+          ITEMS: JSON.stringify(chunk),
+          TOKEN: sessionToken
+        };
+        if(carritoId) params.CARRITO_ID = carritoId;
+
+        const res = await api(params);
+
+        if(!res.ok) {
+          mostrarMsg("Error preparando carrito: "+(res.error||"desconocido"),"err");
+          loader.style.display="none"; btn.disabled=false;
+          return;
+        }
+        carritoId = res.carritoId;
+      }
+
+      // Usar CARRITO_ID en vez de CARRITO
+      carritoParam = { CARRITO_ID: carritoId };
+    }
+
+    // ── Cobrar ──
+    const data = await api({
+      ACCION: "VENTA_POS",
+      ...carritoParam,
+      SUCURSAL: sucursal,
+      USUARIO: usuario,
+      METODO_PAGO: metodoPago,
+      CLIENTE: cliente,
+      TOKEN: sessionToken
+    });
+
+    if(!manejarRespuesta(data)){loader.style.display="none";btn.disabled=false;return}
+
+    if(data.ok){
+      sonidoCaja();
+      mostrarMsg(
+        metodoPago==="CREDITO"
+          ? "📝 Venta a crédito registrada ("+items.length+" productos)"
+          : "✅ Venta registrada ("+items.length+" productos)","ok"
+      );
+      document.getElementById("mainPanel").classList.add("ok");
+      setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);
+      carrito=[]; renderCarrito();
+      document.getElementById("clienteVenta").value="";
+      cargarInventario();
+    } else if(data.error==="STOCK_INSUFICIENTE"){
+      mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err");
+    } else if(data.error==="CARRITO_EXPIRADO"){
+      mostrarMsg("⏰ El carrito expiró. Intenta cobrar de nuevo.","err");
+    } else {
+      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
+    }
+
+  } catch(e){ mostrarMsg("Error de conexión","err"); }
+  loader.style.display="none"; btn.disabled=false;
+}
 
 // ══ CUENTAS PAGAR ══
 async function listarCuentasPagar(){const loader=document.getElementById("loaderPagar"),tabla=document.getElementById("tablaPagar");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_CUENTAS_PAGAR",SUCURSAL:document.getElementById("filtroPagarSucursal").value,ESTADO:document.getElementById("filtroPagarEstado").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`}else{let h=`<table><thead><tr><th class="col-prod">Proveedor</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;data.datos.forEach(c=>{const ok=c.estado==="CANCELADO";h+=`<tr><td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalCompra).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoPagar('${c.id}')">💳</button>`:""}</td></tr>`});tabla.innerHTML=h+"</tbody></table>"}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
