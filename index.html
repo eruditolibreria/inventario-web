@@ -106,7 +106,7 @@ body::before{
 .rol-VENDEDOR{ background:rgba(255,152,0,0.15);  color:var(--orange); border:1px solid rgba(255,152,0,0.3); }
 .rol-ALMACEN { background:rgba(41,121,255,0.15); color:#6eb4ff;       border:1px solid rgba(41,121,255,0.3); }
 
-.panel-body{ padding:20px 24px; }
+.panel-body{ padding:20px 24px; max-height:calc(100vh - 160px); overflow-y:auto; }
 
 #loginScreen{ padding:32px 24px 28px; }
 .login-logo{ text-align:center; margin-bottom:28px; }
@@ -280,6 +280,95 @@ tr:last-child td{ border-bottom:none; }
 .access-notice{ font-size:11px; color:var(--muted); text-align:center; margin-top:8px; }
 .empty-state{ color:var(--muted); text-align:center; padding:20px; font-size:13px; }
 
+/* ✓ NUEVOS ESTILOS PARA INVENTARIO Y IMÁGENES */
+.inventario-grid{
+  display:grid; gap:10px; margin-bottom:14px;
+}
+.inventario-card{
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:12px; display:grid;
+  grid-template-columns:60px 1fr 80px;
+  gap:10px; align-items:start;
+}
+.inventario-img{
+  width:60px; height:60px; border-radius:8px;
+  background:var(--surface3); display:flex;
+  align-items:center; justify-content:center;
+  font-size:24px; overflow:hidden;
+  border:1px solid var(--border);
+}
+.inventario-img img{
+  width:100%; height:100%; object-fit:cover;
+}
+.inventario-info{
+  font-size:12px;
+}
+.inventario-info .nombre{
+  font-weight:700; color:#fff; margin-bottom:4px;
+}
+.inventario-info .detalle{
+  color:var(--muted); font-size:11px; margin:2px 0;
+}
+.inventario-actions{
+  display:flex; flex-direction:column; gap:6px;
+}
+.btn-xs{
+  padding:6px 10px; font-size:11px; width:100%;
+  border-radius:6px; border:none; cursor:pointer;
+  font-weight:600; transition:all 0.2s;
+}
+.btn-xs-edit{
+  background:var(--blue); color:#fff;
+}
+.btn-xs-edit:hover{ opacity:0.9; }
+.btn-xs-del{
+  background:var(--red); color:#fff;
+}
+.btn-xs-del:hover{ opacity:0.9; }
+
+.modal-overlay{
+  display:none; position:fixed; top:0; left:0;
+  right:0; bottom:0; background:rgba(0,0,0,0.7);
+  z-index:1000; align-items:center;
+  justify-content:center;
+}
+.modal-overlay.show{ display:flex; }
+.modal-content{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:20px; width:90%; max-width:400px;
+  max-height:80vh; overflow-y:auto;
+}
+.modal-header{
+  font-size:16px; font-weight:700; color:#fff;
+  margin-bottom:14px; padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.modal-close{
+  position:absolute; top:14px; right:14px;
+  background:none; border:none; color:var(--muted);
+  font-size:20px; cursor:pointer;
+}
+
+.carrito-miniaturas{
+  display:flex; gap:6px; margin-top:8px;
+  flex-wrap:wrap;
+}
+.miniatura{
+  width:50px; height:50px; border-radius:6px;
+  border:1px solid var(--accent);
+  overflow:hidden; cursor:pointer;
+  position:relative;
+}
+.miniatura img{
+  width:100%; height:100%; object-fit:cover;
+}
+.miniatura-badge{
+  position:absolute; top:0; right:0;
+  background:var(--accent); color:#000;
+  font-size:10px; font-weight:700;
+  padding:2px 4px; border-radius:3px;
+}
+
 </style>
 </head>
 
@@ -310,7 +399,7 @@ tr:last-child td{ border-bottom:none; }
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
-        <small>INVENTARIO v4.2</small>
+        <small>INVENTARIO v2.3</small>
       </div>
       <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar">👤</div>
@@ -333,9 +422,10 @@ tr:last-child td{ border-bottom:none; }
         <div class="mode-tab" onclick="setModo('DEVOLUCIONES')" id="tab-DEVOLUCIONES"><span class="tab-icon">↩</span>Devol.</div>
         <div class="mode-tab" onclick="setModo('REPORTES')" id="tab-REPORTES"><span class="tab-icon">📊</span>Report.</div>
         <div class="mode-tab" onclick="setModo('BUSQUEDA')" id="tab-BUSQUEDA"><span class="tab-icon">🔎</span>Buscar</div>
+        <div class="mode-tab" onclick="setModo('INVENTARIO')" id="tab-INVENTARIO"><span class="tab-icon">📚</span>Inventario</div>
       </div>
 
-      <!-- VENTA -->
+      <!-- VENTA (MEJORADO CON IMÁGENES) -->
       <div id="seccion-VENTA" class="oculto">
         <div class="section-label">Registrar venta</div>
         <div class="row-2 mb-12">
@@ -347,6 +437,7 @@ tr:last-child td{ border-bottom:none; }
         <button class="btn btn-green mb-12" onclick="agregarCarrito()">+ Agregar al carrito</button>
         <div class="carrito-header"><h3 id="tituloCarrito">🛒 Carrito <span style="color:var(--muted)">(0)</span></h3></div>
         <table><thead><tr><th class="col-prod">Producto</th><th>Cant</th><th>Precio</th><th>Total</th><th></th></tr></thead><tbody id="carritoBody"></tbody></table>
+        <div id="carritoMiniaturas" class="carrito-miniaturas"></div>
         <div class="carrito-total"><small>TOTAL A COBRAR</small><br><span id="totalVenta">Bs 0.00</span></div>
         <div class="row-2 mb-12">
           <div class="field-group" style="margin:0"><label class="field-label">Método de pago</label><select id="metodoPagoVenta" onchange="toggleClienteVenta()"><option value="EFECTIVO">💵 Efectivo</option><option value="TRANSFERENCIA">🏦 Transferencia</option><option value="CREDITO">📝 Crédito</option></select></div>
@@ -362,8 +453,8 @@ tr:last-child td{ border-bottom:none; }
         <div class="field-group"><label class="field-label">Sucursal</label><select id="sucursalCompra"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div>
         <div class="field-group"><label class="field-label">Producto</label><input id="productoCompra" placeholder="🔎 Escribe para buscar o crear..." onkeyup="buscarProductoCompra()"><div id="listaCompra" class="autocomplete"></div><div id="infoCompra" class="info-prod"></div></div>
         <div class="field-group"><label class="field-label">Categoría</label><input id="categoriaCompra" placeholder="Ej: Cartulinas, bolígrafos..."></div>
-        <div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Costo paquete</label><input id="costoCompra" type="number" placeholder="Bs 0.00"></div><div class="field-group" style="margin:0"><label class="field-label">Precio venta</label><input id="precioVentaCompra" type="number" placeholder="Bs 0.00"></div></div>
-        <div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Cant. paquetes</label><input id="cantidadCompra" type="number" placeholder="0"></div><div class="field-group" style="margin:0"><label class="field-label">Unid. x paquete</label><input id="unidadesCompra" type="number" placeholder="0"></div></div>
+        <div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Costo paquete</label><input id="costoCompra" type="number" min="0.01" step="0.01" placeholder="Bs 0.00"></div><div class="field-group" style="margin:0"><label class="field-label">Precio venta</label><input id="precioVentaCompra" type="number" min="0.01" step="0.01" placeholder="Bs 0.00"></div></div>
+        <div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Cant. paquetes</label><input id="cantidadCompra" type="number" min="1" placeholder="0"></div><div class="field-group" style="margin:0"><label class="field-label">Unid. x paquete</label><input id="unidadesCompra" type="number" min="1" placeholder="0"></div></div>
         <div class="field-group mt-8"><label class="field-label">Proveedor</label><input id="proveedorCompra" placeholder="Nombre del proveedor"></div>
         <div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Fecha entrada</label><input id="fechaCompra" type="date"></div><div class="field-group" style="margin:0"><label class="field-label">Ubicación</label><input id="ubicacionCompra" placeholder="Ej: Mostrador"></div></div>
         <div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Método de pago</label><select id="metodoPagoCompra" onchange="toggleClienteCompra()"><option value="EFECTIVO">💵 Efectivo</option><option value="TRANSFERENCIA">🏦 Transferencia</option><option value="CREDITO">📝 Crédito (C×P)</option></select></div><div class="field-group oculto" style="margin:0" id="campoClienteCompra"><label class="field-label">Acreedor</label><input id="clienteCompra" placeholder="Nombre del acreedor"></div></div>
@@ -427,28 +518,68 @@ tr:last-child td{ border-bottom:none; }
         <div id="searchResultsList" class="search-results-list"></div>
       </div>
 
+      <!-- ✓ NUEVO: INVENTARIO ADMIN -->
+      <div id="seccion-INVENTARIO" class="oculto">
+        <div class="section-label">Gestión de inventario</div>
+        <div class="row-2 mb-12">
+          <div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="filtroInvSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div>
+          <div class="field-group" style="margin:0"><label class="field-label">Filtro</label><input id="filtroInvProducto" placeholder="Buscar producto..."></div>
+        </div>
+        <button class="btn btn-ghost mb-12" onclick="cargarInventarioAdmin()">🔄 Cargar inventario</button>
+        <div class="loader" id="loaderInvAdmin"></div>
+        <div id="inventarioGrid" class="inventario-grid"></div>
+      </div>
+
       <div id="mensajeApp" class="mensaje"></div>
       <div class="divider"></div>
-      <button class="btn btn-ghost" onclick="verInventario()">📊 Ver Inventario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✓ MODAL DE EDICIÓN DE IMAGEN -->
+<div id="modalImagen" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close" onclick="cerrarModalImagen()">✕</button>
+    <div class="modal-header">Actualizar imagen del producto</div>
+    <div class="field-group">
+      <label class="field-label">Producto</label>
+      <input id="modalImagenProducto" type="text" readonly style="background:var(--surface3)">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Sucursal</label>
+      <input id="modalImagenSucursal" type="text" readonly style="background:var(--surface3)">
+    </div>
+    <div class="field-group">
+      <label class="field-label">URL de imagen</label>
+      <input id="modalImagenUrl" type="text" placeholder="https://ejemplo.com/imagen.jpg">
+    </div>
+    <div style="text-align:center;margin:12px 0;color:var(--muted);font-size:11px">
+      O copia un enlace público de Google Drive (botón derecho → Copiar enlace)
+    </div>
+    <div class="loader" id="loaderModalImagen"></div>
+    <div class="row-2">
+      <button class="btn btn-primary" onclick="guardarImagenProducto()">✅ Guardar</button>
+      <button class="btn btn-ghost" onclick="cerrarModalImagen()">Cancelar</button>
     </div>
   </div>
 </div>
 
 <script>
-
 // ══════════════════════════════════════════════
-//  CONFIG — URL directa de GAS, todo por GET
+//  CONFIG — REEMPLAZA ESTA URL CON TU DEPLOY
 // ══════════════════════════════════════════════
 
-// ⚠️ REEMPLAZA ESTA URL CON TU DEPLOY ID REAL
-const baseURL = "https://script.google.com/macros/s/AKfycbwMR_qg8axH-cglZ0qU2tP1LhbA-ehWpQfr7Mk-xnH0fBbSGgTgyV70IKIfEz5KjeUXvg/exec";
+const baseURL = "https://script.google.com/macros/s/AKfycbyN7Obso50si81Fp04uZsnBSGSC-49Qxc1YqiEde7rfOLLc1mKO42fJS_wFqrA8t5sPPQ/exec";
 
 let sessionToken=null, sessionUser=null, sessionRol=null;
 let inventarioGlobal=[], carrito=[];
 let devolPaginaActual=1;
 const DEVOL_LIMITE=20;
+const CARRITO_CHUNK_SIZE=10;
 
-// ── Único helper: todo va por GET con query params ──
+// Modal de imagen
+let modalImagenData={producto:"", sucursal:""};
+
 async function api(params) {
   const qs = Object.entries(params)
     .filter(([_,v]) => v !== undefined && v !== null && v !== "")
@@ -472,17 +603,16 @@ function sonidoCaja(){
   }catch(e){}
 }
 
-// ══ PERMISOS ══
 const PERMISOS={
-  ADMIN:{tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"],inicio:"VENTA"},
+  ADMIN:{tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA","INVENTARIO"],inicio:"VENTA"},
   VENDEDOR:{tabs:["VENTA","CUENTAS","DEVOLUCIONES","BUSQUEDA"],inicio:"VENTA"},
-  ALMACEN:{tabs:["COMPRA","CUENTAS","DEVOLUCIONES","BUSQUEDA"],inicio:"COMPRA"},
+  ALMACEN:{tabs:["COMPRA","CUENTAS","DEVOLUCIONES","BUSQUEDA","INVENTARIO"],inicio:"COMPRA"},
 };
 const PERMISOS_DEFAULT={tabs:["BUSQUEDA"],inicio:"BUSQUEDA"};
 function obtenerPermisos(r){return PERMISOS[(r||"").toUpperCase()]||PERMISOS_DEFAULT}
 function aplicarRol(rol){
   const{tabs,inicio}=obtenerPermisos(rol);
-  ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"].forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden-tab",!tabs.includes(t)));
+  ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA","INVENTARIO"].forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden-tab",!tabs.includes(t)));
   const ru=(rol||"").toUpperCase();
   document.getElementById("subtab-cuentas-COBRAR").classList.toggle("hidden-tab",!["ADMIN","VENDEDOR"].includes(ru));
   document.getElementById("subtab-cuentas-PAGAR").classList.toggle("hidden-tab",!["ADMIN","ALMACEN"].includes(ru));
@@ -527,12 +657,11 @@ function cerrarSesion(){
 // ══ UTILIDADES ══
 function hoy(){return new Date().toISOString().slice(0,10)}
 function mostrarMsg(t,tipo){const m=document.getElementById("mensajeApp");m.className="mensaje "+(tipo==="ok"?"msg-ok":"msg-err");m.textContent=t;m.style.display="block";setTimeout(()=>m.style.display="none",3500)}
-function setModo(modo){["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA"].forEach(m=>{document.getElementById("seccion-"+m).classList.toggle("oculto",m!==modo);document.getElementById("tab-"+m).classList.toggle("active",m===modo)});if(modo==="CAJA"&&sessionToken)verificarEstadoCaja();if(modo==="DEVOLUCIONES")setSubModoDevol("REGISTRAR");if(modo==="REPORTES")setSubModoReportes("MAS")}
+function setModo(modo){["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA","INVENTARIO"].forEach(m=>{document.getElementById("seccion-"+m).classList.toggle("oculto",m!==modo);document.getElementById("tab-"+m).classList.toggle("active",m===modo)});if(modo==="CAJA"&&sessionToken)verificarEstadoCaja();if(modo==="DEVOLUCIONES")setSubModoDevol("REGISTRAR");if(modo==="REPORTES")setSubModoReportes("MAS")}
 function setSubModoCaja(s){["APERTURA","CIERRE","APORTES"].forEach(x=>{document.getElementById("caja-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-caja-"+x).classList.toggle("active",x===s)})}
 function setSubModoCuentas(s){["COBRAR","PAGAR"].forEach(x=>{document.getElementById("cuentas-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-cuentas-"+x).classList.toggle("active",x===s)})}
 function setSubModoDevol(s){["REGISTRAR","LISTAR"].forEach(x=>{document.getElementById("devol-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-devol-"+x).classList.toggle("active",x===s)})}
 function setSubModoReportes(s){["MAS","MENOS"].forEach(x=>{document.getElementById("rep-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-rep-"+x).classList.toggle("active",x===s)})}
-function verInventario(){window.open("https://docs.google.com/spreadsheets/d/1hpec74x28bmF8ECJSPqWHvajLo4Ibjk4w1xjBUiRT9c/edit","_blank")}
 function manejarRespuesta(d){if(!d.ok&&(d.error==="NO_AUTORIZADO"||d.error==="PERMISO_DENEGADO")){mostrarMsg("⛔ Sin permisos para esta acción","err");return false}return true}
 function toggleClienteVenta(){document.getElementById("campoClienteVenta").classList.toggle("oculto",document.getElementById("metodoPagoVenta").value!=="CREDITO")}
 function toggleClienteCompra(){document.getElementById("campoClienteCompra").classList.toggle("oculto",document.getElementById("metodoPagoCompra").value!=="CREDITO")}
@@ -540,29 +669,103 @@ function toggleAcreedorGasto(){document.getElementById("campoAcreedorGasto").cla
 
 // ══ INVENTARIO ══
 async function cargarInventario(){if(!sessionToken)return;try{const d=await api({ACCION:"LISTAR_INVENTARIO",LIMITE:200,TOKEN:sessionToken});inventarioGlobal=d.datos||[]}catch(e){}}
-setInterval(()=>{if(sessionToken)cargarInventario()},15000);
+setInterval(()=>{if(sessionToken)cargarInventario()},30000);
 
 // ══ AUTOCOMPLETE ══
 function construirAC(lista,items,onSelect){lista.innerHTML="";if(items.length===0){lista.classList.remove("show");return}items.slice(0,8).forEach(p=>{const div=document.createElement("div");div.className="ac-item";div.innerHTML=`<strong>${p.producto}</strong><small>Stock: ${p.stock} | Bs ${p.precio} | ${p.sucursal}</small>`;div.onclick=()=>{onSelect(p);lista.classList.remove("show")};lista.appendChild(div)});lista.classList.add("show")}
 
 // ══ VENTA ══
-function buscarProductoVenta(){const t=document.getElementById("productoVenta").value.toLowerCase(),s=document.getElementById("sucursalVenta").value,l=document.getElementById("listaVenta"),info=document.getElementById("infoProductoVenta");info.classList.remove("show");if(t.length<1){l.classList.remove("show");return}construirAC(l,inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(t)&&p.sucursal===s),p=>{document.getElementById("productoVenta").value=p.producto;info.innerHTML=`Stock disponible: <b>${p.stock}</b> | Precio: <b>Bs ${p.precio}</b>`+(p.stock<=5?`<br><span class="stock-bajo">⚠ Stock bajo</span>`:"");info.classList.add("show")})}
-function agregarCarrito(){const pr=document.getElementById("productoVenta").value.trim(),ca=Number(document.getElementById("cantidadVenta").value),su=document.getElementById("sucursalVenta").value;if(!pr||!ca||ca<=0){mostrarMsg("Completa producto y cantidad","err");return}if(!su){mostrarMsg("Selecciona una sucursal","err");return}const p=inventarioGlobal.find(x=>x.producto===pr&&x.sucursal===su);if(!p){mostrarMsg("Producto no encontrado en inventario","err");return}if(p.stock<ca){mostrarMsg("Stock insuficiente (disponible: "+p.stock+")","err");return}const ex=carrito.find(i=>i.producto===pr);if(ex){ex.cantidad+=ca;ex.total=ex.precio*ex.cantidad}else carrito.push({producto:pr,precio:p.precio,cantidad:ca,total:p.precio*ca});renderCarrito();document.getElementById("productoVenta").value="";document.getElementById("cantidadVenta").value="";document.getElementById("infoProductoVenta").classList.remove("show")}
-function renderCarrito(){const tb=document.getElementById("carritoBody");tb.innerHTML="";let tot=0;carrito.forEach((it,i)=>{tot+=it.total;tb.innerHTML+=`<tr><td class="col-prod">${it.producto}</td><td>${it.cantidad}</td><td>Bs ${it.precio}</td><td>Bs ${it.total.toFixed(2)}</td><td><button class="btn-del" onclick="eliminarItem(${i})">✕</button></td></tr>`});document.getElementById("totalVenta").textContent="Bs "+tot.toFixed(2);document.getElementById("tituloCarrito").innerHTML=`🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`}
+function buscarProductoVenta(){const su=document.getElementById("sucursalVenta").value;if(!su){document.getElementById("listaVenta").classList.remove("show");return}const t=document.getElementById("productoVenta").value.toLowerCase(),l=document.getElementById("listaVenta"),info=document.getElementById("infoProductoVenta");info.classList.remove("show");if(t.length<1){l.classList.remove("show");return}construirAC(l,inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(t)&&p.sucursal===su),p=>{document.getElementById("productoVenta").value=p.producto;info.innerHTML=`Stock disponible: <b>${p.stock}</b> | Precio: <b>Bs ${p.precio}</b>`+(p.stock<=5?`<br><span class="stock-bajo">⚠ Stock bajo</span>`:"");info.classList.add("show")})}
+
+function agregarCarrito(){const pr=document.getElementById("productoVenta").value.trim(),ca=Number(document.getElementById("cantidadVenta").value),su=document.getElementById("sucursalVenta").value;if(!pr||!ca||ca<=0){mostrarMsg("Completa producto y cantidad","err");return}if(!su){mostrarMsg("Selecciona una sucursal","err");return}const p=inventarioGlobal.find(x=>x.producto===pr&&x.sucursal===su);if(!p){mostrarMsg("Producto no encontrado en inventario","err");return}if(p.stock<ca){mostrarMsg("Stock insuficiente (disponible: "+p.stock+")","err");return}const ex=carrito.find(i=>i.producto===pr);if(ex){ex.cantidad+=ca;ex.total=ex.precio*ex.cantidad}else carrito.push({producto:pr,precio:p.precio,cantidad:ca,total:p.precio*ca,imagen:p.imagen||""});renderCarrito();document.getElementById("productoVenta").value="";document.getElementById("cantidadVenta").value="";document.getElementById("infoProductoVenta").classList.remove("show")}
+
+function renderCarrito(){const tb=document.getElementById("carritoBody"),minis=document.getElementById("carritoMiniaturas");tb.innerHTML="";minis.innerHTML="";let tot=0;carrito.forEach((it,i)=>{tot+=it.total;tb.innerHTML+=`<tr><td class="col-prod">${it.producto}</td><td>${it.cantidad}</td><td>Bs ${it.precio}</td><td>Bs ${it.total.toFixed(2)}</td><td><button class="btn-del" onclick="eliminarItem(${i})">✕</button></td></tr>`;if(it.imagen){const mini=document.createElement("div");mini.className="miniatura";mini.innerHTML=`<img src="${it.imagen}" alt="${it.producto}"><div class="miniatura-badge">${it.cantidad}</div>`;minis.appendChild(mini)}});document.getElementById("totalVenta").textContent="Bs "+tot.toFixed(2);document.getElementById("tituloCarrito").innerHTML=`🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`}
 function eliminarItem(i){carrito.splice(i,1);renderCarrito()}
 
 async function cobrar(){
-  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}if(carrito.length===0){mostrarMsg("El carrito está vacío","err");return}
-  const su=document.getElementById("sucursalVenta").value,us=document.getElementById("usuarioVenta").value||sessionUser,mp=document.getElementById("metodoPagoVenta").value,cl=document.getElementById("clienteVenta").value||"MOSTRADOR";
-  if(!su){mostrarMsg("Selecciona una sucursal","err");return}if(mp==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err");return}
-  const loader=document.getElementById("loaderVenta"),btn=document.getElementById("btnCobrar");loader.style.display="block";btn.disabled=true;
-  try{
-    const data=await api({ACCION:"VENTA_POS",CARRITO:JSON.stringify(carrito.map(i=>({producto:i.producto,cantidad:i.cantidad}))),SUCURSAL:su,USUARIO:us,METODO_PAGO:mp,CLIENTE:cl,TOKEN:sessionToken});
+  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
+  if(carrito.length===0){mostrarMsg("El carrito está vacío","err");return}
+
+  const sucursal  = document.getElementById("sucursalVenta").value;
+  const usuario   = document.getElementById("usuarioVenta").value||sessionUser;
+  const metodoPago= document.getElementById("metodoPagoVenta").value;
+  const cliente   = document.getElementById("clienteVenta").value||"MOSTRADOR";
+
+  if(!sucursal){mostrarMsg("Selecciona una sucursal","err");return}
+  if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){
+    mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err");return;
+  }
+
+  const loader = document.getElementById("loaderVenta");
+  const btn    = document.getElementById("btnCobrar");
+  loader.style.display="block"; btn.disabled=true;
+
+  try {
+    const items = carrito.map(i=>({producto:i.producto, cantidad:i.cantidad}));
+
+    let carritoParam = {};
+
+    if(items.length <= CARRITO_CHUNK_SIZE) {
+      carritoParam = { CARRITO: JSON.stringify(items) };
+    } else {
+      let carritoId = null;
+
+      for(let i = 0; i < items.length; i += CARRITO_CHUNK_SIZE) {
+        const chunk = items.slice(i, i + CARRITO_CHUNK_SIZE);
+        const params = {
+          ACCION: "CARRITO_GUARDAR",
+          ITEMS: JSON.stringify(chunk),
+          TOKEN: sessionToken
+        };
+        if(carritoId) params.CARRITO_ID = carritoId;
+
+        const res = await api(params);
+
+        if(!res.ok) {
+          mostrarMsg("Error preparando carrito: "+(res.error||"desconocido"),"err");
+          loader.style.display="none"; btn.disabled=false;
+          return;
+        }
+        carritoId = res.carritoId;
+      }
+
+      carritoParam = { CARRITO_ID: carritoId };
+    }
+
+    const data = await api({
+      ACCION: "VENTA_POS",
+      ...carritoParam,
+      SUCURSAL: sucursal,
+      USUARIO: usuario,
+      METODO_PAGO: metodoPago,
+      CLIENTE: cliente,
+      TOKEN: sessionToken
+    });
+
     if(!manejarRespuesta(data)){loader.style.display="none";btn.disabled=false;return}
-    if(data.ok){sonidoCaja();mostrarMsg(mp==="CREDITO"?"📝 Venta a crédito registrada":"✅ Venta registrada correctamente","ok");document.getElementById("mainPanel").classList.add("ok");setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);carrito=[];renderCarrito();document.getElementById("clienteVenta").value="";cargarInventario()}
-    else if(data.error==="STOCK_INSUFICIENTE"){mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err")}
-    else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
-  }catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";btn.disabled=false;
+
+    if(data.ok){
+      sonidoCaja();
+      mostrarMsg(
+        metodoPago==="CREDITO"
+          ? "📝 Venta a crédito registrada ("+items.length+" productos)"
+          : "✅ Venta registrada ("+items.length+" productos)","ok"
+      );
+      document.getElementById("mainPanel").classList.add("ok");
+      setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);
+      carrito=[]; renderCarrito();
+      document.getElementById("clienteVenta").value="";
+      cargarInventario();
+    } else if(data.error==="STOCK_INSUFICIENTE"){
+      mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err");
+    } else if(data.error==="CARRITO_EXPIRADO"){
+      mostrarMsg("⏰ El carrito expiró. Intenta cobrar de nuevo.","err");
+    } else {
+      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
+    }
+
+  } catch(e){ mostrarMsg("Error de conexión","err"); }
+  loader.style.display="none"; btn.disabled=false;
 }
 
 // ══ COMPRA ══
@@ -610,7 +813,7 @@ async function abrirCaja(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const su=document.getElementById("aperturaSucursal").value,si=Number(document.getElementById("aperturaSaldo").value);
   if(!su){mostrarMsg("Selecciona una sucursal","err");return}if(isNaN(si)||si<0){mostrarMsg("Ingresa un saldo inicial válido","err");return}
   const loader=document.getElementById("loaderApertura");loader.style.display="block";
-  try{const data=await api({ACCION:"APERTURA_CAJA",SUCURSAL:su,SALDO_INICIAL:si,NOTAS:document.getElementById("aperturaNotas").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("🔓 Caja abierta correctamente · "+data.sucursal,"ok");document.getElementById("aperturaSaldo").value="";document.getElementById("aperturaNotas").value="";await verificarEstadoCaja()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
+  try{const data=await api({ACCION:"APERTURA_CAJA",SUCURSAL:su,SALDO_INICIAL:si,NOTAS:document.getElementById("aperturaNotas").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("🔓 Caja abierta correctamente · "+data.sucursal,"ok");document.getElementById("aperturaSaldo").value="";document.getElementById("aperturaNotas").value="";document.getElementById("aperturaSucursal").value="";await verificarEstadoCaja()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
 async function cerrarCaja(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const id=document.getElementById("cierreCajaId").value,sf=Number(document.getElementById("cierreSaldo").value);
@@ -622,107 +825,14 @@ async function registrarAporteRetiro(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const su=document.getElementById("aporteSucursal").value,tp=document.getElementById("aporteTipo").value,co=document.getElementById("aporteConcepto").value.trim(),mo=Number(document.getElementById("aporteMonto").value),me=document.getElementById("aporteMetodo").value,fe=document.getElementById("aporteFecha").value;
   if(!su){mostrarMsg("Selecciona una sucursal","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}
   const loader=document.getElementById("loaderAporte");loader.style.display="block";
-  try{const data=await api({ACCION:"REGISTRAR_APORTE_RETIRO",SUCURSAL:su,TIPO:tp,CONCEPTO:co,MONTO:mo,METODO_GASTO:me,FECHA:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("💼 "+tp+" registrado correctamente","ok");document.getElementById("aporteConcepto").value="";document.getElementById("aporteMonto").value=""}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
+  try{const data=await api({ACCION:"REGISTRAR_APORTE_RETIRO",SUCURSAL:su,TIPO:tp,CONCEPTO:co,MONTO:mo,METODO_GASTO:me,FECHA:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("💼 "+tp+" registrado correctamente","ok");document.getElementById("aporteConcepto").value="";document.getElementById("aporteMonto").value="";document.getElementById("aporteSucursal").value="";document.getElementById("aporteTipo").value="APORTE"}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
 
 // ══ CUENTAS COBRAR ══
-// ══════════════════════════════════════════════
-//  COBRAR — con chunking automático para carritos grandes
-//  Reemplaza la función cobrar() existente
-// ══════════════════════════════════════════════
-
-const CARRITO_CHUNK_SIZE = 10; // items por chunk (seguro para URL)
-
-async function cobrar(){
-  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
-  if(carrito.length===0){mostrarMsg("El carrito está vacío","err");return}
-
-  const sucursal  = document.getElementById("sucursalVenta").value;
-  const usuario   = document.getElementById("usuarioVenta").value||sessionUser;
-  const metodoPago= document.getElementById("metodoPagoVenta").value;
-  const cliente   = document.getElementById("clienteVenta").value||"MOSTRADOR";
-
-  if(!sucursal){mostrarMsg("Selecciona una sucursal","err");return}
-  if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){
-    mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err");return;
-  }
-
-  const loader = document.getElementById("loaderVenta");
-  const btn    = document.getElementById("btnCobrar");
-  loader.style.display="block"; btn.disabled=true;
-
-  try {
-    const items = carrito.map(i=>({producto:i.producto, cantidad:i.cantidad}));
-
-    // ── Decidir: directo o por chunks ──
-    let carritoParam = {};
-
-    if(items.length <= CARRITO_CHUNK_SIZE) {
-      // Carrito pequeño → enviar directo como antes
-      carritoParam = { CARRITO: JSON.stringify(items) };
-    } else {
-      // Carrito grande → guardar en servidor por chunks
-      let carritoId = null;
-
-      for(let i = 0; i < items.length; i += CARRITO_CHUNK_SIZE) {
-        const chunk = items.slice(i, i + CARRITO_CHUNK_SIZE);
-        const params = {
-          ACCION: "CARRITO_GUARDAR",
-          ITEMS: JSON.stringify(chunk),
-          TOKEN: sessionToken
-        };
-        if(carritoId) params.CARRITO_ID = carritoId;
-
-        const res = await api(params);
-
-        if(!res.ok) {
-          mostrarMsg("Error preparando carrito: "+(res.error||"desconocido"),"err");
-          loader.style.display="none"; btn.disabled=false;
-          return;
-        }
-        carritoId = res.carritoId;
-      }
-
-      // Usar CARRITO_ID en vez de CARRITO
-      carritoParam = { CARRITO_ID: carritoId };
-    }
-
-    // ── Cobrar ──
-    const data = await api({
-      ACCION: "VENTA_POS",
-      ...carritoParam,
-      SUCURSAL: sucursal,
-      USUARIO: usuario,
-      METODO_PAGO: metodoPago,
-      CLIENTE: cliente,
-      TOKEN: sessionToken
-    });
-
-    if(!manejarRespuesta(data)){loader.style.display="none";btn.disabled=false;return}
-
-    if(data.ok){
-      sonidoCaja();
-      mostrarMsg(
-        metodoPago==="CREDITO"
-          ? "📝 Venta a crédito registrada ("+items.length+" productos)"
-          : "✅ Venta registrada ("+items.length+" productos)","ok"
-      );
-      document.getElementById("mainPanel").classList.add("ok");
-      setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);
-      carrito=[]; renderCarrito();
-      document.getElementById("clienteVenta").value="";
-      cargarInventario();
-    } else if(data.error==="STOCK_INSUFICIENTE"){
-      mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err");
-    } else if(data.error==="CARRITO_EXPIRADO"){
-      mostrarMsg("⏰ El carrito expiró. Intenta cobrar de nuevo.","err");
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
-
-  } catch(e){ mostrarMsg("Error de conexión","err"); }
-  loader.style.display="none"; btn.disabled=false;
-}
+async function listarCuentasCobrar(){const loader=document.getElementById("loaderCobrar"),tabla=document.getElementById("tablaCobrar");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_CUENTAS_COBRAR",SUCURSAL:document.getElementById("filtroCobrarSucursal").value,ESTADO:document.getElementById("filtroCobrarEstado").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`}else{let h=`<table><thead><tr><th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;data.datos.forEach(c=>{const ok=c.estado==="CANCELADO";h+=`<tr><td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalVenta).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoCobrar('${c.id}')">💳</button>`:""}</td></tr>`});tabla.innerHTML=h+"</tbody></table>"}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
+function abrirFormAbonoCobrar(id){document.getElementById("abonarCobrarId").value=id;document.getElementById("abonarCobrarMonto").value="";document.getElementById("abonarCobrarFecha").value=hoy();document.getElementById("formAbonarCobrar").classList.add("show");document.getElementById("formAbonarCobrar").scrollIntoView({behavior:"smooth"})}
+async function confirmarAbonoCobrar(){const id=document.getElementById("abonarCobrarId").value,mo=Number(document.getElementById("abonarCobrarMonto").value),me=document.getElementById("abonarCobrarMetodo").value,fe=document.getElementById("abonarCobrarFecha").value;if(!id){mostrarMsg("ID no encontrado","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}const loader=document.getElementById("loaderAbonarCobrar");loader.style.display="block";try{const data=await api({ACCION:"ABONAR_CUENTA_COBRAR",ID:id,ABONO:mo,METODO_PAGO:me,FECHA_PAGO:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");document.getElementById("formAbonarCobrar").classList.remove("show");await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
+async function registrarCuentaCobrar(){const su=document.getElementById("nuevaCobrarSucursal").value,cli=document.getElementById("nuevaCobrarCliente").value.trim(),co=document.getElementById("nuevaCobrarConcepto").value.trim(),to=Number(document.getElementById("nuevaCobrarTotal").value),ab=Number(document.getElementById("nuevaCobrarAbono").value)||0;if(!cli){mostrarMsg("Ingresa el nombre del cliente","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(to)||to<=0){mostrarMsg("Ingresa el total","err");return}const loader=document.getElementById("loaderNuevaCobrar");loader.style.display="block";try{const data=await api({ACCION:"REGISTRAR_CUENTA_COBRAR",SUCURSAL:su,CLIENTE:cli,CONCEPTO:co,TOTAL_VENTA:to,ABONO:ab,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");["nuevaCobrarCliente","nuevaCobrarConcepto","nuevaCobrarTotal","nuevaCobrarAbono"].forEach(id=>document.getElementById(id).value="");await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
 
 // ══ CUENTAS PAGAR ══
 async function listarCuentasPagar(){const loader=document.getElementById("loaderPagar"),tabla=document.getElementById("tablaPagar");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_CUENTAS_PAGAR",SUCURSAL:document.getElementById("filtroPagarSucursal").value,ESTADO:document.getElementById("filtroPagarEstado").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`}else{let h=`<table><thead><tr><th class="col-prod">Proveedor</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;data.datos.forEach(c=>{const ok=c.estado==="CANCELADO";h+=`<tr><td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalCompra).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoPagar('${c.id}')">💳</button>`:""}</td></tr>`});tabla.innerHTML=h+"</tbody></table>"}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
@@ -762,6 +872,56 @@ let busquedaTimer=null;
 function buscarProductoDetalle(){const t=document.getElementById("busquedaInput").value.trim(),l=document.getElementById("listaBusqueda");clearTimeout(busquedaTimer);document.getElementById("searchResultsList").innerHTML="";if(t.length<2){l.classList.remove("show");return}const sg=inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(t.toLowerCase()));l.innerHTML="";if(sg.length>0){sg.slice(0,8).forEach(p=>{const div=document.createElement("div");div.className="ac-item";div.innerHTML=`<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;div.onclick=()=>{document.getElementById("busquedaInput").value=p.producto;l.classList.remove("show");ejecutarBusquedaDetalle(p.producto)};l.appendChild(div)});l.classList.add("show")}else{l.classList.remove("show")}busquedaTimer=setTimeout(()=>ejecutarBusquedaDetalle(t),600)}
 async function ejecutarBusquedaDetalle(t){if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const loader=document.getElementById("loaderBusqueda"),l=document.getElementById("listaBusqueda"),co=document.getElementById("searchResultsList");l.classList.remove("show");loader.style.display="block";co.innerHTML="";try{const data=await api({ACCION:"BUSCAR_PRODUCTO_DETALLE",PRODUCTO:t,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}const rs=data.datos||[];if(rs.length===0){co.innerHTML=`<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${t}</b>"</div>`}else{rs.forEach(p=>co.appendChild(renderSearchCard(p)))}}catch(e){co.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
 function renderSearchCard(p){const div=document.createElement("div");div.className="search-result show";const sc=p.stock<=0?"warn":p.stock<=5?"orange":"ok",sl=p.stock<=0?"⛔ Sin stock":p.stock<=5?"⚠ Stock bajo":"✅ En stock";div.innerHTML=`<div class="sr-name">📦 ${p.producto}</div><div class="sr-grid"><div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">Bs ${p.precioVenta??'—'}</div></div><div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">Bs ${p.precioUnidad??'—'}</div></div><div class="sr-field ${sc==='warn'?'red':sc==='orange'?'orange':'accent'}"><div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud. · ${sl}</div></div><div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:#6eb4ff">${p.sucursal??'—'}</div></div><div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${p.ubicacion||'—'}</div></div><div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor||'—'}</div></div></div>`;return div}
+
+// ══ ✓ NUEVO: INVENTARIO ADMIN ══
+async function cargarInventarioAdmin(){
+  if(!sessionToken||sessionRol!=="ADMIN"){mostrarMsg("Sin permisos","err");return}
+  const loader=document.getElementById("loaderInvAdmin"),grid=document.getElementById("inventarioGrid"),filtroSuc=document.getElementById("filtroInvSucursal").value,filtroProd=document.getElementById("filtroInvProducto").value.toLowerCase();
+  loader.style.display="block";grid.innerHTML="";
+  try{
+    const data=await api({ACCION:"LISTAR_INVENTARIO_ADMIN",TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){loader.style.display="none";return}
+    let datos=data.datos||[];
+    if(filtroSuc) datos=datos.filter(p=>p.sucursal===filtroSuc);
+    if(filtroProd) datos=datos.filter(p=>p.producto.toLowerCase().includes(filtroProd));
+    if(datos.length===0){grid.innerHTML=`<div class="empty-state">Sin productos encontrados</div>`}
+    else{datos.forEach(p=>{const card=document.createElement("div");card.className="inventario-card";card.innerHTML=`<div class="inventario-img">${p.imagen?`<img src="${p.imagen}" alt="${p.producto}">`:``}</div><div class="inventario-info"><div class="nombre">${p.producto}</div><div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2)||'—'}</div><div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2)||'—'}</div><div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div><div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div></div><div class="inventario-actions"><button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen||''}')">🖼️ Imagen</button><button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}',${p.fila})">🗑️ Eliminar</button></div>`;grid.appendChild(card)})}
+  }catch(e){grid.innerHTML=`<div style="color:var(--red);padding:10px">Error de conexión</div>`}
+  loader.style.display="none";
+}
+
+function abrirModalImagen(prod,suc,img){
+  modalImagenData={producto:prod,sucursal:suc};
+  document.getElementById("modalImagenProducto").value=prod;
+  document.getElementById("modalImagenSucursal").value=suc;
+  document.getElementById("modalImagenUrl").value=img;
+  document.getElementById("modalImagen").classList.add("show");
+}
+function cerrarModalImagen(){
+  document.getElementById("modalImagen").classList.remove("show");
+}
+async function guardarImagenProducto(){
+  const prod=modalImagenData.producto,suc=modalImagenData.sucursal,url=document.getElementById("modalImagenUrl").value.trim();
+  if(!url){mostrarMsg("Ingresa una URL de imagen","err");return}
+  const loader=document.getElementById("loaderModalImagen");loader.style.display="block";
+  try{
+    const data=await api({ACCION:"ACTUALIZAR_IMAGEN_PRODUCTO",PRODUCTO:prod,SUCURSAL:suc,IMAGEN_URL:url,TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){loader.style.display="none";return}
+    if(data.ok){mostrarMsg("✅ Imagen guardada","ok");cerrarModalImagen();await cargarInventarioAdmin()}
+    else{mostrarMsg("Error: "+data.error,"err")}
+  }catch(e){mostrarMsg("Error de conexión","err")}
+  loader.style.display="none";
+}
+
+async function confirmarEliminar(id,prod,fila){
+  if(!confirm(`¿Eliminar el producto "${prod}"? Esta acción no se puede deshacer.`))return;
+  try{
+    const data=await api({ACCION:"ELIMINAR_PRODUCTO",ID:id,FILA:fila,TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){return}
+    if(data.ok){mostrarMsg("🗑️ Producto eliminado","ok");await cargarInventarioAdmin()}
+    else{mostrarMsg("Error: "+data.error,"err")}
+  }catch(e){mostrarMsg("Error de conexión","err")}
+}
 
 document.addEventListener("click",e=>{if(!e.target.closest(".autocomplete")&&!e.target.closest("input")){document.querySelectorAll(".autocomplete").forEach(a=>a.classList.remove("show"))}});
 
