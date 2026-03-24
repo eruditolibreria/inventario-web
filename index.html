@@ -280,7 +280,6 @@ tr:last-child td{ border-bottom:none; }
 .access-notice{ font-size:11px; color:var(--muted); text-align:center; margin-top:8px; }
 .empty-state{ color:var(--muted); text-align:center; padding:20px; font-size:13px; }
 
-/* ✓ NUEVOS ESTILOS PARA INVENTARIO Y IMÁGENES */
 .inventario-grid{
   display:grid; gap:10px; margin-bottom:14px;
 }
@@ -425,7 +424,7 @@ tr:last-child td{ border-bottom:none; }
         <div class="mode-tab" onclick="setModo('INVENTARIO')" id="tab-INVENTARIO"><span class="tab-icon">📚</span>Inventario</div>
       </div>
 
-      <!-- VENTA (MEJORADO CON IMÁGENES) -->
+      <!-- VENTA -->
       <div id="seccion-VENTA" class="oculto">
         <div class="section-label">Registrar venta</div>
         <div class="row-2 mb-12">
@@ -497,7 +496,7 @@ tr:last-child td{ border-bottom:none; }
       <div id="seccion-DEVOLUCIONES" class="oculto">
         <div class="section-label">Devoluciones</div>
         <div class="sub-tabs"><div class="sub-tab active" onclick="setSubModoDevol('REGISTRAR')" id="subtab-devol-REGISTRAR">📝 Registrar</div><div class="sub-tab" onclick="setSubModoDevol('LISTAR')" id="subtab-devol-LISTAR">📋 Historial</div></div>
-        <div id="devol-REGISTRAR"><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="devolSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="devolTipo"><option value="VENTA">↩ Devolución de Venta</option><option value="COMPRA">↪ Devolución de Compra</option></select></div></div><div class="field-group mt-8"><label class="field-label">ID de referencia (Venta o Compra)</label><input id="devolReferenciaId" placeholder="Ej: VEN-1234567-abcd1234"><div style="font-size:11px;color:var(--muted);margin-top:4px">Puedes encontrar el ID en la hoja VENTAS o COMPRAS del Google Sheet</div></div><div class="field-group"><label class="field-label">Producto</label><input id="devolProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDevol()"><div id="listaDevol" class="autocomplete"></div></div><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Cantidad</label><input id="devolCantidad" type="number" min="1" placeholder="0"></div><div class="field-group" style="margin:0"><label class="field-label">Precio unitario (Bs)</label><input id="devolPrecio" type="number" min="0.01" step="0.01" placeholder="0.00"></div></div><div class="field-group mt-8"><label class="field-label">Motivo</label><select id="devolMotivo"><option value="PRODUCTO_DEFECTUOSO">🔧 Producto defectuoso</option><option value="ERROR_FACTURACION">📄 Error de facturación</option><option value="PRODUCTO_INCORRECTO">📦 Producto incorrecto</option><option value="EXCESO_STOCK">📊 Exceso de stock</option><option value="OTRO">❓ Otro</option></select></div><div class="field-group"><label class="field-label">Cliente / Proveedor (opcional)</label><input id="devolClienteProveedor" placeholder="Nombre de quien devuelve"></div><div class="field-group"><label class="field-label">Notas (opcional)</label><textarea id="devolNotas" placeholder="Observaciones adicionales..."></textarea></div><div class="loader" id="loaderDevol"></div><button class="btn btn-teal" onclick="registrarDevolucion()">↩ Registrar Devolución</button></div>
+        <div id="devol-REGISTRAR"><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="devolSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="devolTipo"><option value="VENTA">↩ Devolución de Venta</option><option value="COMPRA">↪ Devolución de Compra</option></select></div></div><div class="field-group mt-8"><label class="field-label">ID de referencia (Venta o Compra)</label><input id="devolReferenciaId" placeholder="Ej: VEN-1234567-abcd1234"><div style="font-size:11px;color:var(--muted);margin-top:4px">Puedes encontrar el ID en el historial de ventas o compras</div></div><div class="field-group"><label class="field-label">Producto</label><input id="devolProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDevol()"><div id="listaDevol" class="autocomplete"></div></div><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Cantidad</label><input id="devolCantidad" type="number" min="1" placeholder="0"></div><div class="field-group" style="margin:0"><label class="field-label">Precio unitario (Bs)</label><input id="devolPrecio" type="number" min="0.01" step="0.01" placeholder="0.00"></div></div><div class="field-group mt-8"><label class="field-label">Motivo</label><select id="devolMotivo"><option value="PRODUCTO_DEFECTUOSO">🔧 Producto defectuoso</option><option value="ERROR_FACTURACION">📄 Error de facturación</option><option value="PRODUCTO_INCORRECTO">📦 Producto incorrecto</option><option value="EXCESO_STOCK">📊 Exceso de stock</option><option value="OTRO">❓ Otro</option></select></div><div class="field-group"><label class="field-label">Cliente / Proveedor (opcional)</label><input id="devolClienteProveedor" placeholder="Nombre de quien devuelve"></div><div class="field-group"><label class="field-label">Notas (opcional)</label><textarea id="devolNotas" placeholder="Observaciones adicionales..."></textarea></div><div class="loader" id="loaderDevol"></div><button class="btn btn-teal" onclick="registrarDevolucion()">↩ Registrar Devolución</button></div>
         <div id="devol-LISTAR" class="oculto"><div class="row-2 mb-12"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="filtroDevSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="filtroDevTipo"><option value="">Todos</option><option value="VENTA">Devolución venta</option><option value="COMPRA">Devolución compra</option></select></div></div><button class="btn btn-ghost mb-12" onclick="listarDevoluciones()">🔄 Cargar historial</button><div class="loader" id="loaderListarDevol"></div><div id="tablaDevol"></div><div id="paginDevol" style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;display:none"><button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(-1)">← Anterior</button><span id="paginDevol-info" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span><button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(1)">Siguiente →</button></div></div>
       </div>
 
@@ -518,7 +517,7 @@ tr:last-child td{ border-bottom:none; }
         <div id="searchResultsList" class="search-results-list"></div>
       </div>
 
-      <!-- ✓ NUEVO: INVENTARIO ADMIN -->
+      <!-- INVENTARIO ADMIN -->
       <div id="seccion-INVENTARIO" class="oculto">
         <div class="section-label">Gestión de inventario</div>
         <div class="row-2 mb-12">
@@ -536,7 +535,7 @@ tr:last-child td{ border-bottom:none; }
   </div>
 </div>
 
-<!-- ✓ MODAL DE EDICIÓN DE IMAGEN -->
+<!-- MODAL DE EDICIÓN DE IMAGEN -->
 <div id="modalImagen" class="modal-overlay">
   <div class="modal-content">
     <button class="modal-close" onclick="cerrarModalImagen()">✕</button>
@@ -566,10 +565,9 @@ tr:last-child td{ border-bottom:none; }
 
 <script>
 // ══════════════════════════════════════════════
-//  CONFIG — REEMPLAZA ESTA URL CON TU DEPLOY
+//  CONFIG — URL de la Edge Function en Supabase
 // ══════════════════════════════════════════════
-
-const baseURL = "https://script.google.com/macros/s/AKfycbyN7Obso50si81Fp04uZsnBSGSC-49Qxc1YqiEde7rfOLLc1mKO42fJS_wFqrA8t5sPPQ/exec";
+const baseURL = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos";
 
 let sessionToken=null, sessionUser=null, sessionRol=null;
 let inventarioGlobal=[], carrito=[];
@@ -580,12 +578,16 @@ const CARRITO_CHUNK_SIZE=10;
 // Modal de imagen
 let modalImagenData={producto:"", sucursal:""};
 
+// ── Función API: POST con JSON (más seguro que GET con parámetros) ──
 async function api(params) {
-  const qs = Object.entries(params)
-    .filter(([_,v]) => v !== undefined && v !== null && v !== "")
-    .map(([k,v]) => k + "=" + encodeURIComponent(v))
-    .join("&");
-  const res = await fetch(baseURL + "?" + qs, { redirect:'follow' });
+  const body = Object.fromEntries(
+    Object.entries(params).filter(([_,v]) => v !== undefined && v !== null && v !== "")
+  );
+  const res = await fetch(baseURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
   return res.json();
 }
 
@@ -685,87 +687,44 @@ function eliminarItem(i){carrito.splice(i,1);renderCarrito()}
 async function cobrar(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
   if(carrito.length===0){mostrarMsg("El carrito está vacío","err");return}
-
-  const sucursal  = document.getElementById("sucursalVenta").value;
-  const usuario   = document.getElementById("usuarioVenta").value||sessionUser;
-  const metodoPago= document.getElementById("metodoPagoVenta").value;
-  const cliente   = document.getElementById("clienteVenta").value||"MOSTRADOR";
-
+  const sucursal=document.getElementById("sucursalVenta").value;
+  const usuario=document.getElementById("usuarioVenta").value||sessionUser;
+  const metodoPago=document.getElementById("metodoPagoVenta").value;
+  const cliente=document.getElementById("clienteVenta").value||"MOSTRADOR";
   if(!sucursal){mostrarMsg("Selecciona una sucursal","err");return}
-  if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){
-    mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err");return;
-  }
-
-  const loader = document.getElementById("loaderVenta");
-  const btn    = document.getElementById("btnCobrar");
-  loader.style.display="block"; btn.disabled=true;
-
-  try {
-    const items = carrito.map(i=>({producto:i.producto, cantidad:i.cantidad}));
-
-    let carritoParam = {};
-
-    if(items.length <= CARRITO_CHUNK_SIZE) {
-      carritoParam = { CARRITO: JSON.stringify(items) };
-    } else {
-      let carritoId = null;
-
-      for(let i = 0; i < items.length; i += CARRITO_CHUNK_SIZE) {
-        const chunk = items.slice(i, i + CARRITO_CHUNK_SIZE);
-        const params = {
-          ACCION: "CARRITO_GUARDAR",
-          ITEMS: JSON.stringify(chunk),
-          TOKEN: sessionToken
-        };
-        if(carritoId) params.CARRITO_ID = carritoId;
-
-        const res = await api(params);
-
-        if(!res.ok) {
-          mostrarMsg("Error preparando carrito: "+(res.error||"desconocido"),"err");
-          loader.style.display="none"; btn.disabled=false;
-          return;
-        }
-        carritoId = res.carritoId;
+  if(metodoPago==="CREDITO"&&!document.getElementById("clienteVenta").value.trim()){mostrarMsg("Ingresa el nombre del cliente para ventas a crédito","err");return}
+  const loader=document.getElementById("loaderVenta"),btn=document.getElementById("btnCobrar");
+  loader.style.display="block";btn.disabled=true;
+  try{
+    const items=carrito.map(i=>({producto:i.producto,cantidad:i.cantidad}));
+    let carritoParam={};
+    if(items.length<=CARRITO_CHUNK_SIZE){
+      carritoParam={CARRITO:JSON.stringify(items)};
+    }else{
+      let carritoId=null;
+      for(let i=0;i<items.length;i+=CARRITO_CHUNK_SIZE){
+        const chunk=items.slice(i,i+CARRITO_CHUNK_SIZE);
+        const params={ACCION:"CARRITO_GUARDAR",ITEMS:JSON.stringify(chunk),TOKEN:sessionToken};
+        if(carritoId)params.CARRITO_ID=carritoId;
+        const res=await api(params);
+        if(!res.ok){mostrarMsg("Error preparando carrito: "+(res.error||"desconocido"),"err");loader.style.display="none";btn.disabled=false;return}
+        carritoId=res.carritoId;
       }
-
-      carritoParam = { CARRITO_ID: carritoId };
+      carritoParam={CARRITO_ID:carritoId};
     }
-
-    const data = await api({
-      ACCION: "VENTA_POS",
-      ...carritoParam,
-      SUCURSAL: sucursal,
-      USUARIO: usuario,
-      METODO_PAGO: metodoPago,
-      CLIENTE: cliente,
-      TOKEN: sessionToken
-    });
-
+    const data=await api({ACCION:"VENTA_POS",...carritoParam,SUCURSAL:sucursal,USUARIO:usuario,METODO_PAGO:metodoPago,CLIENTE:cliente,TOKEN:sessionToken});
     if(!manejarRespuesta(data)){loader.style.display="none";btn.disabled=false;return}
-
     if(data.ok){
       sonidoCaja();
-      mostrarMsg(
-        metodoPago==="CREDITO"
-          ? "📝 Venta a crédito registrada ("+items.length+" productos)"
-          : "✅ Venta registrada ("+items.length+" productos)","ok"
-      );
+      mostrarMsg(metodoPago==="CREDITO"?"📝 Venta a crédito registrada ("+items.length+" productos)":"✅ Venta registrada ("+items.length+" productos)","ok");
       document.getElementById("mainPanel").classList.add("ok");
       setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);
-      carrito=[]; renderCarrito();
-      document.getElementById("clienteVenta").value="";
-      cargarInventario();
-    } else if(data.error==="STOCK_INSUFICIENTE"){
-      mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err");
-    } else if(data.error==="CARRITO_EXPIRADO"){
-      mostrarMsg("⏰ El carrito expiró. Intenta cobrar de nuevo.","err");
-    } else {
-      mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err");
-    }
-
-  } catch(e){ mostrarMsg("Error de conexión","err"); }
-  loader.style.display="none"; btn.disabled=false;
+      carrito=[];renderCarrito();document.getElementById("clienteVenta").value="";cargarInventario();
+    }else if(data.error==="STOCK_INSUFICIENTE"){mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err")}
+    else if(data.error==="CARRITO_EXPIRADO"){mostrarMsg("⏰ El carrito expiró. Intenta cobrar de nuevo.","err")}
+    else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
+  }catch(e){mostrarMsg("Error de conexión","err")}
+  loader.style.display="none";btn.disabled=false;
 }
 
 // ══ COMPRA ══
@@ -873,7 +832,7 @@ function buscarProductoDetalle(){const t=document.getElementById("busquedaInput"
 async function ejecutarBusquedaDetalle(t){if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const loader=document.getElementById("loaderBusqueda"),l=document.getElementById("listaBusqueda"),co=document.getElementById("searchResultsList");l.classList.remove("show");loader.style.display="block";co.innerHTML="";try{const data=await api({ACCION:"BUSCAR_PRODUCTO_DETALLE",PRODUCTO:t,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}const rs=data.datos||[];if(rs.length===0){co.innerHTML=`<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${t}</b>"</div>`}else{rs.forEach(p=>co.appendChild(renderSearchCard(p)))}}catch(e){co.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
 function renderSearchCard(p){const div=document.createElement("div");div.className="search-result show";const sc=p.stock<=0?"warn":p.stock<=5?"orange":"ok",sl=p.stock<=0?"⛔ Sin stock":p.stock<=5?"⚠ Stock bajo":"✅ En stock";div.innerHTML=`<div class="sr-name">📦 ${p.producto}</div><div class="sr-grid"><div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">Bs ${p.precioVenta??'—'}</div></div><div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">Bs ${p.precioUnidad??'—'}</div></div><div class="sr-field ${sc==='warn'?'red':sc==='orange'?'orange':'accent'}"><div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud. · ${sl}</div></div><div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:#6eb4ff">${p.sucursal??'—'}</div></div><div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${p.ubicacion||'—'}</div></div><div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor||'—'}</div></div></div>`;return div}
 
-// ══ ✓ NUEVO: INVENTARIO ADMIN ══
+// ══ INVENTARIO ADMIN ══
 async function cargarInventarioAdmin(){
   if(!sessionToken||sessionRol!=="ADMIN"){mostrarMsg("Sin permisos","err");return}
   const loader=document.getElementById("loaderInvAdmin"),grid=document.getElementById("inventarioGrid"),filtroSuc=document.getElementById("filtroInvSucursal").value,filtroProd=document.getElementById("filtroInvProducto").value.toLowerCase();
@@ -882,10 +841,10 @@ async function cargarInventarioAdmin(){
     const data=await api({ACCION:"LISTAR_INVENTARIO_ADMIN",TOKEN:sessionToken});
     if(!manejarRespuesta(data)){loader.style.display="none";return}
     let datos=data.datos||[];
-    if(filtroSuc) datos=datos.filter(p=>p.sucursal===filtroSuc);
-    if(filtroProd) datos=datos.filter(p=>p.producto.toLowerCase().includes(filtroProd));
+    if(filtroSuc)datos=datos.filter(p=>p.sucursal===filtroSuc);
+    if(filtroProd)datos=datos.filter(p=>p.producto.toLowerCase().includes(filtroProd));
     if(datos.length===0){grid.innerHTML=`<div class="empty-state">Sin productos encontrados</div>`}
-    else{datos.forEach(p=>{const card=document.createElement("div");card.className="inventario-card";card.innerHTML=`<div class="inventario-img">${p.imagen?`<img src="${p.imagen}" alt="${p.producto}">`:``}</div><div class="inventario-info"><div class="nombre">${p.producto}</div><div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2)||'—'}</div><div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2)||'—'}</div><div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div><div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div></div><div class="inventario-actions"><button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen||''}')">🖼️ Imagen</button><button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}',${p.fila})">🗑️ Eliminar</button></div>`;grid.appendChild(card)})}
+    else{datos.forEach(p=>{const card=document.createElement("div");card.className="inventario-card";card.innerHTML=`<div class="inventario-img">${p.imagen?`<img src="${p.imagen}" alt="${p.producto}">`:``}</div><div class="inventario-info"><div class="nombre">${p.producto}</div><div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2)||'—'}</div><div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2)||'—'}</div><div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div><div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div></div><div class="inventario-actions"><button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen||''}')">🖼️ Imagen</button><button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}')">🗑️ Eliminar</button></div>`;grid.appendChild(card)})}
   }catch(e){grid.innerHTML=`<div style="color:var(--red);padding:10px">Error de conexión</div>`}
   loader.style.display="none";
 }
@@ -897,9 +856,7 @@ function abrirModalImagen(prod,suc,img){
   document.getElementById("modalImagenUrl").value=img;
   document.getElementById("modalImagen").classList.add("show");
 }
-function cerrarModalImagen(){
-  document.getElementById("modalImagen").classList.remove("show");
-}
+function cerrarModalImagen(){document.getElementById("modalImagen").classList.remove("show")}
 async function guardarImagenProducto(){
   const prod=modalImagenData.producto,suc=modalImagenData.sucursal,url=document.getElementById("modalImagenUrl").value.trim();
   if(!url){mostrarMsg("Ingresa una URL de imagen","err");return}
@@ -913,10 +870,10 @@ async function guardarImagenProducto(){
   loader.style.display="none";
 }
 
-async function confirmarEliminar(id,prod,fila){
+async function confirmarEliminar(id,prod){
   if(!confirm(`¿Eliminar el producto "${prod}"? Esta acción no se puede deshacer.`))return;
   try{
-    const data=await api({ACCION:"ELIMINAR_PRODUCTO",ID:id,FILA:fila,TOKEN:sessionToken});
+    const data=await api({ACCION:"ELIMINAR_PRODUCTO",ID:id,TOKEN:sessionToken});
     if(!manejarRespuesta(data)){return}
     if(data.ok){mostrarMsg("🗑️ Producto eliminado","ok");await cargarInventarioAdmin()}
     else{mostrarMsg("Error: "+data.error,"err")}
