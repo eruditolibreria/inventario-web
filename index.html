@@ -368,6 +368,17 @@ tr:last-child td{ border-bottom:none; }
   padding:2px 4px; border-radius:3px;
 }
 
+/* ── Caja live indicator ── */
+.caja-live-dot {
+  display:inline-block; width:7px; height:7px; border-radius:50%;
+  background:var(--accent); margin-right:5px;
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%{ opacity:0.4; transform:scale(0.7); }
+}
+
 </style>
 </head>
 
@@ -398,7 +409,7 @@ tr:last-child td{ border-bottom:none; }
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
-        <small>INVENTARIO v2.3</small>
+        <small>INVENTARIO v2.4</small>
       </div>
       <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar">👤</div>
@@ -578,7 +589,7 @@ const CARRITO_CHUNK_SIZE=10;
 // Modal de imagen
 let modalImagenData={producto:"", sucursal:""};
 
-// ── Función API: POST con JSON (más seguro que GET con parámetros) ──
+// ── Función API: POST con JSON ──
 async function api(params) {
   const body = Object.fromEntries(
     Object.entries(params).filter(([_,v]) => v !== undefined && v !== null && v !== "")
@@ -641,7 +652,8 @@ async function loginSubmit(){
       document.getElementById("repFechaDesde").value=fh.slice(0,7)+"-01";
       toggleClienteVenta();toggleClienteCompra();toggleAcreedorGasto();
       aplicarRol(sessionRol);cargarInventario();
-      if(sessionRol==="ADMIN")verificarEstadoCaja();
+      // ── NUEVO: cargar caja al inicio para todos los roles que tengan acceso ──
+      verificarEstadoCaja();
     }else{mostrarMensajeLogin(data.motivo||"Usuario o contraseña incorrectos","err")}
   }catch(e){mostrarMensajeLogin("Error de conexión. Intenta de nuevo.","err")}
   loader.style.display="none";btn.disabled=false;
@@ -671,7 +683,10 @@ function toggleAcreedorGasto(){document.getElementById("campoAcreedorGasto").cla
 
 // ══ INVENTARIO ══
 async function cargarInventario(){if(!sessionToken)return;try{const d=await api({ACCION:"LISTAR_INVENTARIO",LIMITE:200,TOKEN:sessionToken});inventarioGlobal=d.datos||[]}catch(e){}}
+// Refresco periódico de inventario cada 30s
 setInterval(()=>{if(sessionToken)cargarInventario()},30000);
+// ── NUEVO: Refresco periódico del estado de caja cada 20s ──
+setInterval(()=>{if(sessionToken)verificarEstadoCaja()},20000);
 
 // ══ AUTOCOMPLETE ══
 function construirAC(lista,items,onSelect){lista.innerHTML="";if(items.length===0){lista.classList.remove("show");return}items.slice(0,8).forEach(p=>{const div=document.createElement("div");div.className="ac-item";div.innerHTML=`<strong>${p.producto}</strong><small>Stock: ${p.stock} | Bs ${p.precio} | ${p.sucursal}</small>`;div.onclick=()=>{onSelect(p);lista.classList.remove("show")};lista.appendChild(div)});lista.classList.add("show")}
@@ -719,7 +734,10 @@ async function cobrar(){
       mostrarMsg(metodoPago==="CREDITO"?"📝 Venta a crédito registrada ("+items.length+" productos)":"✅ Venta registrada ("+items.length+" productos)","ok");
       document.getElementById("mainPanel").classList.add("ok");
       setTimeout(()=>document.getElementById("mainPanel").classList.remove("ok"),700);
-      carrito=[];renderCarrito();document.getElementById("clienteVenta").value="";cargarInventario();
+      carrito=[];renderCarrito();document.getElementById("clienteVenta").value="";
+      // ── NUEVO: actualizar inventario Y caja tras cada venta ──
+      cargarInventario();
+      verificarEstadoCaja();
     }else if(data.error==="STOCK_INSUFICIENTE"){mostrarMsg("⚠ Stock insuficiente: "+data.producto+" (disponible: "+data.disponible+")","err")}
     else if(data.error==="CARRITO_EXPIRADO"){mostrarMsg("⏰ El carrito expiró. Intenta cobrar de nuevo.","err")}
     else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
@@ -736,7 +754,15 @@ async function registrarCompra(){
   try{
     const data=await api({ACCION:"COMPRA",PRODUCTO:document.getElementById("productoCompra").value,CATEGORIA:document.getElementById("categoriaCompra").value,COSTO_PAQUETE:document.getElementById("costoCompra").value,CANTIDAD_PAQUETE:document.getElementById("cantidadCompra").value,UNIDADES_PAQUETE:document.getElementById("unidadesCompra").value,PRECIO_VENTA:document.getElementById("precioVentaCompra").value,PROVEEDOR:document.getElementById("proveedorCompra").value,FECHA_ENTRADA:document.getElementById("fechaCompra").value,UBICACION_PRODUCTO:document.getElementById("ubicacionCompra").value,SUCURSAL:document.getElementById("sucursalCompra").value,METODO_PAGO:mp,CLIENTE:cl,TOKEN:sessionToken});
     if(!manejarRespuesta(data)){loader.style.display="none";return}
-    if(data.ok){mostrarMsg(mp==="CREDITO"?"📝 Compra a crédito registrada":"✅ Compra registrada","ok");document.querySelectorAll("#seccion-COMPRA input").forEach(i=>i.value="");document.getElementById("categoriaCompra").value="";document.getElementById("metodoPagoCompra").value="EFECTIVO";toggleClienteCompra();document.getElementById("fechaCompra").value=hoy();cargarInventario()}
+    if(data.ok){
+      mostrarMsg(mp==="CREDITO"?"📝 Compra a crédito registrada":"✅ Compra registrada","ok");
+      document.querySelectorAll("#seccion-COMPRA input").forEach(i=>i.value="");
+      document.getElementById("categoriaCompra").value="";document.getElementById("metodoPagoCompra").value="EFECTIVO";
+      toggleClienteCompra();document.getElementById("fechaCompra").value=hoy();
+      // ── NUEVO: actualizar inventario Y caja tras cada compra ──
+      cargarInventario();
+      verificarEstadoCaja();
+    }
     else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
   }catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
@@ -751,7 +777,14 @@ async function registrarGasto(){
   try{
     const data=await api({ACCION:"REGISTRAR_GASTO",CONCEPTO:co,CATEGORIA:cat,IMPORTE:Number(imp),PERSONA:ac||pe,FECHA:document.getElementById("gastoFecha").value,NOTAS:document.getElementById("gastoNotas").value.trim(),SUCURSAL:su,METODO_PAGO:mp,TOKEN:sessionToken});
     if(!manejarRespuesta(data)){loader.style.display="none";return}
-    if(data.ok){mostrarMsg(mp==="CREDITO"?"📝 Gasto a crédito registrado":"💸 Gasto registrado correctamente","ok");["gastoConcepto","gastoImporte","gastoPersona","gastoNotas","gastoAcreedor"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});document.getElementById("gastoCategoria").value="";document.getElementById("sucursalGasto").value="";document.getElementById("metodoPagoGasto").value="EFECTIVO";toggleAcreedorGasto();document.getElementById("gastoFecha").value=hoy()}
+    if(data.ok){
+      mostrarMsg(mp==="CREDITO"?"📝 Gasto a crédito registrado":"💸 Gasto registrado correctamente","ok");
+      ["gastoConcepto","gastoImporte","gastoPersona","gastoNotas","gastoAcreedor"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
+      document.getElementById("gastoCategoria").value="";document.getElementById("sucursalGasto").value="";
+      document.getElementById("metodoPagoGasto").value="EFECTIVO";toggleAcreedorGasto();document.getElementById("gastoFecha").value=hoy();
+      // ── NUEVO: actualizar caja tras registrar gasto ──
+      verificarEstadoCaja();
+    }
     else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
   }catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
@@ -764,7 +797,18 @@ async function verificarEstadoCaja(){
     const t={ERUDITOS:{txt:document.getElementById("cajaTxtEruditos"),det:document.getElementById("cajaDetEruditos"),card:document.getElementById("cajaCardEruditos")},CENTRAL:{txt:document.getElementById("cajaTxtCentral"),det:document.getElementById("cajaDetCentral"),card:document.getElementById("cajaCardCentral")}};
     Object.values(t).forEach(x=>{x.txt.className="caja-estado-err";x.txt.textContent="🔴 Cerrada";x.det.textContent="";x.card.style.borderColor=""});
     const ca=data.cajas||[];let hay=false;
-    ca.forEach(c=>{const s=(c.sucursal||"").toUpperCase(),x=t[s];if(!x)return;hay=true;x.txt.className="caja-estado-ok";x.txt.textContent="🟢 Abierta";x.det.textContent="Bs "+c.saldoInicial+" · "+c.usuarioApertura;x.card.style.borderColor="var(--accent)";const o=document.createElement("option");o.value=c.cajaId;o.textContent=s+" · Bs "+c.saldoInicial;cs.appendChild(o)});
+    ca.forEach(c=>{
+      const s=(c.sucursal||"").toUpperCase(),x=t[s];if(!x)return;hay=true;
+      x.txt.className="caja-estado-ok";
+      // ── NUEVO: mostrar saldo inicial + movimientos del día en el detalle ──
+      x.txt.innerHTML=`<span class="caja-live-dot"></span>Abierta`;
+      const saldoStr=c.saldoActual!==undefined
+        ? `Bs ${Number(c.saldoActual).toFixed(2)} (actual)`
+        : `Bs ${Number(c.saldoInicial).toFixed(2)} (inicial)`;
+      x.det.textContent=saldoStr+' · '+c.usuarioApertura;
+      x.card.style.borderColor="var(--accent)";
+      const o=document.createElement("option");o.value=c.cajaId;o.textContent=s+" · "+saldoStr;cs.appendChild(o)
+    });
     cb.style.display=hay?"inline-block":"none";if(ca.length===1)cs.value=ca[0].cajaId;
   }catch(e){}}
 
@@ -784,19 +828,26 @@ async function registrarAporteRetiro(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const su=document.getElementById("aporteSucursal").value,tp=document.getElementById("aporteTipo").value,co=document.getElementById("aporteConcepto").value.trim(),mo=Number(document.getElementById("aporteMonto").value),me=document.getElementById("aporteMetodo").value,fe=document.getElementById("aporteFecha").value;
   if(!su){mostrarMsg("Selecciona una sucursal","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}
   const loader=document.getElementById("loaderAporte");loader.style.display="block";
-  try{const data=await api({ACCION:"REGISTRAR_APORTE_RETIRO",SUCURSAL:su,TIPO:tp,CONCEPTO:co,MONTO:mo,METODO_GASTO:me,FECHA:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("💼 "+tp+" registrado correctamente","ok");document.getElementById("aporteConcepto").value="";document.getElementById("aporteMonto").value="";document.getElementById("aporteSucursal").value="";document.getElementById("aporteTipo").value="APORTE"}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
+  try{const data=await api({ACCION:"REGISTRAR_APORTE_RETIRO",SUCURSAL:su,TIPO:tp,CONCEPTO:co,MONTO:mo,METODO_GASTO:me,FECHA:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}
+    if(data.ok){
+      mostrarMsg("💼 "+tp+" registrado correctamente","ok");
+      document.getElementById("aporteConcepto").value="";document.getElementById("aporteMonto").value="";
+      document.getElementById("aporteSucursal").value="";document.getElementById("aporteTipo").value="APORTE";
+      // ── NUEVO: siempre actualizar caja tras aportes/retiros ──
+      await verificarEstadoCaja();
+    }else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
 
 // ══ CUENTAS COBRAR ══
 async function listarCuentasCobrar(){const loader=document.getElementById("loaderCobrar"),tabla=document.getElementById("tablaCobrar");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_CUENTAS_COBRAR",SUCURSAL:document.getElementById("filtroCobrarSucursal").value,ESTADO:document.getElementById("filtroCobrarEstado").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`}else{let h=`<table><thead><tr><th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;data.datos.forEach(c=>{const ok=c.estado==="CANCELADO";h+=`<tr><td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalVenta).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoCobrar('${c.id}')">💳</button>`:""}</td></tr>`});tabla.innerHTML=h+"</tbody></table>"}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
 function abrirFormAbonoCobrar(id){document.getElementById("abonarCobrarId").value=id;document.getElementById("abonarCobrarMonto").value="";document.getElementById("abonarCobrarFecha").value=hoy();document.getElementById("formAbonarCobrar").classList.add("show");document.getElementById("formAbonarCobrar").scrollIntoView({behavior:"smooth"})}
-async function confirmarAbonoCobrar(){const id=document.getElementById("abonarCobrarId").value,mo=Number(document.getElementById("abonarCobrarMonto").value),me=document.getElementById("abonarCobrarMetodo").value,fe=document.getElementById("abonarCobrarFecha").value;if(!id){mostrarMsg("ID no encontrado","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}const loader=document.getElementById("loaderAbonarCobrar");loader.style.display="block";try{const data=await api({ACCION:"ABONAR_CUENTA_COBRAR",ID:id,ABONO:mo,METODO_PAGO:me,FECHA_PAGO:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");document.getElementById("formAbonarCobrar").classList.remove("show");await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
+async function confirmarAbonoCobrar(){const id=document.getElementById("abonarCobrarId").value,mo=Number(document.getElementById("abonarCobrarMonto").value),me=document.getElementById("abonarCobrarMetodo").value,fe=document.getElementById("abonarCobrarFecha").value;if(!id){mostrarMsg("ID no encontrado","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}const loader=document.getElementById("loaderAbonarCobrar");loader.style.display="block";try{const data=await api({ACCION:"ABONAR_CUENTA_COBRAR",ID:id,ABONO:mo,METODO_PAGO:me,FECHA_PAGO:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");document.getElementById("formAbonarCobrar").classList.remove("show");verificarEstadoCaja();await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
 async function registrarCuentaCobrar(){const su=document.getElementById("nuevaCobrarSucursal").value,cli=document.getElementById("nuevaCobrarCliente").value.trim(),co=document.getElementById("nuevaCobrarConcepto").value.trim(),to=Number(document.getElementById("nuevaCobrarTotal").value),ab=Number(document.getElementById("nuevaCobrarAbono").value)||0;if(!cli){mostrarMsg("Ingresa el nombre del cliente","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(to)||to<=0){mostrarMsg("Ingresa el total","err");return}const loader=document.getElementById("loaderNuevaCobrar");loader.style.display="block";try{const data=await api({ACCION:"REGISTRAR_CUENTA_COBRAR",SUCURSAL:su,CLIENTE:cli,CONCEPTO:co,TOTAL_VENTA:to,ABONO:ab,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");["nuevaCobrarCliente","nuevaCobrarConcepto","nuevaCobrarTotal","nuevaCobrarAbono"].forEach(id=>document.getElementById(id).value="");await listarCuentasCobrar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
 
 // ══ CUENTAS PAGAR ══
 async function listarCuentasPagar(){const loader=document.getElementById("loaderPagar"),tabla=document.getElementById("tablaPagar");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_CUENTAS_PAGAR",SUCURSAL:document.getElementById("filtroPagarSucursal").value,ESTADO:document.getElementById("filtroPagarEstado").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin cuentas encontradas</div>`}else{let h=`<table><thead><tr><th class="col-prod">Proveedor</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;data.datos.forEach(c=>{const ok=c.estado==="CANCELADO";h+=`<tr><td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalCompra).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok?"estado-cancelado":"estado-pendiente"}">${c.estado}</td><td>${!ok?`<button class="btn-ghost btn-sm" onclick="abrirFormAbonoPagar('${c.id}')">💳</button>`:""}</td></tr>`});tabla.innerHTML=h+"</tbody></table>"}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none"}
 function abrirFormAbonoPagar(id){document.getElementById("abonarPagarId").value=id;document.getElementById("abonarPagarMonto").value="";document.getElementById("abonarPagarFecha").value=hoy();document.getElementById("formAbonarPagar").classList.add("show");document.getElementById("formAbonarPagar").scrollIntoView({behavior:"smooth"})}
-async function confirmarAbonoPagar(){const id=document.getElementById("abonarPagarId").value,mo=Number(document.getElementById("abonarPagarMonto").value),me=document.getElementById("abonarPagarMetodo").value,fe=document.getElementById("abonarPagarFecha").value;if(!id){mostrarMsg("ID no encontrado","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}const loader=document.getElementById("loaderAbonarPagar");loader.style.display="block";try{const data=await api({ACCION:"ABONAR_CUENTA_PAGAR",ID:id,ABONO:mo,METODO_PAGO:me,FECHA_PAGO:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");document.getElementById("formAbonarPagar").classList.remove("show");await listarCuentasPagar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
+async function confirmarAbonoPagar(){const id=document.getElementById("abonarPagarId").value,mo=Number(document.getElementById("abonarPagarMonto").value),me=document.getElementById("abonarPagarMetodo").value,fe=document.getElementById("abonarPagarFecha").value;if(!id){mostrarMsg("ID no encontrado","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}const loader=document.getElementById("loaderAbonarPagar");loader.style.display="block";try{const data=await api({ACCION:"ABONAR_CUENTA_PAGAR",ID:id,ABONO:mo,METODO_PAGO:me,FECHA_PAGO:fe,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Pago registrado · Saldo: Bs "+data.nuevoSaldo,"ok");document.getElementById("formAbonarPagar").classList.remove("show");verificarEstadoCaja();await listarCuentasPagar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
 async function registrarCuentaPagar(){const su=document.getElementById("nuevaPagarSucursal").value,pr=document.getElementById("nuevaPagarProveedor").value.trim(),co=document.getElementById("nuevaPagarConcepto").value.trim(),to=Number(document.getElementById("nuevaPagarTotal").value),ab=Number(document.getElementById("nuevaPagarAbono").value)||0;if(!pr){mostrarMsg("Ingresa el nombre del proveedor","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(to)||to<=0){mostrarMsg("Ingresa el total","err");return}const loader=document.getElementById("loaderNuevaPagar");loader.style.display="block";try{const data=await api({ACCION:"REGISTRAR_CUENTA_PAGAR",SUCURSAL:su,PROVEEDOR:pr,CONCEPTO:co,TOTAL_COMPRA:to,ABONO:ab,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("📋 Cuenta registrada · Saldo: Bs "+data.saldo,"ok");["nuevaPagarProveedor","nuevaPagarConcepto","nuevaPagarTotal","nuevaPagarAbono"].forEach(id=>document.getElementById(id).value="");await listarCuentasPagar()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
 
 // ══ DEVOLUCIONES ══
@@ -807,7 +858,16 @@ async function registrarDevolucion(){
   if(!su){mostrarMsg("Selecciona una sucursal","err");return}if(!ref){mostrarMsg("Ingresa el ID de referencia","err");return}if(!pr){mostrarMsg("Ingresa el nombre del producto","err");return}if(isNaN(ca)||ca<=0){mostrarMsg("Ingresa una cantidad válida","err");return}if(isNaN(pc)||pc<=0){mostrarMsg("Ingresa un precio unitario válido","err");return}
   if(!confirm(`¿Confirmar devolución de ${ca} ud. de "${pr}" por Bs ${(ca*pc).toFixed(2)}?`))return;
   const loader=document.getElementById("loaderDevol");loader.style.display="block";
-  try{const data=await api({ACCION:"REGISTRAR_DEVOLUCION",SUCURSAL:su,TIPO_DEVOLUCION:tp,REFERENCIA_ID:ref,PRODUCTO:pr,CANTIDAD:ca,PRECIO_UNITARIO:pc,MOTIVO:mo,CLIENTE_PROVEEDOR:cp,NOTAS:no,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("↩ Devolución registrada · Total: Bs "+data.total,"ok");["devolReferenciaId","devolProducto","devolCantidad","devolPrecio","devolClienteProveedor","devolNotas"].forEach(id=>document.getElementById(id).value="");document.getElementById("devolSucursal").value="";document.getElementById("devolTipo").value="VENTA";document.getElementById("devolMotivo").value="PRODUCTO_DEFECTUOSO";cargarInventario()}else if(data.error==="REFERENCIA_NO_ENCONTRADA"){mostrarMsg("⚠ "+data.motivo,"err")}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
+  try{const data=await api({ACCION:"REGISTRAR_DEVOLUCION",SUCURSAL:su,TIPO_DEVOLUCION:tp,REFERENCIA_ID:ref,PRODUCTO:pr,CANTIDAD:ca,PRECIO_UNITARIO:pc,MOTIVO:mo,CLIENTE_PROVEEDOR:cp,NOTAS:no,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}
+    if(data.ok){
+      mostrarMsg("↩ Devolución registrada · Total: Bs "+data.total,"ok");
+      ["devolReferenciaId","devolProducto","devolCantidad","devolPrecio","devolClienteProveedor","devolNotas"].forEach(id=>document.getElementById(id).value="");
+      document.getElementById("devolSucursal").value="";document.getElementById("devolTipo").value="VENTA";document.getElementById("devolMotivo").value="PRODUCTO_DEFECTUOSO";
+      // ── NUEVO: actualizar inventario Y caja tras devolución ──
+      cargarInventario();
+      verificarEstadoCaja();
+    }else if(data.error==="REFERENCIA_NO_ENCONTRADA"){mostrarMsg("⚠ "+data.motivo,"err")}
+    else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
 async function listarDevoluciones(pg){
   if(!sessionToken)return;if(pg===undefined)pg=1;devolPaginaActual=pg;
