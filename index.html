@@ -171,6 +171,19 @@ tr:last-child td{border-bottom:none;}
 .btn-icon{background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;transition:all 0.15s;}
 .btn-icon:hover{border-color:var(--accent);color:var(--accent);}
 .btn-icon.danger:hover{border-color:var(--red);color:var(--red);}
+/* Transferencias */
+.transf-arrow{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;font-size:13px;font-weight:700;}
+.transf-arrow .suc-pill{background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--text);}
+.transf-arrow .arrow{color:var(--teal);font-size:18px;}
+.cierre-resumen{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px;display:none;}
+.cierre-resumen.show{display:block;animation:fadeIn 0.2s ease;}
+.cierre-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.cierre-row:last-child{border-bottom:none;font-weight:700;font-size:14px;}
+.cierre-row .label{color:var(--muted);}
+.cierre-row .val{font-family:var(--mono);}
+.val-pos{color:var(--accent);}
+.val-neg{color:var(--red);}
+.val-neu{color:var(--text);}
 </style>
 </head>
 <body>
@@ -200,7 +213,7 @@ tr:last-child td{border-bottom:none;}
     <div class="app-header">
       <div class="brand">
         <h1>📦 <span>Eruditos</span></h1>
-        <small>INVENTARIO v2.5</small>
+        <small>INVENTARIO v2.6</small>
       </div>
       <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar">👤</div>
@@ -215,16 +228,17 @@ tr:last-child td{border-bottom:none;}
 
     <div class="panel-body">
       <div class="mode-tabs">
-        <div class="mode-tab" onclick="setModo('VENTA')" id="tab-VENTA"><span class="tab-icon">💰</span>Venta</div>
-        <div class="mode-tab" onclick="setModo('COMPRA')" id="tab-COMPRA"><span class="tab-icon">🛒</span>Compra</div>
-        <div class="mode-tab" onclick="setModo('GASTO')" id="tab-GASTO"><span class="tab-icon">💸</span>Gastos</div>
-        <div class="mode-tab" onclick="setModo('CAJA')" id="tab-CAJA"><span class="tab-icon">🏦</span>Caja</div>
-        <div class="mode-tab" onclick="setModo('CUENTAS')" id="tab-CUENTAS"><span class="tab-icon">📋</span>Cuentas</div>
-        <div class="mode-tab" onclick="setModo('DEVOLUCIONES')" id="tab-DEVOLUCIONES"><span class="tab-icon">↩</span>Devol.</div>
-        <div class="mode-tab" onclick="setModo('REPORTES')" id="tab-REPORTES"><span class="tab-icon">📊</span>Report.</div>
-        <div class="mode-tab" onclick="setModo('BUSQUEDA')" id="tab-BUSQUEDA"><span class="tab-icon">🔎</span>Buscar</div>
-        <div class="mode-tab" onclick="setModo('INVENTARIO')" id="tab-INVENTARIO"><span class="tab-icon">📚</span>Invent.</div>
-        <div class="mode-tab" onclick="setModo('USUARIOS')" id="tab-USUARIOS"><span class="tab-icon">👥</span>Usuarios</div>
+        <div class="mode-tab" onclick="setModo('VENTA')"         id="tab-VENTA">        <span class="tab-icon">💰</span>Venta</div>
+        <div class="mode-tab" onclick="setModo('COMPRA')"        id="tab-COMPRA">       <span class="tab-icon">🛒</span>Compra</div>
+        <div class="mode-tab" onclick="setModo('GASTO')"         id="tab-GASTO">        <span class="tab-icon">💸</span>Gastos</div>
+        <div class="mode-tab" onclick="setModo('CAJA')"          id="tab-CAJA">         <span class="tab-icon">🏦</span>Caja</div>
+        <div class="mode-tab" onclick="setModo('CUENTAS')"       id="tab-CUENTAS">      <span class="tab-icon">📋</span>Cuentas</div>
+        <div class="mode-tab" onclick="setModo('DEVOLUCIONES')"  id="tab-DEVOLUCIONES"> <span class="tab-icon">↩</span>Devol.</div>
+        <div class="mode-tab" onclick="setModo('TRANSFERENCIAS')" id="tab-TRANSFERENCIAS"><span class="tab-icon">🔄</span>Transf.</div>
+        <div class="mode-tab" onclick="setModo('REPORTES')"      id="tab-REPORTES">     <span class="tab-icon">📊</span>Report.</div>
+        <div class="mode-tab" onclick="setModo('BUSQUEDA')"      id="tab-BUSQUEDA">     <span class="tab-icon">🔎</span>Buscar</div>
+        <div class="mode-tab" onclick="setModo('INVENTARIO')"    id="tab-INVENTARIO">   <span class="tab-icon">📚</span>Invent.</div>
+        <div class="mode-tab" onclick="setModo('USUARIOS')"      id="tab-USUARIOS">     <span class="tab-icon">👥</span>Usuarios</div>
       </div>
 
       <!-- VENTA -->
@@ -285,9 +299,34 @@ tr:last-child td{border-bottom:none;}
           <div id="cajaCardCentral" class="caja-card" style="margin:0"><div class="sr-key" style="margin-bottom:6px">CENTRAL</div><div id="cajaTxtCentral" class="caja-estado-err">🔴 Cerrada</div><div id="cajaDetCentral" class="caja-detalle"></div></div>
         </div>
         <div class="sub-tabs"><div class="sub-tab active" onclick="setSubModoCaja('APERTURA')" id="subtab-caja-APERTURA">🔓 Apertura</div><div class="sub-tab" onclick="setSubModoCaja('CIERRE')" id="subtab-caja-CIERRE">🔒 Cierre</div><div class="sub-tab" onclick="setSubModoCaja('APORTES')" id="subtab-caja-APORTES">💼 Aportes</div></div>
-        <div id="caja-APERTURA"><div class="field-group"><label class="field-label">Sucursal</label><select id="aperturaSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group"><label class="field-label">Saldo inicial (efectivo en caja)</label><input id="aperturaSaldo" type="number" min="0" step="0.01" placeholder="Bs 0.00"></div><div class="field-group"><label class="field-label">Notas (opcional)</label><input id="aperturaNotas" placeholder="Observaciones de apertura"></div><div class="loader" id="loaderApertura"></div><button class="btn btn-primary" onclick="abrirCaja()">🔓 Abrir Caja</button></div>
-        <div id="caja-CIERRE" class="oculto"><div class="field-group"><label class="field-label">Sucursal a cerrar</label><select id="cierreCajaId"><option value="">🏪 Seleccionar sucursal</option></select></div><div class="field-group"><label class="field-label">Saldo final contado (efectivo físico)</label><input id="cierreSaldo" type="number" min="0" step="0.01" placeholder="Bs 0.00"></div><div class="field-group"><label class="field-label">Notas de cierre (opcional)</label><input id="cierreNotas" placeholder="Observaciones de cierre"></div><div class="loader" id="loaderCierre"></div><button class="btn btn-red" onclick="cerrarCaja()">🔒 Cerrar Caja</button></div>
-        <div id="caja-APORTES" class="oculto"><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="aporteSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="aporteTipo"><option value="APORTE">⬆ Aporte</option><option value="RETIRO">⬇ Retiro</option></select></div></div><div class="field-group mt-8"><label class="field-label">Concepto</label><input id="aporteConcepto" placeholder="Ej: Capital inicial, retiro propietario..."></div><div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Monto (Bs)</label><input id="aporteMonto" type="number" min="0.01" step="0.01" placeholder="0.00"></div><div class="field-group" style="margin:0"><label class="field-label">Método</label><select id="aporteMetodo"><option value="EFECTIVO">💵 Efectivo</option><option value="TRANSFERENCIA">🏦 Transferencia</option></select></div></div><div class="field-group mt-8"><label class="field-label">Fecha</label><input id="aporteFecha" type="date"></div><div class="loader" id="loaderAporte"></div><button class="btn btn-purple mt-8" onclick="registrarAporteRetiro()">💼 Registrar</button></div>
+        <div id="caja-APERTURA">
+          <div class="field-group"><label class="field-label">Sucursal</label><select id="aperturaSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div>
+          <div class="field-group"><label class="field-label">Saldo inicial (efectivo en caja)</label><input id="aperturaSaldo" type="number" min="0" step="0.01" placeholder="Bs 0.00"></div>
+          <div class="field-group"><label class="field-label">Notas (opcional)</label><input id="aperturaNotas" placeholder="Observaciones de apertura"></div>
+          <div class="loader" id="loaderApertura"></div>
+          <button class="btn btn-primary" onclick="abrirCaja()">🔓 Abrir Caja</button>
+        </div>
+        <div id="caja-CIERRE" class="oculto">
+          <div class="field-group"><label class="field-label">Sucursal a cerrar</label><select id="cierreCajaId"><option value="">🏪 Seleccionar sucursal</option></select></div>
+          <div class="field-group"><label class="field-label">Saldo final contado (efectivo físico)</label><input id="cierreSaldo" type="number" min="0" step="0.01" placeholder="Bs 0.00"></div>
+          <div class="field-group"><label class="field-label">Notas de cierre (opcional)</label><input id="cierreNotas" placeholder="Observaciones de cierre"></div>
+          <!-- Resumen de cierre tras confirmar -->
+          <div id="cierreResumen" class="cierre-resumen">
+            <div class="cierre-row"><span class="label">Sistema esperaba</span><span class="val val-neu" id="cierreValSistema">—</span></div>
+            <div class="cierre-row"><span class="label">Contaste</span><span class="val val-neu" id="cierreValContado">—</span></div>
+            <div class="cierre-row"><span class="label">Diferencia</span><span class="val" id="cierreValDif">—</span></div>
+          </div>
+          <div class="loader" id="loaderCierre"></div>
+          <button class="btn btn-red mt-8" onclick="cerrarCaja()">🔒 Cerrar Caja</button>
+        </div>
+        <div id="caja-APORTES" class="oculto">
+          <div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="aporteSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="aporteTipo"><option value="APORTE">⬆ Aporte</option><option value="RETIRO">⬇ Retiro</option></select></div></div>
+          <div class="field-group mt-8"><label class="field-label">Concepto</label><input id="aporteConcepto" placeholder="Ej: Capital inicial, retiro propietario..."></div>
+          <div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Monto (Bs)</label><input id="aporteMonto" type="number" min="0.01" step="0.01" placeholder="0.00"></div><div class="field-group" style="margin:0"><label class="field-label">Método</label><select id="aporteMetodo"><option value="EFECTIVO">💵 Efectivo</option><option value="TRANSFERENCIA">🏦 Transferencia</option></select></div></div>
+          <div class="field-group mt-8"><label class="field-label">Fecha</label><input id="aporteFecha" type="date"></div>
+          <div class="loader" id="loaderAporte"></div>
+          <button class="btn btn-purple mt-8" onclick="registrarAporteRetiro()">💼 Registrar</button>
+        </div>
       </div>
 
       <!-- CUENTAS -->
@@ -304,6 +343,84 @@ tr:last-child td{border-bottom:none;}
         <div class="sub-tabs"><div class="sub-tab active" onclick="setSubModoDevol('REGISTRAR')" id="subtab-devol-REGISTRAR">📝 Registrar</div><div class="sub-tab" onclick="setSubModoDevol('LISTAR')" id="subtab-devol-LISTAR">📋 Historial</div></div>
         <div id="devol-REGISTRAR"><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="devolSucursal"><option value="">🏪 Seleccionar</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="devolTipo"><option value="VENTA">↩ Devolución de Venta</option><option value="COMPRA">↪ Devolución de Compra</option></select></div></div><div class="field-group mt-8"><label class="field-label">ID de referencia (Venta o Compra)</label><input id="devolReferenciaId" placeholder="Ej: VEN-1234567-abcd1234"><div style="font-size:11px;color:var(--muted);margin-top:4px">Puedes encontrar el ID en el historial de ventas o compras</div></div><div class="field-group"><label class="field-label">Producto</label><input id="devolProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDevol()"><div id="listaDevol" class="autocomplete"></div></div><div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Cantidad</label><input id="devolCantidad" type="number" min="1" placeholder="0"></div><div class="field-group" style="margin:0"><label class="field-label">Precio unitario (Bs)</label><input id="devolPrecio" type="number" min="0.01" step="0.01" placeholder="0.00"></div></div><div class="field-group mt-8"><label class="field-label">Motivo</label><select id="devolMotivo"><option value="PRODUCTO_DEFECTUOSO">🔧 Producto defectuoso</option><option value="ERROR_FACTURACION">📄 Error de facturación</option><option value="PRODUCTO_INCORRECTO">📦 Producto incorrecto</option><option value="EXCESO_STOCK">📊 Exceso de stock</option><option value="OTRO">❓ Otro</option></select></div><div class="field-group"><label class="field-label">Cliente / Proveedor (opcional)</label><input id="devolClienteProveedor" placeholder="Nombre de quien devuelve"></div><div class="field-group"><label class="field-label">Notas (opcional)</label><textarea id="devolNotas" placeholder="Observaciones adicionales..."></textarea></div><div class="loader" id="loaderDevol"></div><button class="btn btn-teal" onclick="registrarDevolucion()">↩ Registrar Devolución</button></div>
         <div id="devol-LISTAR" class="oculto"><div class="row-2 mb-12"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="filtroDevSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Tipo</label><select id="filtroDevTipo"><option value="">Todos</option><option value="VENTA">Devolución venta</option><option value="COMPRA">Devolución compra</option></select></div></div><button class="btn btn-ghost mb-12" onclick="listarDevoluciones()">🔄 Cargar historial</button><div class="loader" id="loaderListarDevol"></div><div id="tablaDevol"></div><div id="paginDevol" style="display:none;justify-content:space-between;align-items:center;margin-top:10px"><button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(-1)">← Anterior</button><span id="paginDevol-info" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span><button class="btn-ghost btn-sm btn" onclick="cambiarPaginaDevol(1)">Siguiente →</button></div></div>
+      </div>
+
+      <!-- TRANSFERENCIAS -->
+      <div id="seccion-TRANSFERENCIAS" class="oculto">
+        <div class="section-label">Transferencia entre sucursales</div>
+        <div class="sub-tabs">
+          <div class="sub-tab active" onclick="setSubModoTransf('REGISTRAR')" id="subtab-transf-REGISTRAR">📦 Registrar</div>
+          <div class="sub-tab" onclick="setSubModoTransf('HISTORIAL')" id="subtab-transf-HISTORIAL">📋 Historial</div>
+        </div>
+
+        <!-- REGISTRAR TRANSFERENCIA -->
+        <div id="transf-REGISTRAR">
+          <div class="field-group">
+            <label class="field-label">Producto</label>
+            <input id="transfProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoTransf()">
+            <div id="listaTransf" class="autocomplete"></div>
+            <div id="infoTransf" class="info-prod"></div>
+          </div>
+          <div class="row-2">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Sucursal origen</label>
+              <select id="transfOrigen" onchange="actualizarInfoTransf()">
+                <option value="">🏪 Seleccionar</option>
+                <option value="ERUDITOS">ERUDITOS</option>
+                <option value="CENTRAL">CENTRAL</option>
+              </select>
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Sucursal destino</label>
+              <select id="transfDestino">
+                <option value="">🏪 Seleccionar</option>
+                <option value="ERUDITOS">ERUDITOS</option>
+                <option value="CENTRAL">CENTRAL</option>
+              </select>
+            </div>
+          </div>
+          <div class="transf-arrow" id="transfArrowDisplay" style="display:none">
+            <span class="suc-pill" id="transfArrowOrigen">—</span>
+            <span class="arrow">→</span>
+            <span class="suc-pill" id="transfArrowDestino">—</span>
+          </div>
+          <div class="field-group mt-8">
+            <label class="field-label">Cantidad a transferir</label>
+            <input id="transfCantidad" type="number" min="1" placeholder="0">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Motivo (opcional)</label>
+            <input id="transfMotivo" placeholder="Ej: Reposición, exceso de stock...">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Notas (opcional)</label>
+            <textarea id="transfNotas" placeholder="Observaciones adicionales..." style="min-height:50px"></textarea>
+          </div>
+          <div class="loader" id="loaderTransf"></div>
+          <button class="btn btn-teal" onclick="registrarTransferencia()">🔄 Transferir</button>
+        </div>
+
+        <!-- HISTORIAL DE TRANSFERENCIAS -->
+        <div id="transf-HISTORIAL" class="oculto">
+          <div class="row-2 mb-12">
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Origen</label>
+              <select id="filtroTransfOrigen"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+            </div>
+            <div class="field-group" style="margin:0">
+              <label class="field-label">Destino</label>
+              <select id="filtroTransfDestino"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+            </div>
+          </div>
+          <button class="btn btn-ghost mb-12" onclick="listarTransferencias()">🔄 Cargar historial</button>
+          <div class="loader" id="loaderListarTransf"></div>
+          <div id="tablaTransf"></div>
+          <div id="paginTransf" style="display:none;justify-content:space-between;align-items:center;margin-top:10px">
+            <button class="btn-ghost btn-sm btn" onclick="cambiarPaginaTransf(-1)">← Anterior</button>
+            <span id="paginTransf-info" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
+            <button class="btn-ghost btn-sm btn" onclick="cambiarPaginaTransf(1)">Siguiente →</button>
+          </div>
+        </div>
       </div>
 
       <!-- REPORTES -->
@@ -335,37 +452,19 @@ tr:last-child td{border-bottom:none;}
         <div id="inventarioGrid" class="inventario-grid"></div>
       </div>
 
-      <!-- ══ USUARIOS (solo ADMIN) ══ -->
+      <!-- USUARIOS (solo ADMIN) -->
       <div id="seccion-USUARIOS" class="oculto">
         <div class="section-label">Gestión de usuarios</div>
-
-        <!-- Lista de usuarios -->
         <button class="btn btn-ghost mb-12" onclick="cargarUsuarios()">🔄 Cargar usuarios</button>
         <div class="loader" id="loaderUsuarios"></div>
         <div id="listaUsuarios"></div>
-
         <div class="divider"></div>
-
-        <!-- Crear nuevo usuario -->
         <div class="section-label">Crear nuevo usuario</div>
         <div class="row-2">
-          <div class="field-group" style="margin:0">
-            <label class="field-label">Usuario</label>
-            <input id="nuevoUsuarioNombre" placeholder="Nombre de usuario" style="text-transform:uppercase">
-          </div>
-          <div class="field-group" style="margin:0">
-            <label class="field-label">Rol</label>
-            <select id="nuevoUsuarioRol">
-              <option value="VENDEDOR">🛍️ Vendedor</option>
-              <option value="ALMACEN">📦 Almacén</option>
-              <option value="ADMIN">👑 Admin</option>
-            </select>
-          </div>
+          <div class="field-group" style="margin:0"><label class="field-label">Usuario</label><input id="nuevoUsuarioNombre" placeholder="Nombre de usuario" style="text-transform:uppercase"></div>
+          <div class="field-group" style="margin:0"><label class="field-label">Rol</label><select id="nuevoUsuarioRol"><option value="VENDEDOR">🛍️ Vendedor</option><option value="ALMACEN">📦 Almacén</option><option value="ADMIN">👑 Admin</option></select></div>
         </div>
-        <div class="field-group mt-8">
-          <label class="field-label">Contraseña (mín. 6 caracteres)</label>
-          <input id="nuevoUsuarioPass" type="password" placeholder="••••••••">
-        </div>
+        <div class="field-group mt-8"><label class="field-label">Contraseña (mín. 6 caracteres)</label><input id="nuevoUsuarioPass" type="password" placeholder="••••••••"></div>
         <div class="loader" id="loaderCrearUsuario"></div>
         <button class="btn btn-primary mt-8" onclick="crearUsuario()">➕ Crear usuario</button>
       </div>
@@ -396,23 +495,10 @@ tr:last-child td{border-bottom:none;}
     <button class="modal-close" onclick="cerrarModalRol()">✕</button>
     <div class="modal-header">Cambiar rol de usuario</div>
     <input type="hidden" id="modalRolUsuario">
-    <div class="field-group">
-      <label class="field-label">Usuario</label>
-      <input id="modalRolNombre" type="text" readonly style="background:var(--surface3)">
-    </div>
-    <div class="field-group">
-      <label class="field-label">Nuevo rol</label>
-      <select id="modalRolNuevo">
-        <option value="VENDEDOR">🛍️ Vendedor</option>
-        <option value="ALMACEN">📦 Almacén</option>
-        <option value="ADMIN">👑 Admin</option>
-      </select>
-    </div>
+    <div class="field-group"><label class="field-label">Usuario</label><input id="modalRolNombre" type="text" readonly style="background:var(--surface3)"></div>
+    <div class="field-group"><label class="field-label">Nuevo rol</label><select id="modalRolNuevo"><option value="VENDEDOR">🛍️ Vendedor</option><option value="ALMACEN">📦 Almacén</option><option value="ADMIN">👑 Admin</option></select></div>
     <div class="loader" id="loaderModalRol"></div>
-    <div class="row-2 mt-8">
-      <button class="btn btn-primary" onclick="confirmarCambioRol()">✅ Guardar</button>
-      <button class="btn btn-ghost" onclick="cerrarModalRol()">Cancelar</button>
-    </div>
+    <div class="row-2 mt-8"><button class="btn btn-primary" onclick="confirmarCambioRol()">✅ Guardar</button><button class="btn btn-ghost" onclick="cerrarModalRol()">Cancelar</button></div>
   </div>
 </div>
 
@@ -422,19 +508,10 @@ tr:last-child td{border-bottom:none;}
     <button class="modal-close" onclick="cerrarModalPass()">✕</button>
     <div class="modal-header">Resetear contraseña</div>
     <input type="hidden" id="modalPassUsuario">
-    <div class="field-group">
-      <label class="field-label">Usuario</label>
-      <input id="modalPassNombre" type="text" readonly style="background:var(--surface3)">
-    </div>
-    <div class="field-group">
-      <label class="field-label">Nueva contraseña (mín. 6 caracteres)</label>
-      <input id="modalPassNueva" type="password" placeholder="••••••••">
-    </div>
+    <div class="field-group"><label class="field-label">Usuario</label><input id="modalPassNombre" type="text" readonly style="background:var(--surface3)"></div>
+    <div class="field-group"><label class="field-label">Nueva contraseña (mín. 6 caracteres)</label><input id="modalPassNueva" type="password" placeholder="••••••••"></div>
     <div class="loader" id="loaderModalPass"></div>
-    <div class="row-2 mt-8">
-      <button class="btn btn-primary" onclick="confirmarResetPass()">✅ Guardar</button>
-      <button class="btn btn-ghost" onclick="cerrarModalPass()">Cancelar</button>
-    </div>
+    <div class="row-2 mt-8"><button class="btn btn-primary" onclick="confirmarResetPass()">✅ Guardar</button><button class="btn btn-ghost" onclick="cerrarModalPass()">Cancelar</button></div>
   </div>
 </div>
 
@@ -443,8 +520,8 @@ const baseURL = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos"
 
 let sessionToken=null, sessionUser=null, sessionRol=null;
 let inventarioGlobal=[], carrito=[];
-let devolPaginaActual=1;
-const DEVOL_LIMITE=20;
+let devolPaginaActual=1, transfPaginaActual=1;
+const DEVOL_LIMITE=20, TRANSF_LIMITE=20;
 const CARRITO_CHUNK_SIZE=10;
 let modalImagenData={producto:"", sucursal:""};
 
@@ -458,16 +535,18 @@ function sonidoCaja(){
   try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o1=ctx.createOscillator(),g1=ctx.createGain();o1.connect(g1);g1.connect(ctx.destination);o1.frequency.value=1200;g1.gain.setValueAtTime(0.3,ctx.currentTime);g1.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.3);const o2=ctx.createOscillator(),g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);o2.frequency.value=800;g2.gain.setValueAtTime(0.2,ctx.currentTime+0.15);g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);o2.start(ctx.currentTime+0.15);o2.stop(ctx.currentTime+0.5);}catch(e){}
 }
 
+const TODOS_MODOS=["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","INVENTARIO","USUARIOS"];
+
 const PERMISOS={
-  ADMIN:{tabs:["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA","INVENTARIO","USUARIOS"],inicio:"VENTA"},
-  VENDEDOR:{tabs:["VENTA","CUENTAS","DEVOLUCIONES","BUSQUEDA"],inicio:"VENTA"},
-  ALMACEN:{tabs:["COMPRA","CUENTAS","DEVOLUCIONES","BUSQUEDA","INVENTARIO"],inicio:"COMPRA"},
+  ADMIN:   { tabs:[...TODOS_MODOS],                                                           inicio:"VENTA"  },
+  VENDEDOR:{ tabs:["VENTA","CUENTAS","DEVOLUCIONES","BUSQUEDA"],                              inicio:"VENTA"  },
+  ALMACEN: { tabs:["COMPRA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","BUSQUEDA","INVENTARIO"],inicio:"COMPRA" },
 };
 const PERMISOS_DEFAULT={tabs:["BUSQUEDA"],inicio:"BUSQUEDA"};
 function obtenerPermisos(r){return PERMISOS[(r||"").toUpperCase()]||PERMISOS_DEFAULT}
 function aplicarRol(rol){
   const{tabs,inicio}=obtenerPermisos(rol);
-  ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA","INVENTARIO","USUARIOS"].forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden-tab",!tabs.includes(t)));
+  TODOS_MODOS.forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden-tab",!tabs.includes(t)));
   const ru=(rol||"").toUpperCase();
   document.getElementById("subtab-cuentas-COBRAR").classList.toggle("hidden-tab",!["ADMIN","VENDEDOR"].includes(ru));
   document.getElementById("subtab-cuentas-PAGAR").classList.toggle("hidden-tab",!["ADMIN","ALMACEN"].includes(ru));
@@ -510,17 +589,25 @@ function cerrarSesion(){
 // ══ UTILIDADES ══
 function hoy(){return new Date().toISOString().slice(0,10)}
 function mostrarMsg(t,tipo){const m=document.getElementById("mensajeApp");m.className="mensaje "+(tipo==="ok"?"msg-ok":"msg-err");m.textContent=t;m.style.display="block";setTimeout(()=>m.style.display="none",3500)}
-function setModo(modo){["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","REPORTES","BUSQUEDA","INVENTARIO","USUARIOS"].forEach(m=>{document.getElementById("seccion-"+m).classList.toggle("oculto",m!==modo);document.getElementById("tab-"+m).classList.toggle("active",m===modo)});if(modo==="CAJA"&&sessionToken)verificarEstadoCaja();if(modo==="DEVOLUCIONES")setSubModoDevol("REGISTRAR");if(modo==="REPORTES")setSubModoReportes("MAS");if(modo==="USUARIOS")cargarUsuarios();}
-function setSubModoCaja(s){["APERTURA","CIERRE","APORTES"].forEach(x=>{document.getElementById("caja-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-caja-"+x).classList.toggle("active",x===s)})}
+function setModo(modo){
+  TODOS_MODOS.forEach(m=>{document.getElementById("seccion-"+m).classList.toggle("oculto",m!==modo);document.getElementById("tab-"+m).classList.toggle("active",m===modo)});
+  if(modo==="CAJA"&&sessionToken)verificarEstadoCaja();
+  if(modo==="DEVOLUCIONES")setSubModoDevol("REGISTRAR");
+  if(modo==="REPORTES")setSubModoReportes("MAS");
+  if(modo==="USUARIOS")cargarUsuarios();
+  if(modo==="TRANSFERENCIAS")setSubModoTransf("REGISTRAR");
+}
+function setSubModoCaja(s){["APERTURA","CIERRE","APORTES"].forEach(x=>{document.getElementById("caja-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-caja-"+x).classList.toggle("active",x===s)});if(s!=="CIERRE")document.getElementById("cierreResumen").classList.remove("show")}
 function setSubModoCuentas(s){["COBRAR","PAGAR"].forEach(x=>{document.getElementById("cuentas-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-cuentas-"+x).classList.toggle("active",x===s)})}
 function setSubModoDevol(s){["REGISTRAR","LISTAR"].forEach(x=>{document.getElementById("devol-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-devol-"+x).classList.toggle("active",x===s)})}
 function setSubModoReportes(s){["MAS","MENOS"].forEach(x=>{document.getElementById("rep-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-rep-"+x).classList.toggle("active",x===s)})}
+function setSubModoTransf(s){["REGISTRAR","HISTORIAL"].forEach(x=>{document.getElementById("transf-"+x).classList.toggle("oculto",x!==s);document.getElementById("subtab-transf-"+x).classList.toggle("active",x===s)})}
 function manejarRespuesta(d){if(!d.ok&&(d.error==="NO_AUTORIZADO"||d.error==="PERMISO_DENEGADO")){mostrarMsg("⛔ Sin permisos para esta acción","err");return false}return true}
 function toggleClienteVenta(){document.getElementById("campoClienteVenta").classList.toggle("oculto",document.getElementById("metodoPagoVenta").value!=="CREDITO")}
 function toggleClienteCompra(){document.getElementById("campoClienteCompra").classList.toggle("oculto",document.getElementById("metodoPagoCompra").value!=="CREDITO")}
 function toggleAcreedorGasto(){document.getElementById("campoAcreedorGasto").classList.toggle("oculto",document.getElementById("metodoPagoGasto").value!=="CREDITO")}
 
-// ══ INVENTARIO ══
+// ══ INVENTARIO GLOBAL ══
 async function cargarInventario(){if(!sessionToken)return;try{const d=await api({ACCION:"LISTAR_INVENTARIO",LIMITE:200,TOKEN:sessionToken});inventarioGlobal=d.datos||[]}catch(e){}}
 setInterval(()=>{if(sessionToken)cargarInventario()},30000);
 setInterval(()=>{if(sessionToken)verificarEstadoCaja()},20000);
@@ -606,12 +693,36 @@ async function abrirCaja(){
   const loader=document.getElementById("loaderApertura");loader.style.display="block";
   try{const data=await api({ACCION:"APERTURA_CAJA",SUCURSAL:su,SALDO_INICIAL:si,NOTAS:document.getElementById("aperturaNotas").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("🔓 Caja abierta correctamente · "+data.sucursal,"ok");document.getElementById("aperturaSaldo").value="";document.getElementById("aperturaNotas").value="";document.getElementById("aperturaSucursal").value="";await verificarEstadoCaja()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
 }
+
 async function cerrarCaja(){
-  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const id=document.getElementById("cierreCajaId").value,sf=Number(document.getElementById("cierreSaldo").value);
-  if(!id){mostrarMsg("No hay caja abierta para cerrar","err");return}if(isNaN(sf)||sf<0){mostrarMsg("Ingresa el saldo final contado","err");return}if(!confirm("¿Confirmar cierre de caja con saldo final Bs "+sf+"?"))return;
+  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
+  const id=document.getElementById("cierreCajaId").value,sf=Number(document.getElementById("cierreSaldo").value);
+  if(!id){mostrarMsg("No hay caja abierta para cerrar","err");return}
+  if(isNaN(sf)||sf<0){mostrarMsg("Ingresa el saldo final contado","err");return}
+  if(!confirm("¿Confirmar cierre de caja con saldo final Bs "+sf+"?"))return;
   const loader=document.getElementById("loaderCierre");loader.style.display="block";
-  try{const data=await api({ACCION:"CIERRE_CAJA",ID:id,SALDO_FINAL:sf,NOTAS:document.getElementById("cierreNotas").value,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){const dif=data.diferencia>=0?"+Bs "+data.diferencia:"-Bs "+Math.abs(data.diferencia);mostrarMsg("🔒 Caja cerrada · Diferencia: "+dif,"ok");document.getElementById("cierreSaldo").value="";document.getElementById("cierreNotas").value="";await verificarEstadoCaja()}else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";
+  try{
+    const data=await api({ACCION:"CIERRE_CAJA",ID:id,SALDO_FINAL:sf,NOTAS:document.getElementById("cierreNotas").value,TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){loader.style.display="none";return}
+    if(data.ok){
+      // Mostrar resumen detallado del cierre
+      const resumen=document.getElementById("cierreResumen");
+      const sActual=Number(data.saldoActual||0), sFinal=Number(data.saldoFinal||sf), dif=Number(data.diferencia||0);
+      document.getElementById("cierreValSistema").textContent=`Bs ${sActual.toFixed(2)}`;
+      document.getElementById("cierreValContado").textContent=`Bs ${sFinal.toFixed(2)}`;
+      const difEl=document.getElementById("cierreValDif");
+      difEl.textContent=(dif>=0?"+":"")+`Bs ${dif.toFixed(2)}`;
+      difEl.className="val "+(dif===0?"val-neu":dif>0?"val-pos":"val-neg");
+      resumen.classList.add("show");
+      const difStr=dif>=0?`+Bs ${dif.toFixed(2)}`:`-Bs ${Math.abs(dif).toFixed(2)}`;
+      mostrarMsg("🔒 Caja cerrada · Diferencia: "+difStr,"ok");
+      document.getElementById("cierreSaldo").value="";document.getElementById("cierreNotas").value="";
+      await verificarEstadoCaja();
+    }else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
+  }catch(e){mostrarMsg("Error de conexión","err")}
+  loader.style.display="none";
 }
+
 async function registrarAporteRetiro(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}const su=document.getElementById("aporteSucursal").value,tp=document.getElementById("aporteTipo").value,co=document.getElementById("aporteConcepto").value.trim(),mo=Number(document.getElementById("aporteMonto").value),me=document.getElementById("aporteMetodo").value,fe=document.getElementById("aporteFecha").value;
   if(!su){mostrarMsg("Selecciona una sucursal","err");return}if(!co){mostrarMsg("Ingresa el concepto","err");return}if(isNaN(mo)||mo<=0){mostrarMsg("Ingresa un monto válido","err");return}
@@ -644,6 +755,101 @@ async function registrarDevolucion(){
 async function listarDevoluciones(pg){if(!sessionToken)return;if(pg===undefined)pg=1;devolPaginaActual=pg;const loader=document.getElementById("loaderListarDevol"),tabla=document.getElementById("tablaDevol"),pdiv=document.getElementById("paginDevol");loader.style.display="block";tabla.innerHTML="";try{const data=await api({ACCION:"LISTAR_DEVOLUCIONES",SUCURSAL:document.getElementById("filtroDevSucursal").value,TIPO_DEVOLUCION:document.getElementById("filtroDevTipo").value,PAGINA:pg,LIMITE:DEVOL_LIMITE,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin devoluciones encontradas</div>`;pdiv.style.display="none"}else{let h=`<table><thead><tr><th class="col-prod">Producto</th><th>Fecha / Suc</th><th>Tipo</th><th>Cant · Total</th><th>Motivo</th></tr></thead><tbody>`;data.datos.forEach(d=>{const ev=d.tipoDevolucion==="VENTA",fc=String(d.fecha).slice(0,10),mc=d.motivo.replace(/_/g," ");h+=`<tr><td class="col-prod">${d.producto}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${d.sucursal}</td><td class="${ev?"tipo-venta":"tipo-compra"}">${ev?"↩ VENTA":"↪ COMPRA"}</td><td style="font-family:var(--mono);font-size:11px">${d.cantidad} ud.<br>Bs ${Number(d.total).toFixed(2)}</td><td style="font-size:10px;color:var(--muted)">${mc}</td></tr>`});tabla.innerHTML=h+`</tbody></table>`;if(data.paginas>1){pdiv.style.display="flex";document.getElementById("paginDevol-info").textContent="Pág "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";pdiv.querySelector("button:first-child").disabled=(pg<=1);pdiv.querySelector("button:last-child").disabled=(pg>=data.paginas)}else{pdiv.style.display="none"}}}catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}loader.style.display="none";}
 function cambiarPaginaDevol(d){listarDevoluciones(devolPaginaActual+d)}
 
+// ══ TRANSFERENCIAS ══
+function buscarProductoTransf(){
+  const t=document.getElementById("transfProducto").value.toLowerCase(),l=document.getElementById("listaTransf"),info=document.getElementById("infoTransf");
+  info.classList.remove("show");
+  if(t.length<1){l.classList.remove("show");return}
+  // Mostrar todos los productos únicos (de ambas sucursales)
+  const unicos=[];const vistos=new Set();
+  inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(t)).forEach(p=>{if(!vistos.has(p.producto)){vistos.add(p.producto);unicos.push(p)}});
+  l.innerHTML="";if(unicos.length===0){l.classList.remove("show");return}
+  unicos.slice(0,8).forEach(p=>{
+    const div=document.createElement("div");div.className="ac-item";
+    div.innerHTML=`<strong>${p.producto}</strong><small>Stock en ${p.sucursal}: ${p.stock}</small>`;
+    div.onclick=()=>{document.getElementById("transfProducto").value=p.producto;l.classList.remove("show");actualizarInfoTransf()};
+    l.appendChild(div);
+  });
+  l.classList.add("show");
+}
+
+function actualizarInfoTransf(){
+  const prod=document.getElementById("transfProducto").value.trim();
+  const origen=document.getElementById("transfOrigen").value;
+  const destino=document.getElementById("transfDestino").value;
+  const info=document.getElementById("infoTransf");
+  const arrowDiv=document.getElementById("transfArrowDisplay");
+  // Actualizar flecha visual
+  if(origen&&destino&&origen!==destino){
+    document.getElementById("transfArrowOrigen").textContent=origen;
+    document.getElementById("transfArrowDestino").textContent=destino;
+    arrowDiv.style.display="flex";
+  }else{arrowDiv.style.display="none"}
+  // Mostrar stock del origen
+  if(prod&&origen){
+    const inv=inventarioGlobal.find(p=>p.producto===prod&&p.sucursal===origen);
+    if(inv){info.innerHTML=`Stock en <b>${origen}</b>: <b>${inv.stock}</b> ud.`+(inv.stock<=5?` <span class="stock-bajo">⚠ Stock bajo</span>`:"");info.classList.add("show")}
+    else{info.innerHTML=`Sin stock en <b>${origen}</b>`;info.classList.add("show")}
+  }else{info.classList.remove("show")}
+}
+
+async function registrarTransferencia(){
+  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
+  const prod=document.getElementById("transfProducto").value.trim();
+  const origen=document.getElementById("transfOrigen").value;
+  const destino=document.getElementById("transfDestino").value;
+  const cantidad=Number(document.getElementById("transfCantidad").value);
+  const motivo=document.getElementById("transfMotivo").value.trim();
+  const notas=document.getElementById("transfNotas").value.trim();
+  if(!prod){mostrarMsg("Selecciona un producto","err");return}
+  if(!origen){mostrarMsg("Selecciona la sucursal de origen","err");return}
+  if(!destino){mostrarMsg("Selecciona la sucursal de destino","err");return}
+  if(origen===destino){mostrarMsg("Origen y destino no pueden ser la misma sucursal","err");return}
+  if(isNaN(cantidad)||cantidad<=0){mostrarMsg("Ingresa una cantidad válida","err");return}
+  if(!confirm(`¿Transferir ${cantidad} ud. de "${prod}" de ${origen} → ${destino}?`))return;
+  const loader=document.getElementById("loaderTransf");loader.style.display="block";
+  try{
+    const data=await api({ACCION:"REGISTRAR_TRANSFERENCIA",PRODUCTO:prod,SUCURSAL_ORIGEN:origen,SUCURSAL_DESTINO:destino,CANTIDAD:cantidad,MOTIVO:motivo,NOTAS:notas,TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){loader.style.display="none";return}
+    if(data.ok){
+      mostrarMsg(`🔄 Transferencia completada · ${data.cantidad} ud. de ${data.origen} → ${data.destino}`,"ok");
+      document.getElementById("transfProducto").value="";document.getElementById("transfCantidad").value="";
+      document.getElementById("transfMotivo").value="";document.getElementById("transfNotas").value="";
+      document.getElementById("transfOrigen").value="";document.getElementById("transfDestino").value="";
+      document.getElementById("infoTransf").classList.remove("show");
+      document.getElementById("transfArrowDisplay").style.display="none";
+      cargarInventario();
+    }else if(data.error==="STOCK_INSUFICIENTE"){mostrarMsg("⚠ Stock insuficiente en origen (disponible: "+data.disponible+")","err")}
+    else if(data.error==="PRODUCTO_NO_ENCONTRADO_EN_ORIGEN"){mostrarMsg("⚠ El producto no existe en la sucursal de origen","err")}
+    else if(data.error==="SUCURSALES_IGUALES"){mostrarMsg("⚠ Origen y destino deben ser diferentes","err")}
+    else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
+  }catch(e){mostrarMsg("Error de conexión","err")}
+  loader.style.display="none";
+}
+
+async function listarTransferencias(pg){
+  if(!sessionToken)return;if(pg===undefined)pg=1;transfPaginaActual=pg;
+  const loader=document.getElementById("loaderListarTransf"),tabla=document.getElementById("tablaTransf"),pdiv=document.getElementById("paginTransf");
+  loader.style.display="block";tabla.innerHTML="";
+  try{
+    const data=await api({ACCION:"LISTAR_TRANSFERENCIAS",SUCURSAL_ORIGEN:document.getElementById("filtroTransfOrigen").value,SUCURSAL_DESTINO:document.getElementById("filtroTransfDestino").value,PAGINA:pg,LIMITE:TRANSF_LIMITE,TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){loader.style.display="none";return}
+    if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin transferencias encontradas</div>`;pdiv.style.display="none"}
+    else{
+      let h=`<table><thead><tr><th class="col-prod">Producto</th><th>Ruta</th><th>Cant</th><th>Fecha</th></tr></thead><tbody>`;
+      data.datos.forEach(t=>{
+        const fc=String(t.fecha).slice(0,10);
+        h+=`<tr><td class="col-prod">${t.producto}${t.motivo?`<br><small style="color:var(--muted)">${t.motivo}</small>`:""}</td><td style="font-size:11px;font-family:var(--mono)">${t.sucursalOrigen}<br><span style="color:var(--teal)">↓</span><br>${t.sucursalDestino}</td><td style="font-family:var(--mono)">${t.cantidad}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${t.usuario}</td></tr>`;
+      });
+      tabla.innerHTML=h+`</tbody></table>`;
+      if(data.paginas>1){pdiv.style.display="flex";document.getElementById("paginTransf-info").textContent="Pág "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";pdiv.querySelector("button:first-child").disabled=(pg<=1);pdiv.querySelector("button:last-child").disabled=(pg>=data.paginas)}
+      else{pdiv.style.display="none"}
+    }
+  }catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}
+  loader.style.display="none";
+}
+function cambiarPaginaTransf(d){listarTransferencias(transfPaginaActual+d)}
+
 // ══ REPORTES ══
 function obtenerFiltrosReporte(){return{sucursal:document.getElementById("repSucursal").value,limite:document.getElementById("repLimite").value,fechaDesde:document.getElementById("repFechaDesde").value,fechaHasta:document.getElementById("repFechaHasta").value}}
 function renderTablaReporte(cId,tId,datos,totales,cb){const co=document.getElementById(cId),td=document.getElementById(tId);if(!datos||datos.length===0){co.innerHTML=`<div class="empty-state">Sin datos para el período seleccionado</div>`;td.style.display="none";return}td.style.display="grid";td.innerHTML=`<div class="reporte-total-card"><div class="rtc-label">Unidades vendidas</div><div class="rtc-val">${totales.cantidad.toLocaleString()}</div></div><div class="reporte-total-card"><div class="rtc-label">Ingresos totales</div><div class="rtc-val">Bs ${Number(totales.ingresos).toFixed(2)}</div></div>`;const mx=Math.max(...datos.map(d=>d.cantidad),1);let h=`<table><thead><tr><th style="width:32px">#</th><th class="col-prod">Producto</th><th>Uds</th><th>Ingresos</th></tr></thead><tbody>`;datos.forEach((d,i)=>{const pc=Math.round((d.cantidad/mx)*100);h+=`<tr><td class="rank-num">${i+1}</td><td class="col-prod" style="padding-right:8px">${d.producto}<div class="rank-bar-wrap"><div class="rank-bar ${cb}" style="width:${pc}%"></div></div></td><td style="font-family:var(--mono);font-size:12px">${d.cantidad}</td><td style="font-family:var(--mono);font-size:12px">Bs ${Number(d.ingresos).toFixed(2)}</td></tr>`});co.innerHTML=h+`</tbody></table>`}
@@ -672,8 +878,6 @@ async function confirmarEliminar(id,prod){if(!confirm(`¿Eliminar el producto "$
 
 // ══ USUARIOS ══
 const ROL_LABELS={ADMIN:"👑 Admin",VENDEDOR:"🛍️ Vendedor",ALMACEN:"📦 Almacén"};
-const ROL_COLORS={ADMIN:"var(--accent)",VENDEDOR:"var(--orange)",ALMACEN:"#6eb4ff"};
-
 async function cargarUsuarios(){
   if(!sessionToken){return}
   const loader=document.getElementById("loaderUsuarios"),lista=document.getElementById("listaUsuarios");
@@ -704,7 +908,6 @@ async function cargarUsuarios(){
   }catch(e){lista.innerHTML=`<div style="color:var(--red);padding:10px">Error de conexión</div>`}
   loader.style.display="none";
 }
-
 async function crearUsuario(){
   if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
   const nombre=document.getElementById("nuevoUsuarioNombre").value.trim().toUpperCase();
@@ -716,17 +919,12 @@ async function crearUsuario(){
   try{
     const data=await api({ACCION:"CREAR_USUARIO",USUARIO:nombre,PASSWORD:pass,ROL:rol,TOKEN:sessionToken});
     if(!manejarRespuesta(data)){loader.style.display="none";return}
-    if(data.ok){
-      mostrarMsg(`✅ Usuario ${data.usuario} creado como ${ROL_LABELS[data.rol]||data.rol}`,"ok");
-      document.getElementById("nuevoUsuarioNombre").value="";document.getElementById("nuevoUsuarioPass").value="";
-      document.getElementById("nuevoUsuarioRol").value="VENDEDOR";
-      await cargarUsuarios();
-    }else if(data.error==="USUARIO_DUPLICADO"){mostrarMsg("⚠ Ese nombre de usuario ya existe","err")}
+    if(data.ok){mostrarMsg(`✅ Usuario ${data.usuario} creado como ${ROL_LABELS[data.rol]||data.rol}`,"ok");document.getElementById("nuevoUsuarioNombre").value="";document.getElementById("nuevoUsuarioPass").value="";document.getElementById("nuevoUsuarioRol").value="VENDEDOR";await cargarUsuarios();}
+    else if(data.error==="USUARIO_DUPLICADO"){mostrarMsg("⚠ Ese nombre de usuario ya existe","err")}
     else{mostrarMsg("Error: "+data.error,"err")}
   }catch(e){mostrarMsg("Error de conexión","err")}
   loader.style.display="none";
 }
-
 function abrirModalRol(usuario,rolActual){document.getElementById("modalRolUsuario").value=usuario;document.getElementById("modalRolNombre").value=usuario;document.getElementById("modalRolNuevo").value=rolActual;document.getElementById("modalRol").classList.add("show");}
 function cerrarModalRol(){document.getElementById("modalRol").classList.remove("show")}
 async function confirmarCambioRol(){
@@ -741,7 +939,6 @@ async function confirmarCambioRol(){
   }catch(e){mostrarMsg("Error de conexión","err")}
   loader.style.display="none";
 }
-
 function abrirModalPass(usuario){document.getElementById("modalPassUsuario").value=usuario;document.getElementById("modalPassNombre").value=usuario;document.getElementById("modalPassNueva").value="";document.getElementById("modalPass").classList.add("show");}
 function cerrarModalPass(){document.getElementById("modalPass").classList.remove("show")}
 async function confirmarResetPass(){
@@ -756,7 +953,6 @@ async function confirmarResetPass(){
   }catch(e){mostrarMsg("Error de conexión","err")}
   loader.style.display="none";
 }
-
 async function toggleEstadoUsuario(usuario,estadoActual){
   const nuevoEstado=estadoActual==="ACTIVO"?"INACTIVO":"ACTIVO";
   if(!confirm(`¿${nuevoEstado==="INACTIVO"?"Desactivar":"Activar"} al usuario ${usuario}?`))return;
@@ -769,6 +965,10 @@ async function toggleEstadoUsuario(usuario,estadoActual){
 }
 
 document.addEventListener("click",e=>{if(!e.target.closest(".autocomplete")&&!e.target.closest("input")){document.querySelectorAll(".autocomplete").forEach(a=>a.classList.remove("show"))}});
+// Actualizar flecha al cambiar selects de transferencia
+document.addEventListener("DOMContentLoaded",()=>{
+  ["transfOrigen","transfDestino"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("change",actualizarInfoTransf)});
+});
 </script>
 </body>
 </html>
