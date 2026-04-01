@@ -519,6 +519,7 @@ tr:last-child td{border-bottom:none;}
 const baseURL = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos";
 
 let sessionToken=null, sessionUser=null, sessionRol=null;
+let sessionRefreshToken=null, sessionExpiresAt=0;
 let inventarioGlobal=[], carrito=[];
 let devolPaginaActual=1, transfPaginaActual=1;
 const DEVOL_LIMITE=20, TRANSF_LIMITE=20;
@@ -526,6 +527,23 @@ const CARRITO_CHUNK_SIZE=10;
 let modalImagenData={producto:"", sucursal:""};
 
 async function api(params) {
+  // Renovar token si expira en menos de 3 minutos
+  const ahoraEnSegundos = Math.floor(Date.now() / 1000);
+  if (sessionRefreshToken && sessionExpiresAt && (sessionExpiresAt - ahoraEnSegundos) < 180) {
+    try {
+      const r = await fetch(baseURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ACCION: "REFRESH_TOKEN", REFRESH_TOKEN: sessionRefreshToken })
+      });
+      const rd = await r.json();
+      if (rd.ok) {
+        sessionToken        = rd.token;
+        sessionRefreshToken = rd.refreshToken;
+        sessionExpiresAt    = rd.expiresAt;
+      }
+    } catch(_) {}
+  }
   const body = Object.fromEntries(Object.entries(params).filter(([_,v]) => v !== undefined && v !== null && v !== ""));
   const res = await fetch(baseURL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   return res.json();
@@ -563,7 +581,10 @@ async function loginSubmit(){
   try{
     const data=await api({ACCION:"LOGIN",USUARIO:usuario,PASSWORD:password});
     if(data.ok){
-      sessionToken=data.token;sessionUser=data.usuario;sessionRol=(data.rol||"").toUpperCase();
+      sessionToken=data.token;
+      sessionRefreshToken = data.refreshToken || null;
+      sessionExpiresAt    = data.expiresAt   || 0;
+      sessionUser=data.usuario;sessionRol=(data.rol||"").toUpperCase();
       document.getElementById("badgeUser").textContent=sessionUser;
       const pill=document.getElementById("badgeRol");pill.textContent=sessionRol;pill.className="rol-pill rol-"+sessionRol;
       document.getElementById("loginScreen").classList.add("oculto");document.getElementById("appScreen").classList.remove("oculto");
