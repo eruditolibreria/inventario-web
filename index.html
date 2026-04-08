@@ -237,7 +237,6 @@ tr:last-child td{border-bottom:none;}
         <div class="mode-tab" onclick="setModo('TRANSFERENCIAS')" id="tab-TRANSFERENCIAS"><span class="tab-icon">🔄</span>Transf.</div>
         <div class="mode-tab" onclick="setModo('REPORTES')"      id="tab-REPORTES">     <span class="tab-icon">📊</span>Report.</div>
         <div class="mode-tab" onclick="setModo('BUSQUEDA')"      id="tab-BUSQUEDA">     <span class="tab-icon">🔎</span>Buscar</div>
-        <div class="mode-tab" onclick="setModo('LAMINAS')"       id="tab-LAMINAS">   <span class="tab-icon">🖼️</span>Láminas</div>
         <div class="mode-tab" onclick="setModo('INVENTARIO')"    id="tab-INVENTARIO">   <span class="tab-icon">📚</span>Inventario</div>
         <div class="mode-tab" onclick="setModo('USUARIOS')"      id="tab-USUARIOS">     <span class="tab-icon">👥</span>Usuarios</div>
       </div>
@@ -452,17 +451,7 @@ tr:last-child td{border-bottom:none;}
         <div class="loader" id="loaderInvAdmin"></div>
         <div id="inventarioGrid" class="inventario-grid"></div>
       </div>
-
-       <!-- LÁMINAS (todos los usuarios) -->
-      <div id="seccion-LAMINAS" class="oculto">
-      <div class="section-label">Buscar lámina</div>
-        <div class="field-group">
-        <label class="field-label">Título de la lámina</label>
-        <input id="laminaInput" placeholder="🔎 Escribe el título..." onkeyup="buscarLaminas()">
-        <div id="listaLaminas" class="autocomplete"></div>
-        </div>
-      <div id="laminaResultados"></div>
-      
+            
       <!-- USUARIOS (solo ADMIN) -->
       <div id="seccion-USUARIOS" class="oculto">
         <div class="section-label">Gestión de usuarios</div>
@@ -908,49 +897,6 @@ function cerrarModalImagen(){document.getElementById("modalImagen").classList.re
 async function guardarImagenProducto(){const prod=modalImagenData.producto,suc=modalImagenData.sucursal,url=document.getElementById("modalImagenUrl").value.trim();if(!url){mostrarMsg("Ingresa una URL de imagen","err");return}const loader=document.getElementById("loaderModalImagen");loader.style.display="block";try{const data=await api({ACCION:"ACTUALIZAR_IMAGEN_PRODUCTO",PRODUCTO:prod,SUCURSAL:suc,IMAGEN_URL:url,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Imagen guardada","ok");cerrarModalImagen();await cargarInventarioAdmin()}else{mostrarMsg("Error: "+data.error,"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none";}
 async function confirmarEliminar(id,prod){if(!confirm(`¿Eliminar el producto "${prod}"? Esta acción no se puede deshacer.`))return;try{const data=await api({ACCION:"ELIMINAR_PRODUCTO",ID:id,TOKEN:sessionToken});if(!manejarRespuesta(data)){return}if(data.ok){mostrarMsg("🗑️ Producto eliminado","ok");await cargarInventarioAdmin()}else{mostrarMsg("Error: "+data.error,"err")}}catch(e){mostrarMsg("Error de conexión","err")}}
 
-// ══ LAMINAS ══
-  let laminaTimer = null;
-function buscarLaminas() {
-  const t = document.getElementById("laminaInput").value.trim();
-  const l = document.getElementById("listaLaminas");
-  clearTimeout(laminaTimer);
-  document.getElementById("laminaResultados").innerHTML = "";
-  if (t.length < 1) { l.classList.remove("show"); return; }
-  // Sugerencias en el autocomplete
-  laminaTimer = setTimeout(async () => {
-    const data = await api({ ACCION:"BUSCAR_LAMINAS", TITULO:t, LIMITE:8, TOKEN:sessionToken });
-    l.innerHTML = "";
-    if (!data.datos?.length) { l.classList.remove("show"); return; }
-    data.datos.forEach(lam => {
-      const div = document.createElement("div");
-      div.className = "ac-item";
-      const estadoColor = lam.estado === "DISPONIBLE" ? "var(--accent)" : "var(--red)";
-      div.innerHTML = `<strong>${lam.titulo}</strong>
-        <small>${lam.categoria} · ${lam.sucursal} · <span style="color:${estadoColor}">${lam.estado}</span></small>`;
-      div.onclick = () => {
-        document.getElementById("laminaInput").value = lam.titulo;
-        l.classList.remove("show");
-        mostrarDetalleLamina(lam);
-      };
-      l.appendChild(div);
-    });
-    l.classList.add("show");
-  }, 300);
-}
-
-function mostrarDetalleLamina(lam) {
-  const sc = lam.estado === "DISPONIBLE" ? "ok" : "warn";
-  document.getElementById("laminaResultados").innerHTML = `
-    <div class="search-result show">
-      <div class="sr-name">🖼️ ${lam.titulo}</div>
-      <div class="sr-grid">
-        <div class="sr-field accent"><div class="sr-key">Categoría</div><div class="sr-val">${lam.categoria||'—'}</div></div>
-        <div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:#6eb4ff">${lam.sucursal||'—'}</div></div>
-        <div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${lam.ubicacion||'—'}</div></div>
-        <div class="sr-field ${sc==='ok'?'accent':'red'}"><div class="sr-key">Estado</div><div class="sr-val ${sc}">${lam.estado||'—'}</div></div>
-      </div>
-    </div>`;
-}
 // ══ USUARIOS ══
 const ROL_LABELS={ADMIN:"👑 Admin",VENDEDOR:"🛍️ Vendedor",ALMACEN:"📦 Almacén"};
 async function cargarUsuarios(){
