@@ -1,22 +1,14 @@
 {
-  "name": "Inventario Eruditos",
-  "short_name": "Grupo Eruditos",
-  "description": "Sistema de Inventario Grupo Eruditos",
+  "name": "Grupo Eruditos — Inventario",
+  "short_name": "Eruditos",
+  "description": "Sistema de inventario Grupo Eruditos",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0e0b08",
-  "theme_color": "#e8981a",
+  "background_color": "#080b0f",
+  "theme_color": "#00e676",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "/icon192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "/icon192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
