@@ -883,11 +883,47 @@ async function eliminarServicio(id){
 }
 
 // ══ INVENTARIO ADMIN ══
-async function cargarInventarioAdmin(){if(!sessionToken||sessionRol!=="ADMIN"){mostrarMsg("Sin permisos","err");return}const loader=document.getElementById("loaderInvAdmin"),grid=document.getElementById("inventarioGrid"),filtroSuc=document.getElementById("filtroInvSucursal").value,filtroProd=document.getElementById("filtroInvProducto").value.toLowerCase();loader.style.display="block";grid.innerHTML="";try{const data=await api({ACCION:"LISTAR_INVENTARIO_ADMIN",TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}let datos=data.datos||[];if(filtroSuc)datos=datos.filter(p=>p.sucursal===filtroSuc);if(filtroProd)datos=datos.filter(p=>p.producto.toLowerCase().includes(filtroProd));if(datos.length===0){grid.innerHTML=`<div class="empty-state">Sin productos encontrados</div>`}else{datos.forEach(p=>{const card=document.createElement("div");card.className="inventario-card";card.innerHTML=`<div class="inventario-img">${p.imagen?`<img src="${p.imagen}" alt="${p.producto}">`:``}</div><div class="inventario-info"><div class="nombre">${p.producto}</div><div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2)||'—'}</div><div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2)||'—'}</div><div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div><div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div></div><div class="inventario-actions"><button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen||''}')">🖼️ Imagen</button><button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}')">🗑️ Eliminar</button></div>`;grid.appendChild(card)})}catch(e){grid.innerHTML=`<div style="color:var(--red);padding:10px">Error de conexión</div>`}loader.style.display="none";}
-function abrirModalImagen(prod,suc,img){modalImagenData={producto:prod,sucursal:suc};document.getElementById("modalImagenProducto").value=prod;document.getElementById("modalImagenSucursal").value=suc;document.getElementById("modalImagenUrl").value=img;document.getElementById("modalImagen").classList.add("show")}
-function cerrarModalImagen(){document.getElementById("modalImagen").classList.remove("show")}
-async function guardarImagenProducto(){const prod=modalImagenData.producto,suc=modalImagenData.sucursal,url=document.getElementById("modalImagenUrl").value.trim();if(!url){mostrarMsg("Ingresa una URL de imagen","err");return}const loader=document.getElementById("loaderModalImagen");loader.style.display="block";try{const data=await api({ACCION:"ACTUALIZAR_IMAGEN_PRODUCTO",PRODUCTO:prod,SUCURSAL:suc,IMAGEN_URL:url,TOKEN:sessionToken});if(!manejarRespuesta(data)){loader.style.display="none";return}if(data.ok){mostrarMsg("✅ Imagen guardada","ok");cerrarModalImagen();await cargarInventarioAdmin()}else{mostrarMsg("Error: "+data.error,"err")}}catch(e){mostrarMsg("Error de conexión","err")}loader.style.display="none"}
-async function confirmarEliminar(id,prod){if(!confirm(`¿Eliminar el producto "${prod}"? Esta acción no se puede deshacer.`))return;try{const data=await api({ACCION:"ELIMINAR_PRODUCTO",ID:id,TOKEN:sessionToken});if(!manejarRespuesta(data))return;if(data.ok){mostrarMsg("🗑️ Producto eliminado","ok");await cargarInventarioAdmin()}else{mostrarMsg("Error: "+data.error,"err")}}catch(e){mostrarMsg("Error de conexión","err")}}
+async function cargarInventarioAdmin(){
+  if(!sessionToken||sessionRol!=="ADMIN"){mostrarMsg("Sin permisos","err");return}
+  const loader=document.getElementById("loaderInvAdmin"),
+        grid=document.getElementById("inventarioGrid"),
+        filtroSuc=document.getElementById("filtroInvSucursal").value,
+        filtroProd=document.getElementById("filtroInvProducto").value.toLowerCase();
+  loader.style.display="block";
+  grid.innerHTML="";
+  try{
+    const data=await api({ACCION:"LISTAR_INVENTARIO_ADMIN",TOKEN:sessionToken});
+    if(!manejarRespuesta(data)){loader.style.display="none";return}
+    let datos=data.datos||[];
+    if(filtroSuc)datos=datos.filter(p=>p.sucursal===filtroSuc);
+    if(filtroProd)datos=datos.filter(p=>p.producto.toLowerCase().includes(filtroProd));
+    if(datos.length===0){
+      grid.innerHTML=`<div class="empty-state">Sin productos encontrados</div>`
+    }else{
+      datos.forEach(p=>{
+        const card=document.createElement("div");
+        card.className="inventario-card";
+        card.innerHTML=`<div class="inventario-img">${p.imagen?`<img src="${p.imagen}" alt="${p.producto}">`:``}</div>
+        <div class="inventario-info">
+          <div class="nombre">${p.producto}</div>
+          <div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2)||'—'}</div>
+          <div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2)||'—'}</div>
+          <div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div>
+          <div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div>
+        </div>
+        <div class="inventario-actions">
+          <button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen||''}')">🖼️ Imagen</button>
+          <button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}')">🗑️ Eliminar</button>
+        </div>`;
+        grid.appendChild(card)
+      })
+    }   // ← cierra el else
+  }     // ← CIERRA EL TRY (esta llave era la que faltaba)
+  catch(e){
+    grid.innerHTML=`<div style="color:var(--red);padding:10px">Error de conexión</div>`
+  }
+  loader.style.display="none";
+}
 
 // ══ USUARIOS ══
 const ROL_LABELS={ADMIN:"👑 Admin",VENDEDOR:"🛍️ Vendedor",ALMACEN:"📦 Almacén"};
