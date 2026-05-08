@@ -1311,10 +1311,10 @@
             .srv-sucursal-select {
                 margin-bottom: 12px;
             }
-        //* — Toast — */
+        //==Toast==/
   #toastContainer {
     position: fixed;
-    bottom: 24px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
@@ -1342,12 +1342,12 @@
   }
   .toast.saliendo { animation: toastOut 0.3s ease forwards; }
   @keyframes toastIn {
-    from { opacity:0; transform:translateY(12px); }
+    from { opacity:0; transform:translateY(-12px); }
     to   { opacity:1; transform:translateY(0); }
   }
   @keyframes toastOut {
     from { opacity:1; transform:translateY(0); }
-    to   { opacity:0; transform:translateY(12px); }
+    to   { opacity:0; transform:translateY(-12px); }
   }
   .toast-msg { flex:1; font-weight:600; }
   .toast-undo {
@@ -1364,7 +1364,7 @@
   }
   .toast-progress {
     position: absolute;
-    bottom: 0; left: 0;
+    top: 0; left: 0;
     height: 3px;
     background: var(--accent);
     border-radius: 0 0 10px 10px;
