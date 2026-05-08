@@ -6,7 +6,7 @@
         <!--- PWA --->
 <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#00e676">
-        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="Eruditos">
         <link rel="apple-touch-icon" href="/icon192.png">
@@ -1311,7 +1311,7 @@
             .srv-sucursal-select {
                 margin-bottom: 12px;
             }
-        /* — Toast — */
+        //* — Toast — */
   #toastContainer {
     position: fixed;
     bottom: 24px;
@@ -1371,7 +1371,7 @@
     transition: width linear;
   }
 
-  /* — Swipe en filas del carrito — */
+  //*— Swipe en filas del carrito — */
   #carritoBody tr {
     position: relative;
     transition: transform 0.2s ease, opacity 0.2s ease;
@@ -2622,6 +2622,7 @@
             const DEVOL_LIMITE = 20
               , TRANSF_LIMITE = 20
               , CARRITO_CHUNK_SIZE = 10;
+            const CARRITO_KEY = "eruditos_carrito_draft";
             let modalImagenData = {
                 producto: "",
                 sucursal: ""
@@ -2760,12 +2761,11 @@
                         toggleAcreedorGasto();
                         aplicarRol(sessionRol);
                         cargarInventario();
-                        function restaurarCarritoDraft() {
+                        (function restaurarCarritoDraft() {
                           try {
                             const raw = localStorage.getItem(CARRITO_KEY);
                             if (!raw) return;
                             const draft = JSON.parse(raw);
-                            // Solo restaurar si tiene menos de 8 horas
                             if (!draft.carrito?.length || (Date.now() - draft.ts) > 8 * 60 * 60 * 1000) {
                               localStorage.removeItem(CARRITO_KEY);
                               return;
@@ -2777,9 +2777,9 @@
                               `📦 Carrito restaurado (${carrito.length} productos)`,
                               "Limpiar",
                               () => { carrito = []; renderCarrito(); limpiarCarritoDraft(); }
-                            )
+                            );
                           } catch(e) {}
-                        }
+                        })();
                         verificarEstadoCaja();
                     } else {
                         mostrarMensajeLogin(data.motivo || "Usuario o contraseña incorrectos", "err")
@@ -3053,14 +3053,18 @@
                         minis.appendChild(mini)
                     }
                       function guardarCarritoDraft() {
-                      try {
-                        localStorage.setItem(CARRITO_KEY, JSON.stringify({
-                          carrito,
-                          sucursal: document.getElementById("sucursalVenta")?.value || "",
-                          ts: Date.now()
-                        }));
-                      } catch(e) {}
+                        try {
+                            localStorage.setItem(CARRITO_KEY, JSON.stringify({
+                                carrito,
+                                sucursal: document.getElementById("sucursalVenta")?.value || "",
+                                ts: Date.now()
+                            }));
+                        } catch(e) {}
                     }
+                    guardarCarritoDraft();
+                    function limpiarCarritoDraft() {
+                    try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
+                }
                 }
                 );
                 document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
@@ -3180,10 +3184,9 @@
                         document.getElementById("mainPanel").classList.add("ok");
                         setTimeout( () => document.getElementById("mainPanel").classList.remove("ok"), 700);
                         carrito = [];
-                        function limpiarCarritoDraft() {
-                          try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
-                        }
-                        renderCarrito();
+                        carrito = [];
+                            limpiarCarritoDraft();  // llamada directa
+                            renderCarrito();
                         document.getElementById("clienteVenta").value = "";
                         cargarInventario();
                         verificarEstadoCaja();
@@ -4537,8 +4540,7 @@
                             grid.appendChild(card)
                         }
                         )
-                    }
-                    // ← cierra el else
+                    }// ← cierra el else
                 } // ← CIERRA EL TRY (esta llave era la que faltaba)
                 catch (e) {
                     grid.innerHTML = `<div style="color:var(--red);padding:10px">Error de conexión</div>`
@@ -4854,7 +4856,76 @@
                 }
               }
             });
+            // ══ FUNCIONES PARA MODAL DE IMAGEN ══
+            function abrirModalImagen(producto, sucursal, imagenUrl) {
+                document.getElementById("modalImagenProducto").value = producto;
+                document.getElementById("modalImagenSucursal").value = sucursal;
+                document.getElementById("modalImagenUrl").value = imagenUrl || "";
+                modalImagenData = { producto, sucursal };
+                document.getElementById("modalImagen").classList.add("show");
+            }
             
+            function cerrarModalImagen() {
+                document.getElementById("modalImagen").classList.remove("show");
+            }
+            
+            async function guardarImagenProducto() {
+                if (!sessionToken) {
+                    mostrarMsg("Sesión expirada", "err");
+                    return;
+                }
+                const url = document.getElementById("modalImagenUrl").value.trim();
+                if (!url) {
+                    mostrarMsg("Ingresa una URL de imagen", "err");
+                    return;
+                }
+                const loader = document.getElementById("loaderModalImagen");
+                loader.style.display = "block";
+                try {
+                    const data = await api({
+                        ACCION: "ACTUALIZAR_IMAGEN_PRODUCTO",
+                        PRODUCTO: modalImagenData.producto,
+                        SUCURSAL: modalImagenData.sucursal,
+                        IMAGEN_URL: url,
+                        TOKEN: sessionToken
+                    });
+                    if (!manejarRespuesta(data)) {
+                        loader.style.display = "none";
+                        return;
+                    }
+                    if (data.ok) {
+                        mostrarMsg("✅ Imagen actualizada", "ok");
+                        cerrarModalImagen();
+                        cargarInventarioAdmin(); // refrescar
+                    } else {
+                        mostrarMsg("Error: " + data.error, "err");
+                    }
+                } catch (e) {
+                    mostrarMsg("Error de conexión", "err");
+                }
+                loader.style.display = "none";
+            }
+            
+            // ══ FUNCIÓN ELIMINAR PRODUCTO (ADMIN) ══
+            async function confirmarEliminar(id, producto) {
+                if (!confirm(`¿Eliminar definitivamente "${producto}"? Esta acción no se puede deshacer.`)) return;
+                try {
+                    const data = await api({
+                        ACCION: "ELIMINAR_PRODUCTO",
+                        ID: id,
+                        TOKEN: sessionToken
+                    });
+                    if (!manejarRespuesta(data)) return;
+                    if (data.ok) {
+                        mostrarMsg(`🗑️ "${producto}" eliminado`, "ok");
+                        cargarInventarioAdmin();
+                    } else {
+                        mostrarMsg("Error: " + data.error, "err");
+                    }
+                } catch (e) {
+                    mostrarMsg("Error de conexión", "err");
+                }
+            }    
         </script>
         <div id="toastContainer"></div>
     </body>
