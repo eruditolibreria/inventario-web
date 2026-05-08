@@ -1311,6 +1311,78 @@
             .srv-sucursal-select {
                 margin-bottom: 12px;
             }
+        /* — Toast — */
+  #toastContainer {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 240px;
+    max-width: 340px;
+    pointer-events: all;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    animation: toastIn 0.25s ease;
+  }
+  .toast.saliendo { animation: toastOut 0.3s ease forwards; }
+  @keyframes toastIn {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes toastOut {
+    from { opacity:1; transform:translateY(0); }
+    to   { opacity:0; transform:translateY(12px); }
+  }
+  .toast-msg { flex:1; font-weight:600; }
+  .toast-undo {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font);
+    white-space: nowrap;
+  }
+  .toast-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 0 0 10px 10px;
+    transition: width linear;
+  }
+
+  /* — Swipe en filas del carrito — */
+  #carritoBody tr {
+    position: relative;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  #carritoBody tr.swipe-out {
+    transform: translateX(80px);
+    opacity: 0;
+  }
+
+  /* — Atajos de teclado: highlight del input activo — */
+  input:focus { outline: none; }
         </style>
     </head>
     <body>
@@ -2536,6 +2608,7 @@
             </div>
         </div>
         <script>
+            
             const baseURL = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos";
             let sessionToken = null
               , sessionUser = null
@@ -2687,6 +2760,26 @@
                         toggleAcreedorGasto();
                         aplicarRol(sessionRol);
                         cargarInventario();
+                        function restaurarCarritoDraft() {
+                          try {
+                            const raw = localStorage.getItem(CARRITO_KEY);
+                            if (!raw) return;
+                            const draft = JSON.parse(raw);
+                            // Solo restaurar si tiene menos de 8 horas
+                            if (!draft.carrito?.length || (Date.now() - draft.ts) > 8 * 60 * 60 * 1000) {
+                              localStorage.removeItem(CARRITO_KEY);
+                              return;
+                            }
+                            carrito = draft.carrito;
+                            if (draft.sucursal) document.getElementById("sucursalVenta").value = draft.sucursal;
+                            renderCarrito();
+                            mostrarToast(
+                              `📦 Carrito restaurado (${carrito.length} productos)`,
+                              "Limpiar",
+                              () => { carrito = []; renderCarrito(); limpiarCarritoDraft(); }
+                            )
+                          } catch(e) {}
+                        }
                         verificarEstadoCaja();
                     } else {
                         mostrarMensajeLogin(data.motivo || "Usuario o contraseña incorrectos", "err")
@@ -2933,6 +3026,13 @@
                         imagen: p.imagen || ""
                     });
                 renderCarrito();
+                function vibrar(tipo = "ok") {
+                  if (!navigator.vibrate) return;
+                  const patrones = {
+                    add: [20],          // muy corta = agregar item
+                  };
+                  navigator.vibrate(patrones[tipo] || [40]);
+                }
                 document.getElementById("productoVenta").value = "";
                 document.getElementById("cantidadVenta").value = "";
                 document.getElementById("infoProductoVenta").classList.remove("show")
@@ -2952,14 +3052,47 @@
                         mini.innerHTML = `<img src="${it.imagen}" alt="${it.producto}"><div class="miniatura-badge">${it.cantidad}</div>`;
                         minis.appendChild(mini)
                     }
+                      function guardarCarritoDraft() {
+                      try {
+                        localStorage.setItem(CARRITO_KEY, JSON.stringify({
+                          carrito,
+                          sucursal: document.getElementById("sucursalVenta")?.value || "",
+                          ts: Date.now()
+                        }));
+                      } catch(e) {}
+                    }
                 }
                 );
                 document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
                 document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`
             }
-            function eliminarItem(i) {
-                carrito.splice(i, 1);
-                renderCarrito()
+                  function eliminarItem(i) {
+                  const itemEliminado = { ...carrito[i] };
+                  const indexEliminado = i;
+                
+                  // Animación swipe
+                  const filas = document.querySelectorAll("#carritoBody tr");
+                  if (filas[i]) {
+                    filas[i].classList.add("swipe-out");
+                    setTimeout(() => {
+                      carrito.splice(indexEliminado, 1);
+                      renderCarrito();
+                    }, 200);
+                  } else {
+                    carrito.splice(i, 1);
+                    renderCarrito();
+                  }
+                
+                  mostrarToast(
+                    `🗑️ "${itemEliminado.producto}" eliminado`,
+                    "Deshacer",
+                    () => {
+                      carrito.splice(indexEliminado, 0, itemEliminado);
+                      renderCarrito();
+                      mostrarMsg("↩ Producto restaurado al carrito", "ok");
+                    }
+                  );
+                }
             }
             async function cobrar() {
                 if (!sessionToken) {
@@ -3036,10 +3169,20 @@
                     }
                     if (data.ok) {
                         sonidoCaja();
+                        function vibrar(tipo = "ok") {
+                          if (!navigator.vibrate) return;
+                          const patrones = {
+                            ok: [40],           // vibración corta = éxito
+                          };
+                          navigator.vibrate(patrones[tipo] || [40]);
+                        }
                         mostrarMsg(metodoPago === "CREDITO" ? "📝 Venta a crédito registrada" : "✅ Venta registrada (" + items.length + " productos)", "ok");
                         document.getElementById("mainPanel").classList.add("ok");
                         setTimeout( () => document.getElementById("mainPanel").classList.remove("ok"), 700);
                         carrito = [];
+                        function limpiarCarritoDraft() {
+                          try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
+                        }
                         renderCarrito();
                         document.getElementById("clienteVenta").value = "";
                         cargarInventario();
@@ -3818,48 +3961,48 @@
 
             // ══ TRANSFERENCIAS ══
             function buscarProductoTransf(){
-  const t=document.getElementById("transfProducto").value.toLowerCase(),l=document.getElementById("listaTransf"),info=document.getElementById("infoTransf");
-  info.classList.remove("show");if(t.length<1){l.classList.remove("show");return}
-  const unicos=[];const vistos=new Set();
-  inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(t)).forEach(p=>{if(!vistos.has(p.producto)){vistos.add(p.producto);unicos.push(p)}});
-  l.innerHTML="";if(unicos.length===0){l.classList.remove("show");return}
-  unicos.slice(0,8).forEach(p=>{const div=document.createElement("div");div.className="ac-item";div.innerHTML=`<strong>${p.producto}</strong><small>Stock en ${p.sucursal}: ${p.stock}</small>`;div.onclick=()=>{document.getElementById("transfProducto").value=p.producto;l.classList.remove("show");actualizarInfoTransf()};l.appendChild(div)});
-  l.classList.add("show");
-}
-function actualizarInfoTransf(){
-  const prod=document.getElementById("transfProducto").value.trim(),origen=document.getElementById("transfOrigen").value,destino=document.getElementById("transfDestino").value,info=document.getElementById("infoTransf"),arrowDiv=document.getElementById("transfArrowDisplay");
-  if(origen&&destino&&origen!==destino){document.getElementById("transfArrowOrigen").textContent=origen;document.getElementById("transfArrowDestino").textContent=destino;arrowDiv.style.display="flex"}else{arrowDiv.style.display="none"}
-  if(prod&&origen){const inv=inventarioGlobal.find(p=>p.producto===prod&&p.sucursal===origen);if(inv){info.innerHTML=`Stock en <b>${origen}</b>: <b>${inv.stock}</b> ud.`+(inv.stock<=5?` <span class="stock-bajo">⚠ Stock bajo</span>`:"");info.classList.add("show")}else{info.innerHTML=`Sin stock en <b>${origen}</b>`;info.classList.add("show")}}else{info.classList.remove("show")}
-}
-async function registrarTransferencia(){
-  if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
-  const prod=document.getElementById("transfProducto").value.trim(),origen=document.getElementById("transfOrigen").value,destino=document.getElementById("transfDestino").value,cantidad=Number(document.getElementById("transfCantidad").value),motivo=document.getElementById("transfMotivo").value.trim(),notas=document.getElementById("transfNotas").value.trim();
-  if(!prod){mostrarMsg("Selecciona un producto","err");return}if(!origen){mostrarMsg("Selecciona la sucursal de origen","err");return}if(!destino){mostrarMsg("Selecciona la sucursal de destino","err");return}if(origen===destino){mostrarMsg("Origen y destino no pueden ser la misma sucursal","err");return}if(isNaN(cantidad)||cantidad<=0){mostrarMsg("Ingresa una cantidad válida","err");return}
-  if(!confirm(`¿Transferir ${cantidad} ud. de "${prod}" de ${origen} → ${destino}?`))return;
-  const loader=document.getElementById("loaderTransf");loader.style.display="block";
-  try{
-    const data=await api({ACCION:"REGISTRAR_TRANSFERENCIA",PRODUCTO:prod,SUCURSAL_ORIGEN:origen,SUCURSAL_DESTINO:destino,CANTIDAD:cantidad,MOTIVO:motivo,NOTAS:notas,TOKEN:sessionToken});
-    if(!manejarRespuesta(data)){loader.style.display="none";return}
-    if(data.ok){mostrarMsg(`🔄 Transferencia completada · ${data.cantidad} ud. de ${data.origen} → ${data.destino}`,"ok");document.getElementById("transfProducto").value="";document.getElementById("transfCantidad").value="";document.getElementById("transfMotivo").value="";document.getElementById("transfNotas").value="";document.getElementById("transfOrigen").value="";document.getElementById("transfDestino").value="";document.getElementById("infoTransf").classList.remove("show");document.getElementById("transfArrowDisplay").style.display="none";cargarInventario();}
-    else if(data.error==="STOCK_INSUFICIENTE"){mostrarMsg("⚠ Stock insuficiente en origen (disponible: "+data.disponible+")","err")}
-    else if(data.error==="PRODUCTO_NO_ENCONTRADO_EN_ORIGEN"){mostrarMsg("⚠ El producto no existe en la sucursal de origen","err")}
-    else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
-  }catch(e){mostrarMsg("Error de conexión","err")}
-  loader.style.display="none";
-}
-async function listarTransferencias(pg){
-  if(!sessionToken)return;if(pg===undefined)pg=1;transfPaginaActual=pg;
-  const loader=document.getElementById("loaderListarTransf"),tabla=document.getElementById("tablaTransf"),pdiv=document.getElementById("paginTransf");
-  loader.style.display="block";tabla.innerHTML="";
-  try{
-    const data=await api({ACCION:"LISTAR_TRANSFERENCIAS",SUCURSAL_ORIGEN:document.getElementById("filtroTransfOrigen").value,SUCURSAL_DESTINO:document.getElementById("filtroTransfDestino").value,PAGINA:pg,LIMITE:TRANSF_LIMITE,TOKEN:sessionToken});
-    if(!manejarRespuesta(data)){loader.style.display="none";return}
-    if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin transferencias encontradas</div>`;pdiv.style.display="none"}
-    else{let h=`<table><thead><tr><th class="col-prod">Producto</th><th>Ruta</th><th>Cant</th><th>Fecha</th></tr></thead><tbody>`;data.datos.forEach(t=>{const fc=String(t.fecha).slice(0,10);h+=`<tr><td class="col-prod">${t.producto}${t.motivo?`<br><small style="color:var(--muted)">${t.motivo}</small>`:""}</td><td style="font-size:11px;font-family:var(--mono)">${t.sucursalOrigen}<br><span style="color:var(--teal)">↓</span><br>${t.sucursalDestino}</td><td style="font-family:var(--mono)">${t.cantidad}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${t.usuario}</td></tr>`});tabla.innerHTML=h+`</tbody></table>`;if(data.paginas>1){pdiv.style.display="flex";document.getElementById("paginTransf-info").textContent="Pág "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";pdiv.querySelector("button:first-child").disabled=(pg<=1);pdiv.querySelector("button:last-child").disabled=(pg>=data.paginas)}else{pdiv.style.display="none"}}
-  }catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}
-  loader.style.display="none";
-}
-function cambiarPaginaTransf(d){listarTransferencias(transfPaginaActual+d)}
+              const t=document.getElementById("transfProducto").value.toLowerCase(),l=document.getElementById("listaTransf"),info=document.getElementById("infoTransf");
+              info.classList.remove("show");if(t.length<1){l.classList.remove("show");return}
+              const unicos=[];const vistos=new Set();
+              inventarioGlobal.filter(p=>p.producto.toLowerCase().includes(t)).forEach(p=>{if(!vistos.has(p.producto)){vistos.add(p.producto);unicos.push(p)}});
+              l.innerHTML="";if(unicos.length===0){l.classList.remove("show");return}
+              unicos.slice(0,8).forEach(p=>{const div=document.createElement("div");div.className="ac-item";div.innerHTML=`<strong>${p.producto}</strong><small>Stock en ${p.sucursal}: ${p.stock}</small>`;div.onclick=()=>{document.getElementById("transfProducto").value=p.producto;l.classList.remove("show");actualizarInfoTransf()};l.appendChild(div)});
+              l.classList.add("show");
+            }
+            function actualizarInfoTransf(){
+              const prod=document.getElementById("transfProducto").value.trim(),origen=document.getElementById("transfOrigen").value,destino=document.getElementById("transfDestino").value,info=document.getElementById("infoTransf"),arrowDiv=document.getElementById("transfArrowDisplay");
+              if(origen&&destino&&origen!==destino){document.getElementById("transfArrowOrigen").textContent=origen;document.getElementById("transfArrowDestino").textContent=destino;arrowDiv.style.display="flex"}else{arrowDiv.style.display="none"}
+              if(prod&&origen){const inv=inventarioGlobal.find(p=>p.producto===prod&&p.sucursal===origen);if(inv){info.innerHTML=`Stock en <b>${origen}</b>: <b>${inv.stock}</b> ud.`+(inv.stock<=5?` <span class="stock-bajo">⚠ Stock bajo</span>`:"");info.classList.add("show")}else{info.innerHTML=`Sin stock en <b>${origen}</b>`;info.classList.add("show")}}else{info.classList.remove("show")}
+            }
+            async function registrarTransferencia(){
+              if(!sessionToken){mostrarMsg("Sesión expirada","err");return}
+              const prod=document.getElementById("transfProducto").value.trim(),origen=document.getElementById("transfOrigen").value,destino=document.getElementById("transfDestino").value,cantidad=Number(document.getElementById("transfCantidad").value),motivo=document.getElementById("transfMotivo").value.trim(),notas=document.getElementById("transfNotas").value.trim();
+              if(!prod){mostrarMsg("Selecciona un producto","err");return}if(!origen){mostrarMsg("Selecciona la sucursal de origen","err");return}if(!destino){mostrarMsg("Selecciona la sucursal de destino","err");return}if(origen===destino){mostrarMsg("Origen y destino no pueden ser la misma sucursal","err");return}if(isNaN(cantidad)||cantidad<=0){mostrarMsg("Ingresa una cantidad válida","err");return}
+              if(!confirm(`¿Transferir ${cantidad} ud. de "${prod}" de ${origen} → ${destino}?`))return;
+              const loader=document.getElementById("loaderTransf");loader.style.display="block";
+              try{
+                const data=await api({ACCION:"REGISTRAR_TRANSFERENCIA",PRODUCTO:prod,SUCURSAL_ORIGEN:origen,SUCURSAL_DESTINO:destino,CANTIDAD:cantidad,MOTIVO:motivo,NOTAS:notas,TOKEN:sessionToken});
+                if(!manejarRespuesta(data)){loader.style.display="none";return}
+                if(data.ok){mostrarMsg(`🔄 Transferencia completada · ${data.cantidad} ud. de ${data.origen} → ${data.destino}`,"ok");document.getElementById("transfProducto").value="";document.getElementById("transfCantidad").value="";document.getElementById("transfMotivo").value="";document.getElementById("transfNotas").value="";document.getElementById("transfOrigen").value="";document.getElementById("transfDestino").value="";document.getElementById("infoTransf").classList.remove("show");document.getElementById("transfArrowDisplay").style.display="none";cargarInventario();}
+                else if(data.error==="STOCK_INSUFICIENTE"){mostrarMsg("⚠ Stock insuficiente en origen (disponible: "+data.disponible+")","err")}
+                else if(data.error==="PRODUCTO_NO_ENCONTRADO_EN_ORIGEN"){mostrarMsg("⚠ El producto no existe en la sucursal de origen","err")}
+                else{mostrarMsg("Error: "+(data.error||JSON.stringify(data)),"err")}
+              }catch(e){mostrarMsg("Error de conexión","err")}
+              loader.style.display="none";
+            }
+            async function listarTransferencias(pg){
+              if(!sessionToken)return;if(pg===undefined)pg=1;transfPaginaActual=pg;
+              const loader=document.getElementById("loaderListarTransf"),tabla=document.getElementById("tablaTransf"),pdiv=document.getElementById("paginTransf");
+              loader.style.display="block";tabla.innerHTML="";
+              try{
+                const data=await api({ACCION:"LISTAR_TRANSFERENCIAS",SUCURSAL_ORIGEN:document.getElementById("filtroTransfOrigen").value,SUCURSAL_DESTINO:document.getElementById("filtroTransfDestino").value,PAGINA:pg,LIMITE:TRANSF_LIMITE,TOKEN:sessionToken});
+                if(!manejarRespuesta(data)){loader.style.display="none";return}
+                if(!data.datos||data.datos.length===0){tabla.innerHTML=`<div class="empty-state">Sin transferencias encontradas</div>`;pdiv.style.display="none"}
+                else{let h=`<table><thead><tr><th class="col-prod">Producto</th><th>Ruta</th><th>Cant</th><th>Fecha</th></tr></thead><tbody>`;data.datos.forEach(t=>{const fc=String(t.fecha).slice(0,10);h+=`<tr><td class="col-prod">${t.producto}${t.motivo?`<br><small style="color:var(--muted)">${t.motivo}</small>`:""}</td><td style="font-size:11px;font-family:var(--mono)">${t.sucursalOrigen}<br><span style="color:var(--teal)">↓</span><br>${t.sucursalDestino}</td><td style="font-family:var(--mono)">${t.cantidad}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${t.usuario}</td></tr>`});tabla.innerHTML=h+`</tbody></table>`;if(data.paginas>1){pdiv.style.display="flex";document.getElementById("paginTransf-info").textContent="Pág "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";pdiv.querySelector("button:first-child").disabled=(pg<=1);pdiv.querySelector("button:last-child").disabled=(pg>=data.paginas)}else{pdiv.style.display="none"}}
+              }catch(e){tabla.innerHTML=`<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`}
+              loader.style.display="none";
+            }
+            function cambiarPaginaTransf(d){listarTransferencias(transfPaginaActual+d)}
 
             // ══ REPORTES ══
             function obtenerFiltrosReporte() {
@@ -4380,17 +4523,17 @@ function cambiarPaginaTransf(d){listarTransferencias(transfPaginaActual+d)}
                             const card = document.createElement("div");
                             card.className = "inventario-card";
                             card.innerHTML = `<div class="inventario-img">${p.imagen ? `<img src="${p.imagen}" alt="${p.producto}">` : ``}</div>
-        <div class="inventario-info">
-          <div class="nombre">${p.producto}</div>
-          <div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2) || '—'}</div>
-          <div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2) || '—'}</div>
-          <div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div>
-          <div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div>
-        </div>
-        <div class="inventario-actions">
-          <button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen || ''}')">🖼️ Imagen</button>
-          <button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}')">🗑️ Eliminar</button>
-        </div>`;
+                            <div class="inventario-info">
+                              <div class="nombre">${p.producto}</div>
+                              <div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2) || '—'}</div>
+                              <div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2) || '—'}</div>
+                              <div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div>
+                              <div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div>
+                            </div>
+                            <div class="inventario-actions">
+                              <button class="btn-xs btn-xs-edit" onclick="abrirModalImagen('${p.producto}','${p.sucursal}','${p.imagen || ''}')">🖼️ Imagen</button>
+                              <button class="btn-xs btn-xs-del" onclick="confirmarEliminar('${p.id}','${p.producto}')">🗑️ Eliminar</button>
+                            </div>`;
                             grid.appendChild(card)
                         }
                         )
@@ -4607,7 +4750,113 @@ function cambiarPaginaTransf(d){listarTransferencias(transfPaginaActual+d)}
                 );
             }
             );
+
+            // ══════════════════════════════════════════════
+            // SISTEMA DE TOAST CON DESHACER
+            // ══════════════════════════════════════════════
+            let toastActivo = null;
+            
+            function mostrarToast(mensaje, accionLabel, accionFn, duracion = 4000) {
+              const container = document.getElementById("toastContainer");
+            
+              // Si ya hay uno activo, lo cerramos antes
+              if (toastActivo) cerrarToast(toastActivo);
+            
+              const toast = document.createElement("div");
+              toast.className = "toast";
+              toast.style.position = "relative";
+              toast.style.overflow = "hidden";
+              toast.innerHTML = `
+                <span class="toast-msg">${mensaje}</span>
+                ${accionFn ? `<button class="toast-undo" id="btnUndoToast">${accionLabel || "Deshacer"}</button>` : ""}
+                <div class="toast-progress" id="toastProgress" style="width:100%"></div>
+              `;
+              container.appendChild(toast);
+              toastActivo = toast;
+            
+              // Barra de progreso animada
+              const bar = toast.querySelector("#toastProgress");
+              requestAnimationFrame(() => {
+                bar.style.transition = `width ${duracion}ms linear`;
+                bar.style.width = "0%";
+              });
+            
+              // Botón deshacer
+              if (accionFn) {
+                toast.querySelector("#btnUndoToast").onclick = () => {
+                  accionFn();
+                  cerrarToast(toast);
+                };
+              }
+            
+              const timer = setTimeout(() => cerrarToast(toast), duracion);
+              toast._timer = timer;
+              return toast;
+            }
+            
+            function cerrarToast(toast) {
+              if (!toast || !toast.parentNode) return;
+              clearTimeout(toast._timer);
+              toast.classList.add("saliendo");
+              setTimeout(() => toast.parentNode && toast.parentNode.removeChild(toast), 320);
+              if (toastActivo === toast) toastActivo = null;
+            }
+            // ══════════════════════════════════════════════
+            // ATAJOS DE TECLADO GLOBALES
+            // ══════════════════════════════════════════════
+            document.addEventListener("keydown", e => {
+              // Solo si el usuario está logueado
+              if (!sessionToken) return;
+            
+              // Escape: cierra modales y autocompletes
+              if (e.key === "Escape") {
+                document.querySelectorAll(".modal-overlay.show").forEach(m => m.classList.remove("show"));
+                document.querySelectorAll(".autocomplete.show").forEach(a => a.classList.remove("show"));
+                return;
+              }
+            
+              // "/" → enfoca el buscador del tab activo (no interferir si ya hay un input activo)
+              if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+                e.preventDefault();
+                const inputs = {
+                  "VENTA": "productoVenta",
+                  "BUSQUEDA": "busquedaInput",
+                  "COMPRA": "productoCompra",
+                  "LAMINAS": "laminaInput",
+                  "TRANSFERENCIAS": "transfProducto",
+                };
+                const tabActivo = TODOS_MODOS.find(m => !document.getElementById("seccion-" + m).classList.contains("oculto"));
+                const inputId = inputs[tabActivo];
+                if (inputId) document.getElementById(inputId)?.focus();
+                return;
+              }
+            
+              // Ctrl/Cmd + Enter → confirma la acción principal del tab activo
+              if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                const tabActivo = TODOS_MODOS.find(m => !document.getElementById("seccion-" + m).classList.contains("oculto"));
+                const acciones = {
+                  "VENTA": () => document.getElementById("btnCobrar")?.click(),
+                  "COMPRA": () => registrarCompra(),
+                  "GASTO": () => registrarGasto(),
+                };
+                if (acciones[tabActivo]) {
+                  e.preventDefault();
+                  acciones[tabActivo]();
+                }
+                return;
+              }
+            
+              // F5 propio (sin recargar): recarga inventario global
+              if (e.key === "F5" && !e.ctrlKey) {
+                if (sessionToken) {
+                  e.preventDefault();
+                  cargarInventario().then(() => mostrarMsg("🔄 Inventario actualizado", "ok"));
+                }
+              }
+            });
+            
         </script>
+        <div id="toastContainer"></div>
     </body>
 </html>
 
