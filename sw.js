@@ -1,5 +1,5 @@
 // Nombre de caché con versión (cámbialo cada vez que actualices la app)
-const CACHE_NAME = 'eruditos-v3'; // ← Incrementa este número en cada despliegue
+const CACHE_NAME = 'eruditos-v4'; // ← Incrementa este número en cada despliegue
 
 // Archivos a cachear (offline)
 const urlsToCache = [
@@ -43,8 +43,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Si la respuesta es válida, actualiza el caché y devuelve
-        if (response && response.status === 200) {
+        // Solo cachear si la petición es GET y la respuesta es válida
+        if (response && response.status === 200 && event.request.method === 'GET') {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseClone);
@@ -53,8 +53,12 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => {
-        // Si falla la red, devuelve del caché
-        return caches.match(event.request);
+        // Si falla la red, devuelve del caché (pero solo para GET)
+        if (event.request.method === 'GET') {
+          return caches.match(event.request);
+        }
+        // Para otros métodos (POST, etc.) simplemente propagamos el error
+        throw new Error('Network error');
       })
   );
 });
