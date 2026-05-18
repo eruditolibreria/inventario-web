@@ -11,6 +11,37 @@
         <meta name="apple-mobile-web-app-title" content="Eruditos">
         <link rel="apple-touch-icon" href="/icon192.png">
         <script>
+            // TEMA CLARO/OSCURO
+            (function() {
+                const saved = localStorage.getItem('theme');
+                const icon = document.getElementById('themeIcon');
+                if (saved === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.querySelector('meta[name=theme-color]').content = '#f0f2f5';
+                    if (icon) icon.textContent = '\u{2600}\u{FE0F}';
+                } else {
+                    if (icon) icon.textContent = '\u{1F319}';
+                }
+            })();
+            function toggleTheme() {
+                const html = document.documentElement;
+                const meta = document.querySelector('meta[name=theme-color]');
+                const icon = document.getElementById('themeIcon');
+                const isLight = html.getAttribute('data-theme') === 'light';
+                if (isLight) {
+                    html.removeAttribute('data-theme');
+                    meta.content = '#080b0f';
+                    localStorage.setItem('theme', 'dark');
+                    icon.textContent = '\u{1F319}';
+                } else {
+                    html.setAttribute('data-theme', 'light');
+                    meta.content = '#f0f2f5';
+                    localStorage.setItem('theme', 'light');
+                    icon.textContent = '\u{2600}\u{FE0F}';
+                }
+            }
+
+            // CODIGO ORIGINAL
             if ('serviceWorker'in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register('/sw.js');
@@ -37,8 +68,33 @@
                 --teal: #00bcd4;
                 --text: #dde6f0;
                 --muted: #4a6278;
+                --red-dim: rgba(255,71,87,0.12);
+                --orange-dim: rgba(255,152,0,0.15);
+                --blue-dim: rgba(41,121,255,0.15);
                 --font: 'Outfit',sans-serif;
                 --mono: 'DM Mono',monospace;
+            }
+
+            /* ===== TEMA CLARO ===== */
+            [data-theme='light'] {
+                --bg: #f0f2f5;
+                --surface: #ffffff;
+                --surface2: #f4f6f9;
+                --surface3: #e8ecf1;
+                --border: #d0d7de;
+                --accent: #00c853;
+                --accent-dim: rgba(0,200,83,0.10);
+                --accent-glow: rgba(0,200,83,0.20);
+                --orange: #e65100;
+                --red: #d32f2f;
+                --blue: #1565c0;
+                --purple: #7c4dff;
+                --teal: #00838f;
+                --red-dim: rgba(211,47,47,0.12);
+                --orange-dim: rgba(230,81,0,0.12);
+                --blue-dim: rgba(21,101,192,0.12);
+                --text: #1a2332;
+                --muted: #6b7f94;
             }
 
             * {
@@ -56,6 +112,18 @@
                 justify-content: center;
                 align-items: flex-start;
                 padding: 20px 12px 40px;
+            }
+
+            /* ===== RESPONSIVE ===== */
+            html { transition: padding 0.3s ease; }
+            @media (min-width: 768px) {
+                body { padding: 24px 32px 48px; }
+            }
+            @media (min-width: 1024px) {
+                body { padding: 32px 48px 64px; }
+            }
+            @media (min-width: 1440px) {
+                body { padding: 40px 64px 80px; }
             }
 
             body::before {
@@ -88,7 +156,17 @@
                 border: 1px solid var(--border);
                 box-shadow: 0 0 40px rgba(0,230,118,0.06);
                 overflow: hidden;
-                transition: box-shadow 0.4s;
+                transition: box-shadow 0.4s, max-width 0.3s ease;
+            }
+
+            @media (min-width: 768px) {
+                .panel { max-width: 720px; border-radius: 20px; }
+            }
+            @media (min-width: 1024px) {
+                .panel { max-width: 960px; border-radius: 24px; }
+            }
+            @media (min-width: 1440px) {
+                .panel { max-width: 1200px; border-radius: 28px; }
             }
 
             .panel.ok {
@@ -101,6 +179,15 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+            }
+
+            @media (min-width: 1024px) {
+                .app-header { padding: 24px 32px 18px; }
+                .brand h1 { font-size: 22px; }
+            }
+            @media (min-width: 1440px) {
+                .app-header { padding: 28px 40px 20px; }
+                .brand h1 { font-size: 24px; }
             }
 
             .brand h1 {
@@ -167,9 +254,9 @@
                 font-family: var(--mono);
                 padding: 2px 7px;
                 border-radius: 20px;
-                background: rgba(0,230,118,0.15);
+                background: var(--accent-dim);
                 color: var(--accent);
-                border: 1px solid rgba(0,230,118,0.3);
+                border: 1px solid var(--accent);
                 margin-top: 2px;
             }
 
@@ -185,21 +272,21 @@
             }
 
             .rol-ADMIN {
-                background: rgba(0,230,118,0.15);
+                background: var(--accent-dim);
                 color: var(--accent);
-                border: 1px solid rgba(0,230,118,0.3);
+                border: 1px solid var(--accent);
             }
 
             .rol-VENDEDOR {
-                background: rgba(255,152,0,0.15);
+                background: var(--orange-dim);
                 color: var(--orange);
-                border: 1px solid rgba(255,152,0,0.3);
+                border: 1px solid var(--orange);
             }
 
             .rol-ALMACEN {
-                background: rgba(41,121,255,0.15);
+                background: var(--blue-dim);
                 color: #6eb4ff;
-                border: 1px solid rgba(41,121,255,0.3);
+                border: 1px solid var(--blue);
             }
 
             .panel-body {
@@ -208,8 +295,24 @@
                 overflow-y: auto;
             }
 
+            @media (min-width: 1024px) {
+                .panel-body { padding: 24px 32px; max-height: calc(100vh - 140px); }
+            }
+            @media (min-width: 1440px) {
+                .panel-body { padding: 28px 40px; }
+            }
+
             #loginScreen {
                 padding: 32px 24px 28px;
+            }
+
+            @media (min-width: 1024px) {
+                #loginScreen { padding: 48px 40px 40px; }
+                .login-logo h2 { font-size: 28px; }
+                .login-logo .logo-icon { font-size: 52px; }
+            }
+            @media (min-width: 1440px) {
+                #loginScreen { padding: 56px 48px 48px; }
             }
 
             .login-logo {
@@ -226,7 +329,7 @@
             .login-logo h2 {
                 font-size: 24px;
                 font-weight: 800;
-                color: #fff;
+                color: var(--text);
             }
 
             .login-logo p {
@@ -263,6 +366,10 @@
                 -webkit-appearance: none;
             }
 
+            @media (min-width: 1024px) {
+                input, select, textarea { padding: 12px 16px; font-size: 15px; }
+            }
+
             input:focus,select:focus {
                 border-color: var(--accent);
                 box-shadow: 0 0 0 3px var(--accent-dim);
@@ -274,6 +381,11 @@
 
             select option {
                 background: #1c2530;
+                color: #dde6f0;
+            }
+            [data-theme='light'] select option {
+                background: #ffffff;
+                color: #1a2332;
             }
 
             textarea {
@@ -370,6 +482,15 @@
                 flex-wrap: wrap;
             }
 
+            @media (min-width: 768px) {
+                .mode-tabs { gap: 6px; padding: 6px; }
+                .mode-tab { padding: 10px 6px; font-size: 11px; }
+            }
+            @media (min-width: 1024px) {
+                .mode-tabs { gap: 8px; padding: 8px; border-radius: 14px; }
+                .mode-tab { padding: 12px 10px; font-size: 12px; border-radius: 10px; }
+            }
+
             .mode-tab {
                 flex: 1;
                 min-width: 44px;
@@ -408,6 +529,14 @@
                 margin-bottom: 14px;
                 border: 1px solid var(--border);
                 flex-wrap: wrap;
+            }
+
+            @media (min-width: 768px) {
+                .sub-tabs { gap: 6px; padding: 5px; }
+                .sub-tab { padding: 9px 8px; font-size: 12px; }
+            }
+            @media (min-width: 1024px) {
+                .sub-tab { padding: 10px 12px; font-size: 13px; }
             }
 
             .sub-tab {
@@ -449,10 +578,21 @@
                 gap: 10px;
             }
 
+            @media (min-width: 1024px) {
+                .row-2 { gap: 16px; }
+            }
+
             .row-3 {
                 display: grid;
                 grid-template-columns: 1fr 1fr 1fr;
                 gap: 8px;
+            }
+
+            @media (min-width: 1024px) {
+                .row-3 { gap: 14px; }
+            }
+            @media (min-width: 1440px) {
+                .row-3 { grid-template-columns: 1fr 1fr 1fr 1fr; }
             }
 
             .mt-8 {
@@ -541,7 +681,7 @@
             .carrito-header h3 {
                 font-size: 14px;
                 font-weight: 700;
-                color: #fff;
+                color: var(--text);
             }
 
             .carrito-total {
@@ -551,6 +691,10 @@
                 font-family: var(--mono);
                 text-align: right;
                 margin: 10px 0 12px;
+            }
+
+            @media (min-width: 1024px) {
+                .carrito-total { font-size: 28px; }
             }
 
             .carrito-total small {
@@ -567,6 +711,15 @@
                 border-radius: 10px;
                 overflow: hidden;
                 border: 1px solid var(--border);
+            }
+
+            @media (min-width: 1024px) {
+                table { font-size: 13px; }
+                td, th { padding: 10px 10px; }
+            }
+            @media (min-width: 1440px) {
+                table { font-size: 14px; }
+                td, th { padding: 12px 14px; }
             }
 
             td,th {
@@ -606,7 +759,7 @@
             }
 
             .btn-del:hover {
-                background: rgba(255,71,87,0.1);
+                background: var(--red-dim);
             }
 
             .estado-pendiente {
@@ -653,6 +806,13 @@
                 margin-bottom: 14px;
             }
 
+            @media (min-width: 768px) {
+                .reporte-totales { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+            }
+            @media (min-width: 1024px) {
+                .reporte-totales { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+            }
+
             .reporte-total-card {
                 background: var(--surface2);
                 border: 1px solid var(--border);
@@ -686,6 +846,10 @@
                 animation: fadeIn 0.2s ease;
             }
 
+            @media (min-width: 1024px) {
+                .mensaje { font-size: 14px; padding: 12px 18px; }
+            }
+
             @keyframes fadeIn {
                 from {
                     opacity: 0;
@@ -699,15 +863,15 @@
             }
 
             .msg-ok {
-                background: rgba(0,230,118,0.12);
+                background: var(--accent-dim);
                 color: var(--accent);
-                border: 1px solid rgba(0,230,118,0.25);
+                border: 1px solid var(--accent);
             }
 
             .msg-err {
-                background: rgba(255,71,87,0.12);
+                background: var(--red-dim);
                 color: var(--red);
-                border: 1px solid rgba(255,71,87,0.25);
+                border: 1px solid var(--red-dim);
             }
 
             .loader {
@@ -748,7 +912,7 @@
             .sr-name {
                 font-size: 16px;
                 font-weight: 700;
-                color: #fff;
+                color: var(--text);
                 margin-bottom: 10px;
                 display: flex;
                 align-items: center;
@@ -759,6 +923,13 @@
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
+            }
+
+            @media (min-width: 768px) {
+                .sr-grid { grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+            }
+            @media (min-width: 1024px) {
+                .sr-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
             }
 
             .sr-field {
@@ -815,12 +986,20 @@
                 margin-top: 12px;
             }
 
+            @media (min-width: 1024px) {
+                .search-results-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            }
+
             .caja-card {
                 background: var(--surface2);
                 border: 1px solid var(--border);
                 border-radius: 12px;
                 padding: 14px;
                 margin-bottom: 14px;
+            }
+
+            @media (min-width: 768px) {
+                .caja-card { padding: 16px; }
             }
 
             .caja-card .caja-estado-ok {
@@ -898,6 +1077,16 @@
                 margin-bottom: 14px;
             }
 
+            @media (min-width: 768px) {
+                .inventario-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+            }
+            @media (min-width: 1024px) {
+                .inventario-grid { grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+            }
+            @media (min-width: 1440px) {
+                .inventario-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+            }
+
             .inventario-card {
                 background: var(--surface2);
                 border: 1px solid var(--border);
@@ -907,6 +1096,12 @@
                 grid-template-columns: 60px 1fr 80px;
                 gap: 10px;
                 align-items: start;
+            }
+
+            @media (min-width: 1024px) {
+                .inventario-card { grid-template-columns: 80px 1fr 120px; gap: 14px; padding: 16px; }
+                .inventario-img { width: 80px; height: 80px; }
+                .inventario-info .nombre { font-size: 14px; }
             }
 
             .inventario-img {
@@ -1007,10 +1202,17 @@
                 overflow-y: auto;
             }
 
+            @media (min-width: 768px) {
+                .modal-content { max-width: 480px; padding: 24px; }
+            }
+            @media (min-width: 1024px) {
+                .modal-content { max-width: 560px; padding: 28px; border-radius: 18px; }
+            }
+
             .modal-header {
                 font-size: 16px;
                 font-weight: 700;
-                color: #fff;
+                color: var(--text);
                 margin-bottom: 14px;
                 padding-bottom: 10px;
                 border-bottom: 1px solid var(--border);
@@ -1098,7 +1300,7 @@
 
             .usuario-card .u-name {
                 font-weight: 700;
-                color: #fff;
+                color: var(--text);
                 font-size: 14px;
             }
 
@@ -1171,6 +1373,11 @@
                 display: none;
             }
 
+            @media (min-width: 1024px) {
+                .cierre-resumen { padding: 16px; }
+                .cierre-row { font-size: 14px; }
+            }
+
             .cierre-resumen.show {
                 display: block;
                 animation: fadeIn 0.2s ease;
@@ -1225,9 +1432,14 @@
                 animation: fadeIn 0.2s ease;
             }
 
+            @media (min-width: 1024px) {
+                .lamina-card { padding: 14px 18px; }
+                .lamina-card .lam-titulo { font-size: 15px; }
+            }
+
             .lamina-card .lam-titulo {
                 font-weight: 700;
-                color: #fff;
+                color: var(--text);
                 font-size: 13px;
                 margin-bottom: 3px;
             }
@@ -1248,8 +1460,8 @@
                 font-size: 10px;
                 font-weight: 700;
                 color: var(--accent);
-                background: rgba(0,230,118,0.1);
-                border: 1px solid rgba(0,230,118,0.3);
+                background: var(--accent-dim);
+                border: 1px solid var(--accent);
                 border-radius: 20px;
                 padding: 2px 8px;
                 white-space: nowrap;
@@ -1259,8 +1471,8 @@
                 font-size: 10px;
                 font-weight: 700;
                 color: var(--red);
-                background: rgba(255,71,87,0.1);
-                border: 1px solid rgba(255,71,87,0.3);
+                background: var(--red-dim);
+                border: 1px solid var(--red);
                 border-radius: 20px;
                 padding: 2px 8px;
                 white-space: nowrap;
@@ -1273,6 +1485,11 @@
                 border-radius: 10px;
                 padding: 12px 14px;
                 margin-bottom: 10px;
+            }
+
+            @media (min-width: 1024px) {
+                .srv-resumen-bloque { padding: 16px 18px; }
+                .srv-resumen-fila { font-size: 14px; }
             }
 
             .srv-resumen-titulo {
@@ -1296,7 +1513,7 @@
             .srv-resumen-fila:last-child {
                 border-bottom: none;
                 font-weight: 700;
-                color: #fff;
+                color: var(--text);
             }
 
             .srv-resumen-fila .srv-val {
@@ -1383,6 +1600,194 @@
 
   /* — Atajos de teclado: highlight del input activo — */
   input:focus { outline: none; }
+
+          /* ============================================
+             SCROLLBAR PERSONALIZADA
+             ============================================ */
+          /* WebKit (Chrome, Safari, Edge, Opera) */
+          ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+          ::-webkit-scrollbar-track {
+            background: var(--surface2);
+            border-radius: 10px;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+            transition: background 0.2s;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+          }
+          /* Firefox */
+          * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) var(--surface2);
+          }
+          /* Scrollbar en modo claro */
+          [data-theme='light'] ::-webkit-scrollbar-track {
+            background: #e8ecf1;
+          }
+          [data-theme='light'] ::-webkit-scrollbar-thumb {
+            background: #c0c8d4;
+          }
+          [data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+            background: #00c853;
+          }
+          [data-theme='light'] * {
+            scrollbar-color: #c0c8d4 #e8ecf1;
+          }
+
+          /* Scroll suave en toda la pagina */
+          html {
+            scroll-behavior: smooth;
+          }
+
+          /* ============================================
+             ANIMACIONES NUEVAS
+             ============================================ */
+
+          /* Pulse sutil para botones principales */
+          @keyframes pulse-soft {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 0 6px rgba(0,230,118,0); }
+          }
+          .btn-primary {
+            animation: pulse-soft 2.5s ease-in-out infinite;
+          }
+
+          /* Shimmer / brillo tipo loading */
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .shimmer {
+            background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 8px;
+          }
+
+          /* Slide-in desde abajo (paneles, cards) */
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .slide-up {
+            animation: slideUp 0.35s ease forwards;
+          }
+
+          /* Scale-in (modales, popups) */
+          @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: scale(1); }
+          }
+          .scale-in {
+            animation: scaleIn 0.25s ease forwards;
+          }
+
+          /* Bounce suave para notificaciones / badges */
+          @keyframes bounce-soft {
+            0%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-4px); }
+            60% { transform: translateY(-2px); }
+          }
+          .bounce-soft {
+            animation: bounce-soft 0.6s ease;
+          }
+
+
+
+
+          /* Animacion de entrada para el login */
+          @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          #loginScreen {
+            animation: fadeSlideUp 0.55s ease forwards;
+          }
+
+          /* Brillo de entrada del panel */
+          @keyframes panelGlow {
+            0% { box-shadow: 0 0 10px rgba(0,230,118,0); }
+            100% { box-shadow: 0 0 40px rgba(0,230,118,0.12); }
+          }
+          .panel {
+            animation: panelGlow 1.2s ease forwards;
+          }
+
+                    /* Transicion suave al cambiar de seccion */
+          .seccion-transition {
+            animation: fadeIn 0.25s ease;
+          }
+
+          /* Hover effects para cards en dispositivos con hover */
+          @media (hover: hover) {
+            .inventario-card:hover,
+            .caja-card:hover,
+            .lamina-card:hover,
+            .usuario-card:hover,
+            .srv-resumen-bloque:hover {
+              border-color: var(--accent);
+              box-shadow: 0 0 20px var(--accent-dim);
+              transition: all 0.25s ease;
+            }
+          }
+
+          /* En mobile no hay hover, aseguramos que no haya efectos raros */
+          @media (hover: none) {
+            .inventario-card:hover,
+            .caja-card:hover,
+            .lamina-card:hover,
+            .usuario-card:hover,
+            .srv-resumen-bloque:hover {
+              border-color: var(--border);
+              box-shadow: none;
+            }
+          }
+          /* BOTON TOGGLE TEMA */
+          .theme-toggle {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.3s;
+            flex-shrink: 0;
+            margin-right: 6px;
+          }
+          .theme-toggle:hover {
+            border-color: var(--accent);
+          }
+          .theme-toggle-icon {
+            font-size: 18px;
+            line-height: 1;
+            transition: transform 0.4s ease;
+          }
+          [data-theme='light'] .theme-toggle-icon {
+            transform: rotate(180deg);
+          }
+          @media (min-width: 1024px) {
+            .theme-toggle { width: 40px; height: 40px; }
+            .theme-toggle-icon { font-size: 20px; }
+          }
+
+
+          /* Transicion suave al cambiar de tema */
+          *, *::before, *::after {
+            transition: background-color 0.3s ease,
+                        border-color 0.25s ease,
+                        color 0.25s ease,
+                        box-shadow 0.25s ease;
+          }
+          body { transition: background-color 0.3s ease, padding 0.3s ease; }
         </style>
     </head>
     <body>
@@ -1414,6 +1819,9 @@
                         </h1>
                         <small>INVENTARIO v2.8</small>
                     </div>
+                    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema claro/oscuro">
+                        <span class="theme-toggle-icon" id="themeIcon">&#127769;</span>
+                    </button>
                     <div class="user-badge" onclick="cerrarSesion()" title="Cerrar sesión">
                         <div class="avatar">👤</div>
                         <div>
@@ -1976,7 +2384,7 @@
                             <div class="row-2">
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Sucursal</label>
-                                    <select id="devolSucursal">
+                                    <select id="devolSucursal" onchange="limpiarBuscadorDevol()">
                                         <option value="">🏪 Seleccionar</option>
                                         <option value="ERUDITOS">ERUDITOS</option>
                                         <option value="CENTRAL">CENTRAL</option>
@@ -1984,21 +2392,29 @@
                                 </div>
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Tipo</label>
-                                    <select id="devolTipo">
+                                    <select id="devolTipo" onchange="limpiarBuscadorDevol()">
                                         <option value="VENTA">↩ Devolución de Venta</option>
                                         <option value="COMPRA">↪ Devolución de Compra</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="field-group mt-8">
-                                <label class="field-label">ID de referencia (Venta o Compra)</label>
-                                <input id="devolReferenciaId" placeholder="Ej: VEN-1234567-abcd1234">
-                                <div style="font-size:11px;color:var(--muted);margin-top:4px">Puedes encontrar el ID en el historial de ventas o compras</div>
+                            <div class="section-label mt-8">Buscar transacción a devolver</div>
+                            <div class="row-2">
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Producto</label>
+                                    <input id="devolBuscProducto" placeholder="🔎 Ej: Cartulina..." onkeyup="buscarTransaccionDevol()">
+                                </div>
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Cliente/Proveedor</label>
+                                    <input id="devolBuscClienteProv" placeholder="Nombre..." onkeyup="buscarTransaccionDevol()">
+                                </div>
                             </div>
-                            <div class="field-group">
-                                <label class="field-label">Producto</label>
-                                <input id="devolProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDevol()">
-                                <div id="listaDevol" class="autocomplete"></div>
+                            <div class="loader" id="loaderBuscDevol" style="display:none;margin:10px auto"></div>
+                            <div id="resultadosBuscDevol" style="margin-top:10px"></div>
+                            <input type="hidden" id="devolReferenciaId">
+                            <div class="field-group" id="devolProductoSeleccionado" style="display:none;background:var(--surface2);border-left:3px solid var(--accent);padding:10px;border-radius:8px">
+                                <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Transacción seleccionada</div>
+                                <div id="devolProductoSeleccionadoTexto" style="font-weight:600;color:var(--text);font-size:14px"></div>
                             </div>
                             <div class="row-2">
                                 <div class="field-group" style="margin:0">
@@ -2660,7 +3076,7 @@
                 });
                 return res.json();
             }
-            function sonidoCaja() {
+                        function sonidoCaja() {
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
                     const o1 = ctx.createOscillator()
@@ -2681,6 +3097,17 @@
                     g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
                     o2.start(ctx.currentTime + 0.15);
                     o2.stop(ctx.currentTime + 0.5);
+                } catch (e) {}
+            }
+            function vibrar(tipo) {
+                try {
+                    if (!navigator.vibrate) return;
+                    switch (tipo) {
+                        case "ok": navigator.vibrate([30, 50, 30]); break;
+                        case "caja": navigator.vibrate([80, 60, 80, 60, 80]); break;
+                        case "error": navigator.vibrate([100, 80, 100]); break;
+                        default: navigator.vibrate([40]); break;
+                    }
                 } catch (e) {}
             }
 
@@ -2835,7 +3262,16 @@
             }
             function setModo(modo) {
                 TODOS_MODOS.forEach(m => {
-                    document.getElementById("seccion-" + m).classList.toggle("oculto", m !== modo);
+                    const sec = document.getElementById("seccion-" + m);
+                    const act = m === modo;
+                    if (act) {
+                        sec.classList.remove("oculto", "seccion-transition");
+                        void sec.offsetWidth;
+                        sec.classList.add("seccion-transition");
+                    } else {
+                        sec.classList.add("oculto");
+                        sec.classList.remove("seccion-transition");
+                    }
                     document.getElementById("tab-" + m).classList.toggle("active", m === modo)
                 }
                 );
@@ -3025,14 +3461,8 @@
                         total: p.precio * ca,
                         imagen: p.imagen || ""
                     });
-                renderCarrito();
-                function vibrar(tipo = "ok") {
-                  if (!navigator.vibrate) return;
-                  const patrones = {
-                    add: [20],          // muy corta = agregar item
-                  };
-                  navigator.vibrate(patrones[tipo] || [40]);
-                }
+                                renderCarrito();
+                vibrar("add");
                 document.getElementById("productoVenta").value = "";
                 document.getElementById("cantidadVenta").value = "";
                 document.getElementById("infoProductoVenta").classList.remove("show")
@@ -3170,12 +3600,9 @@
                         btn.disabled = false;
                         return
                     }
-                    if (data.ok) {
+                                        if (data.ok) {
                         sonidoCaja();
-                        function vibrar(tipo = "ok") {
-                          if (!navigator.vibrate) return;
-                          const patrones = {
-                            ok: [40],           // vibración corta = éxito
+                        vibrar("ok");           // vibración corta = éxito
                           };
                           navigator.vibrate(patrones[tipo] || [40]);
                         }
@@ -3254,10 +3681,16 @@
                         TOKEN: sessionToken
                     });
                     if (!manejarRespuesta(data)) {
-                        loader.style.display = "none";
+
+
+
+
+                                                loader.style.display = "none";
                         return
                     }
                     if (data.ok) {
+                        sonidoCaja();
+                        vibrar("ok");
                         mostrarMsg(mp === "CREDITO" ? "📝 Compra a crédito registrada" : "✅ Compra registrada", "ok");
                         document.querySelectorAll("#seccion-COMPRA input").forEach(i => i.value = "");
                         document.getElementById("categoriaCompra").value = "";
@@ -3324,10 +3757,16 @@
                         TOKEN: sessionToken
                     });
                     if (!manejarRespuesta(data)) {
-                        loader.style.display = "none";
+
+
+
+
+                                                loader.style.display = "none";
                         return
                     }
                     if (data.ok) {
+                        sonidoCaja();
+                        vibrar("ok");
                         mostrarMsg(mp === "CREDITO" ? "📝 Gasto a crédito registrado" : "💸 Gasto registrado correctamente", "ok");
                         ["gastoConcepto", "gastoImporte", "gastoPersona", "gastoNotas", "gastoAcreedor"].forEach(id => {
                             const el = document.getElementById(id);
@@ -3819,19 +4258,122 @@
             }
 
             // ══ DEVOLUCIONES ══
-            function buscarProductoDevol() {
-                const t = document.getElementById("devolProducto").value.toLowerCase()
-                  , l = document.getElementById("listaDevol");
-                if (t.length < 1) {
-                    l.classList.remove("show");
-                    return
-                }
-                construirAC(l, inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t)), p => {
-                    document.getElementById("devolProducto").value = p.producto;
-                    document.getElementById("devolPrecio").value = p.precio
-                }
-                )
+            const SUPABASE_URL = "https://nhysxuqxlkmvrpxdoate.supabase.co";
+            let devolTransaccionSeleccionada = null;
+            
+            function limpiarBuscadorDevol() {
+                devolTransaccionSeleccionada = null;
+                document.getElementById("devolReferenciaId").value = "";
+                document.getElementById("resultadosBuscDevol").innerHTML = "";
+                document.getElementById("devolProductoSeleccionado").style.display = "none";
+                document.getElementById("devolBuscProducto").value = "";
+                document.getElementById("devolBuscClienteProv").value = "";
             }
+            
+            async function buscarTransaccionDevol() {
+                const su = document.getElementById("devolSucursal").value;
+                const tp = document.getElementById("devolTipo").value;
+                const producto = document.getElementById("devolBuscProducto").value;
+                const clienteProv = document.getElementById("devolBuscClienteProv").value;
+                
+                if (!su) {
+                    mostrarMsg("Selecciona una sucursal primero", "err");
+                    return;
+                }
+                
+                // No buscar si ambos campos están vacíos
+                if (!producto.trim() && !clienteProv.trim()) {
+                    document.getElementById("resultadosBuscDevol").innerHTML = "";
+                    return;
+                }
+                
+                const loader = document.getElementById("loaderBuscDevol");
+                const resultados = document.getElementById("resultadosBuscDevol");
+                loader.style.display = "block";
+                resultados.innerHTML = "";
+                
+                try {
+                    const response = await fetch(SUPABASE_URL + "/functions/v1/buscar_transacciones", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            tipo: tp,
+                            sucursal: su,
+                            producto: producto.trim() || undefined,
+                            cliente_proveedor: clienteProv.trim() || undefined
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    loader.style.display = "none";
+                    
+                    if (!data.ok) {
+                        resultados.innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    
+                    const transacciones = data.datos || [];
+                    if (transacciones.length === 0) {
+                        resultados.innerHTML = `<div class="empty-state">No hay transacciones que coincidan</div>`;
+                        return;
+                    }
+                    
+                    // Renderizar lista de transacciones
+                    resultados.innerHTML = "<div style='font-size:11px;color:var(--muted);margin-bottom:8px'>Selecciona una transacción:</div>";
+                    transacciones.forEach(t => {
+                        const card = document.createElement("div");
+                        card.className = "caja-card";
+                        card.style.margin = "0 0 8px 0";
+                        card.style.cursor = "pointer";
+                        card.style.transition = "all 0.15s";
+                        
+                        const fechaDisplay = t.fecha || "—";
+                        const personaDisplay = tp === "VENTA" ? (t.cliente || "—") : (t.proveedor || "—");
+                        
+                        card.innerHTML = `
+                            <div style="flex:1">
+                                <div style="font-weight:600;color:var(--text);margin-bottom:4px">${t.producto}</div>
+                                <div style="font-size:11px;color:var(--muted);line-height:1.4">
+                                    ${personaDisplay} · ${t.cantidad} ud. · Bs ${t.precio || 0} · ${t.sucursal}
+                                </div>
+                            </div>
+                            <div style="font-size:10px;color:var(--muted)">${fechaDisplay}</div>
+                        `;
+                        
+                        card.onmouseenter = () => card.style.borderColor = "var(--accent)";
+                        card.onmouseleave = () => card.style.borderColor = "var(--border)";
+                        
+                        card.onclick = () => seleccionarTransaccionDevol(t);
+                        resultados.appendChild(card);
+                    });
+                } catch (e) {
+                    loader.style.display = "none";
+                    resultados.innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`;
+                }
+            }
+            
+            function seleccionarTransaccionDevol(transaccion) {
+                devolTransaccionSeleccionada = transaccion;
+                document.getElementById("devolReferenciaId").value = transaccion.id;
+                
+                const seleccionadoDiv = document.getElementById("devolProductoSeleccionado");
+                const seleccionadoTexto = document.getElementById("devolProductoSeleccionadoTexto");
+                
+                const personaDisplay = document.getElementById("devolTipo").value === "VENTA" 
+                    ? (transaccion.cliente || "—") 
+                    : (transaccion.proveedor || "—");
+                
+                seleccionadoTexto.innerHTML = `
+                    ${transaccion.producto} · ${transaccion.cantidad} ud. · Bs ${transaccion.precio} · ${personaDisplay}
+                `;
+                seleccionadoDiv.style.display = "block";
+                document.getElementById("resultadosBuscDevol").innerHTML = "";
+                document.getElementById("devolBuscProducto").value = "";
+                document.getElementById("devolBuscClienteProv").value = "";
+            }
+            
             async function registrarDevolucion() {
                 if (!sessionToken) {
                     mostrarMsg("Sesión expirada", "err");
@@ -3840,7 +4382,6 @@
                 const su = document.getElementById("devolSucursal").value
                   , tp = document.getElementById("devolTipo").value
                   , ref = document.getElementById("devolReferenciaId").value.trim()
-                  , pr = document.getElementById("devolProducto").value.trim()
                   , ca = Number(document.getElementById("devolCantidad").value)
                   , pc = Number(document.getElementById("devolPrecio").value)
                   , mo = document.getElementById("devolMotivo").value
@@ -3851,11 +4392,7 @@
                     return
                 }
                 if (!ref) {
-                    mostrarMsg("Ingresa el ID de referencia", "err");
-                    return
-                }
-                if (!pr) {
-                    mostrarMsg("Ingresa el nombre del producto", "err");
+                    mostrarMsg("Selecciona una transacción primero", "err");
                     return
                 }
                 if (isNaN(ca) || ca <= 0) {
@@ -3866,7 +4403,9 @@
                     mostrarMsg("Ingresa un precio unitario válido", "err");
                     return
                 }
-                if (!confirm(`¿Confirmar devolución de ${ca} ud. de "${pr}" por Bs ${(ca * pc).toFixed(2)}?`))
+                
+                const productoNombre = devolTransaccionSeleccionada?.producto || "—";
+                if (!confirm(`¿Confirmar devolución de ${ca} ud. de "${productoNombre}" por Bs ${(ca * pc).toFixed(2)}?`))
                     return;
                 const loader = document.getElementById("loaderDevol");
                 loader.style.display = "block";
@@ -3876,7 +4415,7 @@
                         SUCURSAL: su,
                         TIPO_DEVOLUCION: tp,
                         REFERENCIA_ID: ref,
-                        PRODUCTO: pr,
+                        PRODUCTO: devolTransaccionSeleccionada?.producto || "",
                         CANTIDAD: ca,
                         PRECIO_UNITARIO: pc,
                         MOTIVO: mo,
@@ -3890,7 +4429,12 @@
                     }
                     if (data.ok) {
                         mostrarMsg("↩ Devolución registrada · Total: Bs " + data.total, "ok");
-                        ["devolReferenciaId", "devolProducto", "devolCantidad", "devolPrecio", "devolClienteProveedor", "devolNotas"].forEach(id => document.getElementById(id).value = "");
+                        ["devolReferenciaId", "devolCantidad", "devolPrecio", "devolClienteProveedor", "devolNotas"].forEach(id => document.getElementById(id).value = "");
+                        document.getElementById("devolBuscProducto").value = "";
+                        document.getElementById("devolBuscClienteProv").value = "";
+                        document.getElementById("resultadosBuscDevol").innerHTML = "";
+                        document.getElementById("devolProductoSeleccionado").style.display = "none";
+                        devolTransaccionSeleccionada = null;
                         document.getElementById("devolSucursal").value = "";
                         document.getElementById("devolTipo").value = "VENTA";
                         document.getElementById("devolMotivo").value = "PRODUCTO_DEFECTUOSO";
@@ -4169,11 +4713,15 @@
             let laminaTimer = null;
             function buscarLaminas() {
                 const t = document.getElementById("laminaInput").value.trim();
+                const suc = document.getElementById("laminaFiltroSucursal").value;
+                const est = document.getElementById("laminaFiltroEstado").value;
                 const l = document.getElementById("listaLaminas");
                 clearTimeout(laminaTimer);
                 document.getElementById("listaLaminasResultados").innerHTML = "";
                 document.getElementById("laminaResultados").innerHTML = "";
-                if (t.length < 1) {
+                
+                // Ejecutar búsqueda si hay título O si hay filtros seleccionados
+                if (t.length < 1 && !suc && !est) {
                     l.classList.remove("show");
                     return
                 }
@@ -4929,5 +5477,3 @@
     </body>
     <div id="toastContainer"></div>
 </html>
-
-
