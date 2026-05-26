@@ -3467,6 +3467,9 @@
                 document.getElementById("cantidadVenta").value = "";
                 document.getElementById("infoProductoVenta").classList.remove("show")
             }
+            function limpiarCarritoDraft() {
+                try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
+            }
             function renderCarrito() {
                 const tb = document.getElementById("carritoBody")
                   , minis = document.getElementById("carritoMiniaturas");
