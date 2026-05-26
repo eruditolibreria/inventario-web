@@ -5464,7 +5464,53 @@
                     mostrarMsg("Error de conexión", "err");
                 }
             }    
-        </script>
+                </script>
+    <script>
+        // Doble toque atrás para salir (solo en Android/WebView)
+        (function() {
+            let backPressTimer = null;
+            let exitToast = null;
+
+            window.addEventListener('popstate', function(e) {
+                if (backPressTimer) {
+                    // Segundo toque: salir
+                    if (exitToast) { exitToast.remove(); exitToast = null; }
+                    if (navigator.app && navigator.app.exitApp) {
+                        navigator.app.exitApp();
+                    } else {
+                        window.close();
+                    }
+                    return;
+                }
+                // Primer toque: prevenir cierre y mostrar mensaje
+                e.preventDefault();
+                history.pushState(null, null, location.href);
+                
+                if (!exitToast) {
+                    exitToast = document.createElement('div');
+                    exitToast.textContent = 'Presiona atrás otra vez para salir';
+                    exitToast.style.cssText = `
+                        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                        background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px;
+                        border-radius: 25px; font-family: var(--sans, sans-serif); font-size: 14px;
+                        z-index: 99999; pointer-events: none; transition: opacity 0.3s;
+                        backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                    `;
+                    document.body.appendChild(exitToast);
+                }
+
+                backPressTimer = true;
+                setTimeout(function() {
+                    backPressTimer = null;
+                    if (exitToast) { exitToast.style.opacity = '0'; 
+                        setTimeout(function() { if (exitToast) { exitToast.remove(); exitToast = null; } }, 300); }
+                }, 2000);
+            });
+
+            // Poner un estado inicial en el historial para que popstate pueda dispararse
+            history.pushState(null, null, location.href);
+        })();
+    </script>
     </body>
     <div id="toastContainer"></div>
 </html>
