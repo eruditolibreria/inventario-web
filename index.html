@@ -3045,37 +3045,37 @@
             };
 
             async function api(params) {
-                const ahora = Math.floor(Date.now() / 1000);
-                if (sessionRefreshToken && sessionExpiresAt && (sessionExpiresAt - ahora) < 180) {
-                    try {
-                        const r = await fetch(baseURL, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                ACCION: "REFRESH_TOKEN",
-                                REFRESH_TOKEN: sessionRefreshToken
-                            })
-                        });
-                        const rd = await r.json();
-                        if (rd.ok) {
-                            sessionToken = rd.token;
-                            sessionRefreshToken = rd.refreshToken;
-                            sessionExpiresAt = rd.expiresAt;
+                            const ahora = Math.floor(Date.now() / 1000);
+                            if (sessionRefreshToken && sessionExpiresAt && (sessionExpiresAt - ahora) < 180) {
+                                try {
+                                    const r = await fetch(baseURL, {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({
+                                            ACCION: "REFRESH_TOKEN",
+                                            REFRESH_TOKEN: sessionRefreshToken
+                                        })
+                                    });
+                                    const rd = await r.json();
+                                    if (rd.ok) {
+                                        sessionToken = rd.token;
+                                        sessionRefreshToken = rd.refreshToken;
+                                        sessionExpiresAt = rd.expiresAt;
+                                    }
+                                } catch (_) {}
+                            }
+                            const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
+                            const res = await fetch(baseURL, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(body)
+                            });
+                            return res.json();
                         }
-                    } catch (_) {}
-                }
-                const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
-                const res = await fetch(baseURL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(body)
-                });
-                return res.json();
-            }
                         function sonidoCaja() {
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3467,6 +3467,9 @@
                 document.getElementById("cantidadVenta").value = "";
                 document.getElementById("infoProductoVenta").classList.remove("show")
             }
+            function limpiarCarritoDraft() {
+                try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
+            }
             function renderCarrito() {
                 const tb = document.getElementById("carritoBody")
                   , minis = document.getElementById("carritoMiniaturas");
@@ -3492,10 +3495,7 @@
                         } catch(e) {}
                     }
                     guardarCarritoDraft();
-                    function limpiarCarritoDraft() {
-                    try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
-                }
-                }
+                    }
                 );
                 document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
                 document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`
@@ -3600,9 +3600,12 @@
                         btn.disabled = false;
                         return
                     }
-                                        if (data.ok) {
+                    if (data.ok) {
                         sonidoCaja();
-                        vibrar("ok");           // vibración corta = éxito
+                        function vibrar(tipo = "ok") {
+                          if (!navigator.vibrate) return;
+                          const patrones = {
+                            ok: [40],           // vibración corta = éxito
                           };
                           navigator.vibrate(patrones[tipo] || [40]);
                         }
@@ -3621,9 +3624,9 @@
                     } else {
                         mostrarMsg("Error: " + (data.error || JSON.stringify(data)), "err")
                     }
-                } catch (e) {
-                    mostrarMsg("Error de conexión", "err")
-                }
+                                } catch (e) {
+                                    mostrarMsg("Error de conexión", "err")
+                                }
                 loader.style.display = "none";
                 btn.disabled = false;
             }
@@ -3681,16 +3684,10 @@
                         TOKEN: sessionToken
                     });
                     if (!manejarRespuesta(data)) {
-
-
-
-
-                                                loader.style.display = "none";
+                        loader.style.display = "none";
                         return
                     }
                     if (data.ok) {
-                        sonidoCaja();
-                        vibrar("ok");
                         mostrarMsg(mp === "CREDITO" ? "📝 Compra a crédito registrada" : "✅ Compra registrada", "ok");
                         document.querySelectorAll("#seccion-COMPRA input").forEach(i => i.value = "");
                         document.getElementById("categoriaCompra").value = "";
@@ -3757,16 +3754,10 @@
                         TOKEN: sessionToken
                     });
                     if (!manejarRespuesta(data)) {
-
-
-
-
-                                                loader.style.display = "none";
+                        loader.style.display = "none";
                         return
                     }
                     if (data.ok) {
-                        sonidoCaja();
-                        vibrar("ok");
                         mostrarMsg(mp === "CREDITO" ? "📝 Gasto a crédito registrado" : "💸 Gasto registrado correctamente", "ok");
                         ["gastoConcepto", "gastoImporte", "gastoPersona", "gastoNotas", "gastoAcreedor"].forEach(id => {
                             const el = document.getElementById(id);
@@ -5477,3 +5468,5 @@
     </body>
     <div id="toastContainer"></div>
 </html>
+
+
