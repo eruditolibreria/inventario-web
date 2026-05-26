@@ -3045,37 +3045,37 @@
             };
 
             async function api(params) {
-                const ahora = Math.floor(Date.now() / 1000);
-                if (sessionRefreshToken && sessionExpiresAt && (sessionExpiresAt - ahora) < 180) {
-                    try {
-                        const r = await fetch(baseURL, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                ACCION: "REFRESH_TOKEN",
-                                REFRESH_TOKEN: sessionRefreshToken
-                            })
-                        });
-                        const rd = await r.json();
-                        if (rd.ok) {
-                            sessionToken = rd.token;
-                            sessionRefreshToken = rd.refreshToken;
-                            sessionExpiresAt = rd.expiresAt;
+                            const ahora = Math.floor(Date.now() / 1000);
+                            if (sessionRefreshToken && sessionExpiresAt && (sessionExpiresAt - ahora) < 180) {
+                                try {
+                                    const r = await fetch(baseURL, {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({
+                                            ACCION: "REFRESH_TOKEN",
+                                            REFRESH_TOKEN: sessionRefreshToken
+                                        })
+                                    });
+                                    const rd = await r.json();
+                                    if (rd.ok) {
+                                        sessionToken = rd.token;
+                                        sessionRefreshToken = rd.refreshToken;
+                                        sessionExpiresAt = rd.expiresAt;
+                                    }
+                                } catch (_) {}
+                            }
+                            const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
+                            const res = await fetch(baseURL, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(body)
+                            });
+                            return res.json();
                         }
-                    } catch (_) {}
-                }
-                const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
-                const res = await fetch(baseURL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(body)
-                });
-                return res.json();
-            }
                         function sonidoCaja() {
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3492,10 +3492,7 @@
                         } catch(e) {}
                     }
                     guardarCarritoDraft();
-                    function limpiarCarritoDraft() {
-                    try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
-                }
-                }
+                    }
                 );
                 document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
                 document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`
@@ -3624,9 +3621,9 @@
                     } else {
                         mostrarMsg("Error: " + (data.error || JSON.stringify(data)), "err")
                     }
-                } catch (e) {
-                    mostrarMsg("Error de conexión", "err")
-                }
+                                } catch (e) {
+                                    mostrarMsg("Error de conexión", "err")
+                                }
                 loader.style.display = "none";
                 btn.disabled = false;
             }
