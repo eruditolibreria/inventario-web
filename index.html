@@ -51,6 +51,10 @@
         </script>
         <title>Sistema Inventario — Grupo Eruditos</title>
         <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <!-- Font Awesome 6 para iconos vectoriales -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+        <!-- Font Awesome 6 para iconos vectoriales -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
         <style>
             :root {
                 --bg: #080b0f;
@@ -146,6 +150,24 @@
                 to {
                     transform: translate(20vw,15vh);
                 }
+            @keyframes slideInFromRight {
+                from { opacity: 0; transform: translateX(20px); }
+                to   { opacity: 1; transform: translateX(0); }
+            }
+            @keyframes slideInFromLeft {
+                from { opacity: 0; transform: translateX(-20px); }
+                to   { opacity: 1; transform: translateX(0); }
+            }
+            /* Respetar prefers-reduced-motion */
+            @media (prefers-reduced-motion: reduce) {
+                .mode-tab .tab-icon,
+                .nav-indicator,
+                .mode-tab,
+                .contenido-slider {
+                    transition: none !important;
+                    animation: none !important;
+                }
+            }
             }
 
             .panel {
@@ -470,54 +492,128 @@
                 font-size: 12px;
                 width: auto;
             }
-
+            /* ===== BARRA DE NAVEGACION HORIZONTAL SCROLLABLE ===== */
             .mode-tabs {
                 display: flex;
-                gap: 4px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-behavior: smooth;
+                gap: 2px;
                 background: var(--surface2);
                 border-radius: 12px;
-                padding: 4px;
-                margin-bottom: 18px;
+                padding: 6px 4px;
+                margin-bottom: 14px;
                 border: 1px solid var(--border);
-                flex-wrap: wrap;
+                position: relative;
+                scrollbar-width: thin;
+                scrollbar-color: var(--accent-dim) transparent;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x mandatory;
+            }
+
+            .mode-tabs::-webkit-scrollbar { height: 3px; }
+            .mode-tabs::-webkit-scrollbar-track { background: transparent; }
+            .mode-tabs::-webkit-scrollbar-thumb {
+                background: var(--accent-dim);
+                border-radius: 10px;
+            }
+
+            /* Indicador animado bajo la pestana activa */
+            .nav-indicator {
+                position: absolute;
+                bottom: 6px;
+                height: 3px;
+                background: var(--accent);
+                border-radius: 3px;
+                transition: left 0.35s cubic-bezier(0.25, 0.8, 0.25, 1.2),
+                            width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+                pointer-events: none;
+                z-index: 2;
+                box-shadow: 0 0 8px var(--accent-glow);
             }
 
             @media (min-width: 768px) {
-                .mode-tabs { gap: 6px; padding: 6px; }
-                .mode-tab { padding: 10px 6px; font-size: 11px; }
+                .mode-tabs { gap: 3px; padding: 6px; }
+                .mode-tab { padding: 10px 12px; font-size: 12px; }
             }
             @media (min-width: 1024px) {
-                .mode-tabs { gap: 8px; padding: 8px; border-radius: 14px; }
-                .mode-tab { padding: 12px 10px; font-size: 12px; border-radius: 10px; }
+                .mode-tabs { gap: 4px; padding: 8px; border-radius: 14px; }
+                .mode-tab { padding: 12px 16px; font-size: 13px; border-radius: 10px; }
+            }
+            @media (min-width: 1440px) {
+                .mode-tabs { gap: 6px; padding: 8px 10px; }
+                .mode-tab { padding: 14px 18px; font-size: 13px; }
             }
 
+            /* Pestana individual */
             .mode-tab {
-                flex: 1;
-                min-width: 44px;
-                padding: 8px 2px;
+                flex: 0 0 auto;
+                min-width: 60px;
+                padding: 8px 10px;
                 border-radius: 8px;
                 text-align: center;
                 cursor: pointer;
                 font-size: 10px;
                 font-weight: 600;
                 color: var(--muted);
-                transition: all 0.2s;
+                transition: color 0.25s, background 0.25s;
                 line-height: 1.3;
+                white-space: nowrap;
+                position: relative;
+                z-index: 1;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+                scroll-snap-align: start;
             }
 
             .mode-tab.active {
-                background: var(--accent);
-                color: #000;
+                color: var(--accent);
+                background: transparent;
             }
 
             .mode-tab .tab-icon {
                 display: block;
-                font-size: 14px;
+                font-size: 16px;
                 margin-bottom: 2px;
+                transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            .mode-tab.active .tab-icon {
+                transform: scale(1.25);
+            }
+
+            @media (hover: hover) {
+                .mode-tab:hover { color: var(--text); }
+                .mode-tab:hover .tab-icon { transform: scale(1.1); }
+                .mode-tab.active:hover { color: var(--accent); }
+                .mode-tab.active:hover .tab-icon { transform: scale(1.25); }
             }
 
             .mode-tab.hidden-tab {
-                display: none;
+                display: none !important;
+            }
+
+            /* ===== CONTENEDOR DE CONTENIDO CON SWIPE ===== */
+            .contenido-wrapper {
+                position: relative;
+                overflow: hidden;
+                touch-action: pan-y;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+
+            .contenido-slider {
+                display: flex;
+                transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+                will-change: transform;
+            }
+
+            .contenido-slide {
+                flex: 0 0 100%;
+                width: 100%;
+                min-height: 200px;
+            }
             }
 
             .sub-tabs {
@@ -1834,56 +1930,57 @@
                 </div>
                 <div class="panel-body">
                     <div class="mode-tabs">
-                        <div class="mode-tab" onclick="setModo('VENTA')" id="tab-VENTA">
-                            <span class="tab-icon">💰</span>
+                        <div class="nav-indicator" id="navIndicator"></div>
+                        <div class="mode-tab" onclick="setModo('VENTA')" id="tab-VENTA" aria-label="Venta">
+                            <span class="tab-icon"><i class="fa-solid fa-sack-dollar"></i></span>
                             Venta
                         </div>
-                        <div class="mode-tab" onclick="setModo('COMPRA')" id="tab-COMPRA">
-                            <span class="tab-icon">🛒</span>
+                        <div class="mode-tab" onclick="setModo('COMPRA')" id="tab-COMPRA" aria-label="Compra">
+                            <span class="tab-icon"><i class="fa-solid fa-cart-shopping"></i></span>
                             Compra
                         </div>
-                        <div class="mode-tab" onclick="setModo('GASTO')" id="tab-GASTO">
-                            <span class="tab-icon">💸</span>
+                        <div class="mode-tab" onclick="setModo('GASTO')" id="tab-GASTO" aria-label="Gastos">
+                            <span class="tab-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
                             Gastos
                         </div>
-                        <div class="mode-tab" onclick="setModo('CAJA')" id="tab-CAJA">
-                            <span class="tab-icon">🏦</span>
+                        <div class="mode-tab" onclick="setModo('CAJA')" id="tab-CAJA" aria-label="Caja">
+                            <span class="tab-icon"><i class="fa-solid fa-cash-register"></i></span>
                             Caja
                         </div>
-                        <div class="mode-tab" onclick="setModo('CUENTAS')" id="tab-CUENTAS">
-                            <span class="tab-icon">📋</span>
+                        <div class="mode-tab" onclick="setModo('CUENTAS')" id="tab-CUENTAS" aria-label="Cuentas">
+                            <span class="tab-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
                             Cuentas
                         </div>
-                        <div class="mode-tab" onclick="setModo('DEVOLUCIONES')" id="tab-DEVOLUCIONES">
-                            <span class="tab-icon">↩</span>
+                        <div class="mode-tab" onclick="setModo('DEVOLUCIONES')" id="tab-DEVOLUCIONES" aria-label="Devoluciones">
+                            <span class="tab-icon"><i class="fa-solid fa-rotate-left"></i></span>
                             Devol.
                         </div>
-                        <div class="mode-tab" onclick="setModo('TRANSFERENCIAS')" id="tab-TRANSFERENCIAS">
-                            <span class="tab-icon">🔄</span>
+                        <div class="mode-tab" onclick="setModo('TRANSFERENCIAS')" id="tab-TRANSFERENCIAS" aria-label="Transferencias">
+                            <span class="tab-icon"><i class="fa-solid fa-right-left"></i></span>
                             Transf.
                         </div>
-                        <div class="mode-tab" onclick="setModo('REPORTES')" id="tab-REPORTES">
-                            <span class="tab-icon">📊</span>
+                        <div class="mode-tab" onclick="setModo('REPORTES')" id="tab-REPORTES" aria-label="Reportes">
+                            <span class="tab-icon"><i class="fa-solid fa-chart-simple"></i></span>
                             Report.
                         </div>
-                        <div class="mode-tab" onclick="setModo('BUSQUEDA')" id="tab-BUSQUEDA">
-                            <span class="tab-icon">🔎</span>
+                        <div class="mode-tab" onclick="setModo('BUSQUEDA')" id="tab-BUSQUEDA" aria-label="Buscar">
+                            <span class="tab-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                             Buscar
                         </div>
-                        <div class="mode-tab" onclick="setModo('LAMINAS')" id="tab-LAMINAS">
-                            <span class="tab-icon">🖼️</span>
-                            Láminas
+                        <div class="mode-tab" onclick="setModo('LAMINAS')" id="tab-LAMINAS" aria-label="Laminas">
+                            <span class="tab-icon"><i class="fa-solid fa-images"></i></span>
+                            Laminas
                         </div>
-                        <div class="mode-tab" onclick="setModo('SERVICIOS')" id="tab-SERVICIOS">
-                            <span class="tab-icon">🖨️</span>
+                        <div class="mode-tab" onclick="setModo('SERVICIOS')" id="tab-SERVICIOS" aria-label="Servicios">
+                            <span class="tab-icon"><i class="fa-solid fa-print"></i></span>
                             Servicios
                         </div>
-                        <div class="mode-tab" onclick="setModo('INVENTARIO')" id="tab-INVENTARIO">
-                            <span class="tab-icon">📚</span>
+                        <div class="mode-tab" onclick="setModo('INVENTARIO')" id="tab-INVENTARIO" aria-label="Inventario">
+                            <span class="tab-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
                             Inventario
                         </div>
-                        <div class="mode-tab" onclick="setModo('USUARIOS')" id="tab-USUARIOS">
-                            <span class="tab-icon">👥</span>
+                        <div class="mode-tab" onclick="setModo('USUARIOS')" id="tab-USUARIOS" aria-label="Usuarios">
+                            <span class="tab-icon"><i class="fa-solid fa-users"></i></span>
                             Usuarios
                         </div>
                     </div>
@@ -3260,21 +3357,77 @@
                 m.style.display = "block";
                 setTimeout( () => m.style.display = "none", 3500)
             }
+            /* Variables globales para navegacion */
+            let modoActual = 'VENTA';
+            const ORDEN_MODOS = ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];
+
+            /* Actualizar indicador deslizante */
+            function actualizarIndicador(modo) {
+                const nav = document.querySelector('.mode-tabs');
+                const tab = document.getElementById('tab-' + modo);
+                const indicator = document.getElementById('navIndicator');
+                if (!nav || !tab || !indicator) return;
+                const navRect = nav.getBoundingClientRect();
+                const tabRect = tab.getBoundingClientRect();
+                indicator.style.left = (tabRect.left - navRect.left + nav.scrollLeft) + 'px';
+                indicator.style.width = tabRect.width + 'px';
+            }
+
+            /* Recalcular indicador con resize y scroll */
+            window.addEventListener('resize', function() { if (typeof modoActual !== 'undefined') actualizarIndicador(modoActual); });
+
+            /* Swipe tactil para cambiar de pestana */
+            (function() {
+                var touchStartX = 0, touchStartY = 0;
+                var contenidoArea = document.querySelector('.panel-body');
+                if (contenidoArea) {
+                    contenidoArea.addEventListener('touchstart', function(e) {
+                        touchStartX = e.changedTouches[0].screenX;
+                        touchStartY = e.changedTouches[0].screenY;
+                    }, { passive: true });
+                    contenidoArea.addEventListener('touchend', function(e) {
+                        var diffX = touchStartX - e.changedTouches[0].screenX;
+                        var diffY = touchStartY - e.changedTouches[0].screenY;
+                        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                            var idx = ORDEN_MODOS.indexOf(modoActual);
+                            if (diffX > 0 && idx < ORDEN_MODOS.length - 1) {
+                                var nextTab = document.getElementById('tab-' + ORDEN_MODOS[idx + 1]);
+                                if (nextTab && !nextTab.classList.contains('hidden-tab')) {
+                                    setModo(ORDEN_MODOS[idx + 1]);
+                                }
+                            } else if (diffX < -50 && idx > 0) {
+                                var prevTab = document.getElementById('tab-' + ORDEN_MODOS[idx - 1]);
+                                if (prevTab && !prevTab.classList.contains('hidden-tab')) {
+                                    setModo(ORDEN_MODOS[idx - 1]);
+                                }
+                            }
+                        }
+                    }, { passive: true });
+                }
+            })();
+
             function setModo(modo) {
-                TODOS_MODOS.forEach(m => {
-                    const sec = document.getElementById("seccion-" + m);
-                    const act = m === modo;
+                modoActual = modo;
+                /* Mostrar/ocultar secciones con animacion slide */
+                TODOS_MODOS.forEach(function(m) {
+                    var sec = document.getElementById("seccion-" + m);
+                    var act = m === modo;
                     if (act) {
-                        sec.classList.remove("oculto", "seccion-transition");
-                        void sec.offsetWidth;
-                        sec.classList.add("seccion-transition");
+                        sec.classList.remove("oculto");
+                        sec.style.animation = "slideInFromRight 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
                     } else {
                         sec.classList.add("oculto");
-                        sec.classList.remove("seccion-transition");
+                        sec.style.animation = "";
                     }
-                    document.getElementById("tab-" + m).classList.toggle("active", m === modo)
+                    document.getElementById("tab-" + m).classList.toggle("active", m === modo);
+                });
+                actualizarIndicador(modo);
+                /* Auto-scroll hacia la pestana activa */
+                var tabActivo = document.getElementById("tab-" + modo);
+                if (tabActivo) {
+                    tabActivo.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
                 }
-                );
+                /* --- Acciones especificas por modo (original) --- */
                 if (modo === "CAJA" && sessionToken)
                     verificarEstadoCaja();
                 if (modo === "DEVOLUCIONES")
