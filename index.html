@@ -150,6 +150,7 @@
                 to {
                     transform: translate(20vw,15vh);
                 }
+            }
             @keyframes slideInFromRight {
                 from { opacity: 0; transform: translateX(20px); }
                 to   { opacity: 1; transform: translateX(0); }
@@ -168,8 +169,7 @@
                     animation: none !important;
                 }
             }
-            }
-
+            
             .panel {
                 background: var(--surface);
                 width: 100%;
@@ -613,7 +613,6 @@
                 flex: 0 0 100%;
                 width: 100%;
                 min-height: 200px;
-            }
             }
 
             .sub-tabs {
@@ -2711,9 +2710,17 @@
                         <div class="field-group">
                             <label class="field-label">Nombre del producto</label>
                             <input id="busquedaInput" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDetalle()">
-                            <div id="listaBusqueda" class="autocomplete"></div>
-                        </div>
-                        <div class="loader" id="loaderBusqueda"></div>
+                                                        <div id="listaBusqueda" class="autocomplete"></div>
+                                                    </div>
+                                                    <div class="field-group">
+                                                        <label class="field-label">Sucursal</label>
+                                                        <select id="busquedaSucursal" onchange="buscarProductoDetalle()">
+                                                            <option value="">Todas</option>
+                                                            <option value="ERUDITOS">ERUDITOS</option>
+                                                            <option value="CENTRAL">CENTRAL</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="loader" id="loaderBusqueda"></div>
                         <div id="searchResultsList" class="search-results-list"></div>
                     </div>
                     <!-- LÁMINAS -->
@@ -4783,14 +4790,19 @@
             let busquedaTimer = null;
             function buscarProductoDetalle() {
                 const t = document.getElementById("busquedaInput").value.trim()
-                  , l = document.getElementById("listaBusqueda");
+                  , l = document.getElementById("listaBusqueda")
+                  , sucFiltro = document.getElementById("busquedaSucursal")?.value || "";
                 clearTimeout(busquedaTimer);
                 document.getElementById("searchResultsList").innerHTML = "";
                 if (t.length < 2) {
                     l.classList.remove("show");
                     return
                 }
-                const sg = inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t.toLowerCase()));
+                let sg = inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t.toLowerCase()));
+                /* Filtrar por sucursal si se selecciono una */
+                if (sucFiltro) {
+                    sg = sg.filter(p => p.sucursal === sucFiltro);
+                }
                 l.innerHTML = "";
                 if (sg.length > 0) {
                     sg.slice(0, 8).forEach(p => {
@@ -4800,7 +4812,7 @@
                         div.onclick = () => {
                             document.getElementById("busquedaInput").value = p.producto;
                             l.classList.remove("show");
-                            ejecutarBusquedaDetalle(p.producto)
+                            ejecutarBusquedaDetalle(p.clave || p.producto)
                         }
                         ;
                         l.appendChild(div)
@@ -4819,16 +4831,19 @@
                 }
                 const loader = document.getElementById("loaderBusqueda")
                   , l = document.getElementById("listaBusqueda")
-                  , co = document.getElementById("searchResultsList");
+                  , co = document.getElementById("searchResultsList")
+                  , sucActual = document.getElementById("busquedaSucursal")?.value || "";
                 l.classList.remove("show");
                 loader.style.display = "block";
                 co.innerHTML = "";
                 try {
-                    const data = await api({
+                    const body = {
                         ACCION: "BUSCAR_PRODUCTO_DETALLE",
                         PRODUCTO: t,
                         TOKEN: sessionToken
-                    });
+                    };
+                    if (sucActual) body.SUCURSAL = sucActual;
+                    const data = await api(body);
                     if (!manejarRespuesta(data)) {
                         loader.style.display = "none";
                         return
@@ -4847,6 +4862,7 @@
             function renderSearchCard(p) {
                 const div = document.createElement("div");
                 div.className = "search-result show";
+                div.setAttribute("data-clave", p.clave || "");
                 const sc = p.stock <= 0 ? "warn" : p.stock <= 5 ? "orange" : "ok"
                   , sl = p.stock <= 0 ? "⛔ Sin stock" : p.stock <= 5 ? "⚠ Stock bajo" : "✅ En stock";
                 div.innerHTML = `<div class="sr-name">📦 ${p.producto}</div><div class="sr-grid"><div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">Bs ${p.precioVenta ?? '—'}</div></div><div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">Bs ${p.precioUnidad ?? '—'}</div></div><div class="sr-field ${sc === 'warn' ? 'red' : sc === 'orange' ? 'orange' : 'accent'}"><div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud. · ${sl}</div></div><div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:#6eb4ff">${p.sucursal ?? '—'}</div></div><div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${p.ubicacion || '—'}</div></div><div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor || '—'}</div></div></div>`;
