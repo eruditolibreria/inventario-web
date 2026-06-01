@@ -51,10 +51,17 @@
                     );
 
                                         /* Setear variables CSS para la animación circular */
-                    /* Solo pasamos coordenadas simples; la lógica de dirección está en los keyframes */
-                    html.style.setProperty('--tx', cx + 'px');
-                    html.style.setProperty('--ty', cy + 'px');
-                    html.style.setProperty('--tr', maxRadius + 'px');
+                    /* Expandir (a oscuro): crece desde el botón */
+                    /* Retraer (a claro): se encoge hacia el botón */
+                    if (newTheme === 'dark') {
+                        /* Expandir: círculo pequeño → grande */
+                        html.style.setProperty('--clip-from', 'circle(0% at ' + cx + 'px ' + cy + 'px)');
+                        html.style.setProperty('--clip-to', 'circle(' + maxRadius + 'px at ' + cx + 'px ' + cy + 'px)');
+                    } else {
+                        /* Retraer: círculo grande → pequeño */
+                        html.style.setProperty('--clip-from', 'circle(' + maxRadius + 'px at ' + cx + 'px ' + cy + 'px)');
+                        html.style.setProperty('--clip-to', 'circle(0% at ' + cx + 'px ' + cy + 'px)');
+                    }
                 }
 
                                 /* Verificar soporte de View Transitions API */
@@ -1963,25 +1970,22 @@
            * Esto evita el parpadeo al cambiar a tema claro.
            */
           [data-theme-direction="expand"]::view-transition-new(root) {
-            animation: circularRevealExpand 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: circularReveal 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
           }
           [data-theme-direction="expand"]::view-transition-old(root) {
             animation: none;
           }
           [data-theme-direction="retract"]::view-transition-old(root) {
-            animation: circularRevealRetract 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: circularReveal 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
           }
           [data-theme-direction="retract"]::view-transition-new(root) {
             animation: none;
           }
 
-                    @keyframes circularRevealExpand {
-            from { clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%)); }
-            to   { clip-path: circle(var(--tr, 150vmax) at var(--tx, 50%) var(--ty, 50%)); }
-          }
-          @keyframes circularRevealRetract {
-            from { clip-path: circle(var(--tr, 150vmax) at var(--tx, 50%) var(--ty, 50%)); }
-            to   { clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%)); }
+                    @keyframes circularReveal {
+            /* from y to se controlan con variables CSS segun direccion */
+            from { clip-path: var(--clip-from); }
+            to   { clip-path: var(--clip-to);   }
           }
 
           /* Respetar prefers-reduced-motion: desactivar animación circular */
