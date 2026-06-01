@@ -60,7 +60,7 @@
                                 /* Verificar soporte de View Transitions API */
                 if (document.startViewTransition) {
                     /* Indicar dirección para que CSS sepa qué capa animar */
-                    html.setAttribute('data-theme-direction', newTheme === 'light' ? 'expand' : 'retract');
+                    html.setAttribute('data-theme-direction', newTheme === 'dark' ? 'expand' : 'retract');
 
                     /* Navegador moderno: animación circular */
                     document.startViewTransition(function() {
@@ -1958,16 +1958,10 @@
                     /* ===== CIRCULAR REVEAL — View Transitions API ===== */
           /*
            * Dirección controlada por data-theme-direction en el HTML:
-           *   expand  (→ claro):  anima ::view-transition-new (círculo crece)
-           *   retract (→ oscuro): anima ::view-transition-old (círculo se encoge)
+           *   expand  (→ oscuro): anima ::view-transition-new (círculo crece)
+           *   retract (→ claro):  anima ::view-transition-old (círculo se encoge)
            * Esto evita el parpadeo al cambiar a tema claro.
            */
-
-          /* Fondo del viewport durante la transicion (se ve al encogerse la capa old) */
-          ::view-transition {
-            background-color: var(--bg, #080b0f);
-          }
-
           [data-theme-direction="expand"]::view-transition-new(root) {
             animation: circularRevealExpand 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
           }
@@ -1979,7 +1973,6 @@
           }
           [data-theme-direction="retract"]::view-transition-new(root) {
             animation: none;
-            opacity: 0;
           }
 
                     @keyframes circularRevealExpand {
