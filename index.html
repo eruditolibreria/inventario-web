@@ -2786,6 +2786,8 @@
                         <div class="sub-tabs">
                             <div class="sub-tab active" onclick="setSubModoReportes('MAS')" id="subtab-rep-MAS">🏆 Más vendidos</div>
                             <div class="sub-tab" onclick="setSubModoReportes('MENOS')" id="subtab-rep-MENOS">📉 Menos vendidos</div>
+                            <div class="sub-tab" onclick="setSubModoReportes('STOCK')" id="subtab-rep-STOCK">📦 Alertas y stock</div>
+                            <div class="sub-tab hidden-tab" onclick="setSubModoReportes('FINANCIERO')" id="subtab-rep-FINANCIERO">💰 Financiero</div>
                         </div>
                         <div id="reportes-filtros">
                             <div class="row-2">
@@ -2830,8 +2832,194 @@
                             <div id="totalesMenos" class="reporte-totales" style="display:none"></div>
                             <div id="tablaRepMenos"></div>
                         </div>
+                        <!-- Reportes de Stock -->
+                        <div id="rep-STOCK" class="oculto">
+                            <div class="sub-tabs mb-8" style="border-bottom:none;">
+                                <div class="sub-tab active" onclick="setReporteStock('ALERTAS')" id="subtab-stock-ALERTAS">&#9888; Alertas</div>
+                                <div class="sub-tab" onclick="setReporteStock('ROTACION')" id="subtab-stock-ROTACION">&#128260; Rotacion</div>
+                                <div class="sub-tab" onclick="setReporteStock('VALORIZACION')" id="subtab-stock-VALORIZACION">&#128142; Valorizacion</div>
+                                <div class="sub-tab" onclick="setReporteStock('MOVIMIENTOS')" id="subtab-stock-MOVIMIENTOS">&#128203; Movimientos</div>
+                            </div>
+                            <div id="stock-ALERTAS">
+                                <div class="field-group">
+                                    <label class="field-label">Sucursal</label>
+                                    <select id="alertaSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">Estado</label>
+                                    <select id="alertaEstado"><option value="">Todos</option><option value="AGOTADO">&#128308; Agotado</option><option value="BAJO">&#128992; Bajo</option><option value="OK">&#128994; OK</option></select>
+                                </div>
+                                <div class="loader" id="loaderAlerta"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarStockAlertas()">&#128269; Consultar alertas</button>
+                                <div id="tablaAlertas"></div>
+                            </div>
+                            <div id="stock-ROTACION" class="oculto">
+                                <div class="field-group">
+                                    <label class="field-label">Sucursal</label>
+                                    <select id="rotacionSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">Rotacion</label>
+                                    <select id="rotacionTipo"><option value="">Todas</option><option value="NUNCA VENDIDO">Nunca vendido</option><option value=">30 DIAS">Mas de 30 dias</option><option value=">60 DIAS">Mas de 60 dias</option><option value=">90 DIAS">Mas de 90 dias</option><option value="ACTIVO">Activo</option></select>
+                                </div>
+                                <div class="loader" id="loaderRotacion"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarRotacionInventario()">&#128269; Consultar rotacion</button>
+                                <div id="totalesRotacion" class="reporte-totales" style="display:none"></div>
+                                <div id="tablaRotacion"></div>
+                            </div>
+                            <div id="stock-VALORIZACION" class="oculto">
+                                <div class="row-2">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Sucursal</label>
+                                        <select id="valSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Categoria</label>
+                                        <input id="valCategoria" placeholder="Categoria (opcional)">
+                                    </div>
+                                </div>
+                                <div class="loader" id="loaderValorizacion"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarValorizacionInventario()">&#128142; Calcular valorizacion</button>
+                                <div id="totalesValorizacion" class="reporte-totales" style="display:none"></div>
+                                <div id="tablaValorizacion"></div>
+                            </div>
+                            <div id="stock-MOVIMIENTOS" class="oculto">
+                                <div class="row-2">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Sucursal</label>
+                                        <select id="movSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Tipo</label>
+                                        <select id="movTipo"><option value="">Todos</option><option value="ENTRADA">Entrada</option><option value="SALIDA">Salida</option></select>
+                                    </div>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">Producto</label>
+                                    <input id="movProducto" placeholder="Nombre o parte (opcional)">
+                                </div>
+                                <div class="row-2 mt-8">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Fecha desde</label>
+                                        <input id="movFechaDesde" type="date">
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Fecha hasta</label>
+                                        <input id="movFechaHasta" type="date">
+                                    </div>
+                                </div>
+                                <div class="loader" id="loaderMovimientos"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarHistorialMovimientos(1)">&#128203; Cargar movimientos</button>
+                                <div id="tablaMovimientos"></div>
+                                <div id="paginMovimientos" style="display:none;align-items:center;gap:8px;margin-top:12px">
+                                    <button class="btn btn-ghost btn-sm" onclick="cambiarPaginaMov(-1)">&#8592; Anterior</button>
+                                    <span id="paginMovimientos-info" style="font-size:11px;color:var(--muted);flex:1;text-align:center"></span>
+                                    <button class="btn btn-ghost btn-sm" onclick="cambiarPaginaMov(1)">Siguiente &#8594;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Reportes Financieros -->
+                        <div id="rep-FINANCIERO" class="oculto">
+                            <div class="sub-tabs mb-8" style="border-bottom:none;">
+                                <div class="sub-tab active" onclick="setReporteFinanciero('VENTAS')" id="subtab-fin-VENTAS">&#128202; Ventas</div>
+                                <div class="sub-tab" onclick="setReporteFinanciero('UTILIDAD')" id="subtab-fin-UTILIDAD">&#128200; Utilidad</div>
+                                <div class="sub-tab" onclick="setReporteFinanciero('FLUJO')" id="subtab-fin-FLUJO">&#128181; Flujo caja</div>
+                                <div class="sub-tab" onclick="setReporteFinanciero('COBRAR')" id="subtab-fin-COBRAR">&#129534; Ctas. cobrar</div>
+                            </div>
+                            <div id="fin-VENTAS">
+                                <div class="row-2">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Sucursal</label>
+                                        <select id="vtasSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Tipo</label>
+                                        <select id="vtasTipo"><option value="">Todos</option><option value="PRODUCTO">Producto</option><option value="SERVICIO">Servicio</option></select>
+                                    </div>
+                                </div>
+                                <div class="row-2 mt-8">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Agrupar por</label>
+                                        <select id="vtasAgrupar"><option value="dia">Dia</option><option value="semana">Semana</option><option value="mes">Mes</option></select>
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Mes</label>
+                                        <select id="vtasMes"><option value="">Todos</option></select>
+                                    </div>
+                                </div>
+                                <div class="row-2 mt-8">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Anio</label>
+                                        <select id="vtasAnio"><option value="">Todos</option></select>
+                                    </div>
+                                    <div class="field-group" style="margin:0">&nbsp;</div>
+                                </div>
+                                <div class="loader" id="loaderVentasPeriodo"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarVentasPeriodo()">&#128202; Generar reporte</button>
+                                <div id="totalesVentasPeriodo" class="reporte-totales" style="display:none"></div>
+                                <div id="tablaVentasPeriodo"></div>
+                            </div>
+                            <div id="fin-UTILIDAD" class="oculto">
+                                <div class="field-group">
+                                    <label class="field-label">Sucursal</label>
+                                    <select id="utilSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">Producto</label>
+                                    <input id="utilProducto" placeholder="Filtrar por producto (opcional)">
+                                </div>
+                                <div class="row-2 mt-8">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Fecha desde</label>
+                                        <input id="utilFechaDesde" type="date">
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Fecha hasta</label>
+                                        <input id="utilFechaHasta" type="date">
+                                    </div>
+                                </div>
+                                <div class="loader" id="loaderUtilidad"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarUtilidadBruta()">&#128200; Calcular utilidad</button>
+                                <div id="totalesUtilidad" class="reporte-totales" style="display:none"></div>
+                                <div id="tablaUtilidad"></div>
+                            </div>
+                            <div id="fin-FLUJO" class="oculto">
+                                <div class="field-group">
+                                    <label class="field-label">Sucursal</label>
+                                    <select id="flujoSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                </div>
+                                <div class="row-2 mt-8">
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Fecha desde</label>
+                                        <input id="flujoFechaDesde" type="date">
+                                    </div>
+                                    <div class="field-group" style="margin:0">
+                                        <label class="field-label">Fecha hasta</label>
+                                        <input id="flujoFechaHasta" type="date">
+                                    </div>
+                                </div>
+                                <div class="loader" id="loaderFlujo"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarFlujoCajaReporte()">&#128181; Generar flujo</button>
+                                <div id="totalesFlujo" class="reporte-totales" style="display:none"></div>
+                                <div id="tablaFlujo"></div>
+                            </div>
+                            <div id="fin-COBRAR" class="oculto">
+                                <div class="field-group">
+                                    <label class="field-label">Sucursal</label>
+                                    <select id="cobrarSucursal"><option value="">Todas</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select>
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">Cliente</label>
+                                    <input id="cobrarCliente" placeholder="Filtrar por cliente (opcional)">
+                                </div>
+                                <div class="loader" id="loaderCobrar"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarCuentasCobrarReporte()">&#129534; Consultar cuentas</button>
+                                <div id="totalesCobrar" class="reporte-totales" style="display:none"></div>
+                                <div id="tablaCobrar"></div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- BÚSQUEDA -->
+                    <!-- BUSQUEDA -->
                     <div id="seccion-BUSQUEDA" class="oculto">
                         <div class="section-label">Búsqueda de producto</div>
                         <div class="field-group">
@@ -3265,7 +3453,8 @@
             let inventarioGlobal = []
               , carrito = [];
             let devolPaginaActual = 1
-              , transfPaginaActual = 1;
+              , transfPaginaActual = 1
+              , movPaginaActual = 1;
             const DEVOL_LIMITE = 20
               , TRANSF_LIMITE = 20
               , CARRITO_CHUNK_SIZE = 10;
@@ -3353,7 +3542,7 @@
                     inicio: "VENTA"
                 },
                 ALMACEN: {
-                    tabs: ["COMPRA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO"],
+                    tabs: ["COMPRA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO"],
                     inicio: "COMPRA"
                 },
             };
@@ -3368,7 +3557,8 @@
                 const {tabs, inicio} = obtenerPermisos(rol);
                 TODOS_MODOS.forEach(t => document.getElementById("tab-" + t).classList.toggle("hidden-tab", !tabs.includes(t)));
                 const ru = (rol || "").toUpperCase();
-                document.getElementById("subtab-cuentas-COBRAR").classList.toggle("hidden-tab", !["ADMIN", "VENDEDOR"].includes(ru));
+                                document.getElementById("subtab-cuentas-COBRAR").classList.toggle("hidden-tab", !["ADMIN", "VENDEDOR"].includes(ru));
+                document.getElementById("subtab-rep-FINANCIERO").classList.toggle("hidden-tab", !["ADMIN"].includes(ru));
                 document.getElementById("subtab-cuentas-PAGAR").classList.toggle("hidden-tab", !["ADMIN", "ALMACEN"].includes(ru));
                 if (ru === "VENDEDOR")
                     setSubModoCuentas("COBRAR");
@@ -3873,8 +4063,11 @@
                     verificarEstadoCaja();
                 if (modo === "DEVOLUCIONES")
                     setSubModoDevol("REGISTRAR");
-                if (modo === "REPORTES")
+                if (modo === "REPORTES") {
                     setSubModoReportes("MAS");
+                    const ruSM = (sessionRol || "").toUpperCase();
+                    document.getElementById("subtab-rep-FINANCIERO").classList.toggle("hidden-tab", ruSM !== "ADMIN");
+                }
                 if (modo === "USUARIOS")
                     cargarUsuarios();
                 if (modo === "TRANSFERENCIAS")
@@ -3910,11 +4103,16 @@
                 )
             }
             function setSubModoReportes(s) {
-                ["MAS", "MENOS"].forEach(x => {
-                    document.getElementById("rep-" + x).classList.toggle("oculto", x !== s);
-                    document.getElementById("subtab-rep-" + x).classList.toggle("active", x === s)
-                }
-                )
+                ["MAS", "MENOS", "STOCK", "FINANCIERO"].forEach(x => {
+                    var el = document.getElementById("rep-" + x);
+                    if (el) el.classList.toggle("oculto", x !== s);
+                    var st = document.getElementById("subtab-rep-" + x);
+                    if (st) st.classList.toggle("active", x === s)
+                });
+                var fh = document.getElementById("reportes-filtros");
+                if (fh) fh.style.display = (s === "MAS" || s === "MENOS") ? "" : "none";
+                if (s === "STOCK") setReporteStock("ALERTAS");
+                if (s === "FINANCIERO") setReporteFinanciero("VENTAS");
             }
             function setSubModoTransf(s) {
                 ["REGISTRAR", "HISTORIAL"].forEach(x => {
@@ -5193,7 +5391,7 @@
             }
             async function cargarMenosVendidos() {
                 if (!sessionToken) {
-                    mostrarMsg("Sesión expirada", "err");
+                    mostrarMsg("Sesion expirada", "err");
                     return
                 }
                 const {sucursal, limite, fechaDesde, fechaHasta} = obtenerFiltrosReporte();
@@ -5215,11 +5413,193 @@
                     }
                     renderTablaReporte("tablaRepMenos", "totalesMenos", data.datos, data.totales, "orange")
                 } catch (e) {
-                    document.getElementById("tablaRepMenos").innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`
+                    document.getElementById("tablaRepMenos").innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>`
                 }
                 loader.style.display = "none"
             }
-
+            function setReporteStock(s) {
+                ["ALERTAS","ROTACION","VALORIZACION","MOVIMIENTOS"].forEach(function(x){
+                    document.getElementById("stock-"+x).classList.toggle("oculto",x!==s);
+                    document.getElementById("subtab-stock-"+x).classList.toggle("active",x===s)
+                });
+                if(s==="MOVIMIENTOS") movPaginaActual=1;
+            }
+            function setReporteFinanciero(s) {
+                ["VENTAS","UTILIDAD","FLUJO","COBRAR"].forEach(function(x){
+                    document.getElementById("fin-"+x).classList.toggle("oculto",x!==s);
+                    document.getElementById("subtab-fin-"+x).classList.toggle("active",x===s)
+                });
+                if(s==="VENTAS"){
+                    var a=new Date().getFullYear(),mSel=document.getElementById("vtasMes"),aSel=document.getElementById("vtasAnio");
+                    mSel.innerHTML="<option value=\"\">Todos</option>";
+                    for(var i=1;i<=12;i++){
+                        var v=i<10?"0"+i:""+i;
+                        mSel.innerHTML+='<option value="'+v+'">'+["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][i-1]+"</option>"
+                    }
+                    aSel.innerHTML="<option value=\"\">Todos</option>";
+                    for(var i=a-2;i<=a+2;i++)aSel.innerHTML+='<option value="'+i+'">'+i+"</option>"
+                }
+            }
+            async function cargarStockAlertas() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderAlerta"),tabla=document.getElementById("tablaAlertas");
+                loader.style.display="block";tabla.innerHTML="";
+                try{
+                    var data=await api({ACCION:"STOCK_ALERTAS",SUCURSAL:document.getElementById("alertaSucursal").value,ESTADO:document.getElementById("alertaEstado").value,TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin alertas de stock</div>'}
+                    else{
+                        var h='<table><thead><tr><th class="col-prod">Producto</th><th>Categoria</th><th>Sucursal</th><th>Stock</th><th>Minimo</th><th>Precio</th><th>Ubicacion</th><th>Estado</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            var estadoClase=d.estado==="AGOTADO"?"stock-bajo":(d.estado==="BAJO"?"estado-pendiente":"");
+                            h+='<tr><td class="col-prod">'+d.producto+'</td><td style="font-size:11px;color:var(--muted)">'+d.categoria+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono)">'+d.stock+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">'+d.stock_minimo+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.precio_venta).toFixed(2)+'</td><td style="font-size:10px;color:var(--muted)">'+d.ubicacion+'</td><td class="'+estadoClase+'" style="font-size:11px">'+d.estado+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>'
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            async function cargarRotacionInventario() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderRotacion"),tabla=document.getElementById("tablaRotacion"),tdiv=document.getElementById("totalesRotacion");
+                loader.style.display="block";tabla.innerHTML="";tdiv.style.display="none";
+                try{
+                    var data=await api({ACCION:"ROTACION_INVENTARIO",SUCURSAL:document.getElementById("rotacionSucursal").value,ROTACION:document.getElementById("rotacionTipo").value,TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin datos de rotacion</div>'}
+                    else{
+                        var h='<table><thead><tr><th class="col-prod">Producto</th><th>Categoria</th><th>Sucursal</th><th>Stock</th><th>Precio</th><th>Ultima venta</th><th>Dias sin venta</th><th>Rotacion</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            var rotClase=d.rotacion==="NUNCA VENDIDO"?"stock-bajo":(d.rotacion.indexOf("90")>=0?"estado-pendiente":"");
+                            h+='<tr><td class="col-prod">'+d.producto+'</td><td style="font-size:11px;color:var(--muted)">'+d.categoria+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono)">'+d.stock+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.precio_venta).toFixed(2)+'</td><td style="font-size:11px;color:var(--muted)">'+(d.ultima_venta||'Nunca')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.dias_sin_venta+'</td><td class="'+rotClase+'" style="font-size:11px">'+d.rotacion+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>'
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            async function cargarValorizacionInventario() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderValorizacion"),tabla=document.getElementById("tablaValorizacion"),tdiv=document.getElementById("totalesValorizacion");
+                loader.style.display="block";tabla.innerHTML="";tdiv.style.display="none";
+                try{
+                    var data=await api({ACCION:"VALORIZACION_INVENTARIO",SUCURSAL:document.getElementById("valSucursal").value,CATEGORIA:document.getElementById("valCategoria").value.trim(),TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin datos de valorizacion</div>'}
+                    else{
+                        var totalCosto=0,totalValor=0,totalUtilidad=0,productos=0,stockTotal=0;
+                        var h='<table><thead><tr><th>Categoria</th><th>Sucursal</th><th>Productos</th><th>Stock total</th><th>Costo total</th><th>Valor venta</th><th>Utilidad potencial</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            totalCosto+=Number(d.costo_total)||0;totalValor+=Number(d.valor_venta_total)||0;totalUtilidad+=Number(d.utilidad_potencial)||0;productos+=Number(d.productos)||0;stockTotal+=Number(d.stock_total)||0;
+                            h+='<tr><td style="font-size:11px;color:var(--muted)">'+d.categoria+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono)">'+d.productos+'</td><td style="font-family:var(--mono)">'+d.stock_total+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.costo_total).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.valor_venta_total).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.utilidad_potencial).toFixed(2)+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>';
+                        tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Productos</div><div class="rtc-val">'+productos+'</div></div><div class="reporte-total-card"><div class="rtc-label">Stock total</div><div class="rtc-val">'+stockTotal+'</div></div><div class="reporte-total-card"><div class="rtc-label">Costo total</div><div class="rtc-val">Bs '+totalCosto.toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Valor venta</div><div class="rtc-val">Bs '+totalValor.toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad potencial</div><div class="rtc-val">Bs '+totalUtilidad.toFixed(2)+'</div></div>'
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            async function cargarHistorialMovimientos(pg) {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                if(pg===undefined)pg=1;movPaginaActual=pg;
+                var loader=document.getElementById("loaderMovimientos"),tabla=document.getElementById("tablaMovimientos"),pdiv=document.getElementById("paginMovimientos");
+                loader.style.display="block";tabla.innerHTML="";
+                try{
+                    var data=await api({ACCION:"HISTORIAL_MOVIMIENTOS",SUCURSAL:document.getElementById("movSucursal").value,TIPO_MOV:document.getElementById("movTipo").value,PRODUCTO:document.getElementById("movProducto").value.trim(),FECHA_DESDE:document.getElementById("movFechaDesde").value,FECHA_HASTA:document.getElementById("movFechaHasta").value,PAGINA:pg,LIMITE:20,TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin movimientos encontrados</div>';pdiv.style.display="none"}
+                    else{
+                        var h='<table><thead><tr><th>Fecha</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Tipo</th><th>Origen</th><th>Cant</th><th>Monto</th><th>Usuario</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            var fc=String(d.fecha).slice(0,10),tipoClase=d.tipo_mov==="ENTRADA"?"tipo-compra":"tipo-venta";
+                            h+='<tr><td style="font-size:11px;color:var(--muted)">'+fc+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td class="col-prod">'+d.producto+'</td><td class="'+tipoClase+'" style="font-size:11px">'+d.tipo_mov+'</td><td style="font-size:10px;color:var(--muted)">'+(d.origen||'')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.cantidad+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.monto).toFixed(2)+'</td><td style="font-size:10px;color:var(--muted)">'+(d.usuario||'')+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>';
+                        if(data.paginas>1){pdiv.style.display="flex";document.getElementById("paginMovimientos-info").textContent="Pag "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";pdiv.querySelector("button:first-child").disabled=(pg<=1);pdiv.querySelector("button:last-child").disabled=(pg>=data.paginas)}else{pdiv.style.display="none"}
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            function cambiarPaginaMov(d){cargarHistorialMovimientos(movPaginaActual+d)}
+            async function cargarVentasPeriodo() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderVentasPeriodo"),tabla=document.getElementById("tablaVentasPeriodo"),tdiv=document.getElementById("totalesVentasPeriodo");
+                loader.style.display="block";tabla.innerHTML="";tdiv.style.display="none";
+                try{
+                    var data=await api({ACCION:"VENTAS_PERIODO",SUCURSAL:document.getElementById("vtasSucursal").value,TIPO:document.getElementById("vtasTipo").value,AGRUPAR:document.getElementById("vtasAgrupar").value,MES:document.getElementById("vtasMes").value,ANIO:document.getElementById("vtasAnio").value,TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin ventas en el periodo</div>'}
+                    else{
+                        var h='<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Tipo</th><th>Metodo</th><th>Operaciones</th><th>Unidades</th><th>Total Bs</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            var periodo=d.dia||d.semana||d.mes||'';
+                            h+='<tr><td style="font-size:11px;color:var(--muted)">'+periodo+' '+(d.anio||'')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-size:11px">'+(d.tipo||'')+'</td><td style="font-size:10px;color:var(--muted)">'+(d.metodo_pago||'')+'</td><td style="font-family:var(--mono)">'+d.operaciones+'</td><td style="font-family:var(--mono)">'+d.unidades+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.total_bs).toFixed(2)+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>';
+                        if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Operaciones</div><div class="rtc-val">'+(data.resumen.operaciones||0)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Unidades</div><div class="rtc-val">'+(data.resumen.unidades||0)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Total Bs</div><div class="rtc-val">Bs '+Number(data.resumen.total_bs||0).toFixed(2)+'</div></div>'}
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            async function cargarUtilidadBruta() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderUtilidad"),tabla=document.getElementById("tablaUtilidad"),tdiv=document.getElementById("totalesUtilidad");
+                loader.style.display="block";tabla.innerHTML="";tdiv.style.display="none";
+                try{
+                    var data=await api({ACCION:"UTILIDAD_BRUTA",SUCURSAL:document.getElementById("utilSucursal").value,PRODUCTO:document.getElementById("utilProducto").value.trim(),FECHA_DESDE:document.getElementById("utilFechaDesde").value,FECHA_HASTA:document.getElementById("utilFechaHasta").value,TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin datos de utilidad</div>'}
+                    else{
+                        var h='<table><thead><tr><th>Periodo</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Cant</th><th>Ingresos</th><th>Costo</th><th>Utilidad</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            var periodo=d.dia||d.semana||d.mes||'';
+                            h+='<tr><td style="font-size:11px;color:var(--muted)">'+periodo+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td class="col-prod">'+d.producto+'</td><td style="font-family:var(--mono)">'+d.cantidad+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.ingresos).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.costo).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.utilidad_bruta).toFixed(2)+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>';
+                        if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Ingresos totales</div><div class="rtc-val">Bs '+Number(data.resumen.ingresos||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Costos totales</div><div class="rtc-val">Bs '+Number(data.resumen.costo||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad bruta</div><div class="rtc-val">Bs '+Number(data.resumen.utilidad_bruta||0).toFixed(2)+'</div></div>'}
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            async function cargarFlujoCajaReporte() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderFlujo"),tabla=document.getElementById("tablaFlujo"),tdiv=document.getElementById("totalesFlujo");
+                loader.style.display="block";tabla.innerHTML="";tdiv.style.display="none";
+                try{
+                    var data=await api({ACCION:"FLUJO_CAJA_REPORTE",SUCURSAL:document.getElementById("flujoSucursal").value,FECHA_DESDE:document.getElementById("flujoFechaDesde").value,FECHA_HASTA:document.getElementById("flujoFechaHasta").value,TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin datos de flujo de caja</div>'}
+                    else{
+                        var h='<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Entradas</th><th>Salidas</th><th>Saldo neto</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            var periodo=d.dia||d.semana||d.mes||'';
+                            h+='<tr><td style="font-size:11px;color:var(--muted)">'+periodo+' '+(d.anio||'')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal)">Bs '+Number(d.total_entradas).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--red)">Bs '+Number(d.total_salidas).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.saldo_neto).toFixed(2)+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>';
+                        if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Total entradas</div><div class="rtc-val">Bs '+Number(data.resumen.total_entradas||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Total salidas</div><div class="rtc-val">Bs '+Number(data.resumen.total_salidas||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo neto</div><div class="rtc-val">Bs '+Number(data.resumen.saldo_neto||0).toFixed(2)+'</div></div>'}
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
+            async function cargarCuentasCobrarReporte() {
+                if(!sessionToken){mostrarMsg("Sesion expirada","err");return}
+                var loader=document.getElementById("loaderCobrar"),tabla=document.getElementById("tablaCobrar"),tdiv=document.getElementById("totalesCobrar");
+                loader.style.display="block";tabla.innerHTML="";tdiv.style.display="none";
+                try{
+                    var data=await api({ACCION:"CUENTAS_COBRAR_REPORTE",SUCURSAL:document.getElementById("cobrarSucursal").value,CLIENTE:document.getElementById("cobrarCliente").value.trim(),TOKEN:sessionToken});
+                    if(!manejarRespuesta(data)){loader.style.display="none";return}
+                    if(!data.datos||data.datos.length===0){tabla.innerHTML='<div class="empty-state">Sin cuentas por cobrar</div>'}
+                    else{
+                        var h='<table><thead><tr><th>Sucursal</th><th>Cliente</th><th>Cuentas</th><th>Total adeudado</th><th>Total abonado</th><th>Saldo pendiente</th><th>Canceladas</th><th>Pendientes</th></tr></thead><tbody>';
+                        data.datos.forEach(function(d){
+                            h+='<tr><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-size:11px">'+d.cliente+'</td><td style="font-family:var(--mono)">'+d.cuentas+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--red)">Bs '+Number(d.total_adeudado).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal)">Bs '+Number(d.total_abonado).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.saldo_pendiente).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">'+(d.canceladas||0)+'</td><td style="font-family:var(--mono);font-size:11px">'+(d.pendientes||0)+'</td></tr>'
+                        });
+                        tabla.innerHTML=h+'</tbody></table>';
+                        if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Total adeudado</div><div class="rtc-val">Bs '+Number(data.resumen.total_adeudado||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Total abonado</div><div class="rtc-val">Bs '+Number(data.resumen.total_abonado||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo pendiente</div><div class="rtc-val">Bs '+Number(data.resumen.saldo_pendiente||0).toFixed(2)+'</div></div>'}
+                    }
+                }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
+                loader.style.display="none"
+            }
             // ══ BÚSQUEDA ══
             let busquedaTimer = null;
             function buscarProductoDetalle() {
