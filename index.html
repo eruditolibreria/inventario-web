@@ -100,7 +100,6 @@
         <!-- Font Awesome 6 para iconos vectoriales -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
         <!-- Font Awesome 6 para iconos vectoriales -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
         <style>
             :root {
                 --bg: #080b0f;
@@ -2010,6 +2009,43 @@
                         box-shadow 0.25s ease;
           }
           body { transition: background-color 0.3s ease, padding 0.3s ease; }
+
+        /* ===== PDF PRINT STYLES ===== */
+        @media print {
+          /* Hide everything except the receipt/report */
+          body > *:not(#printArea) { display: none !important; }
+          #printArea {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #000;
+            background: #fff;
+          }
+          #printArea * { color: #000 !important; }
+          #printArea .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+          #printArea .print-header .print-logo { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+          #printArea .print-header .print-sub { font-size: 11px; color: #555 !important; }
+          #printArea .print-title { font-size: 16px; font-weight: 700; text-align: center; margin: 12px 0; }
+          #printArea .print-meta { font-size: 11px; color: #555 !important; margin-bottom: 10px; text-align: center; }
+          #printArea table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
+          #printArea table th { background: #eee; padding: 6px 8px; text-align: left; border-bottom: 2px solid #000; font-weight: 700; font-size: 10px; }
+          #printArea table td { padding: 5px 8px; border-bottom: 1px solid #ddd; }
+          #printArea .print-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+          #printArea .print-summary-card { border: 1px solid #ddd; padding: 10px 16px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; }
+          #printArea .print-summary-card .psc-label { font-size: 10px; color: #555 !important; }
+          #printArea .print-summary-card .psc-val { font-size: 18px; font-weight: 700; }
+          #printArea .print-footer { text-align: center; font-size: 10px; color: #888 !important; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+          #printArea .print-row-2 { display: flex; gap: 16px; margin-bottom: 8px; }
+          #printArea .print-row-2 > div { flex: 1; }
+        }
+        .no-print { }
+        @media print {
+          .no-print { display: none !important; }
+        }
         </style>
     </head>
     <body>
@@ -2176,7 +2212,8 @@
                             </div>
                         </div>
                         <div class="loader" id="loaderVenta"></div>
-                        <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()">⚡ COBRAR</button>
+                        <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()"><i class="fa-solid fa-cash-register"></i> COBRAR</button>
+                        <button class="btn btn-ghost btn-sm no-print" id="btnComprobante" onclick="imprimirComprobante()" style="display:none;margin-top:8px"><i class="fa-solid fa-file-pdf"></i> Comprobante</button>
                     </div>
                     <!-- COMPRA -->
                     <div id="seccion-COMPRA" class="oculto">
@@ -2822,13 +2859,15 @@
                         </div>
                         <div id="rep-MAS">
                             <div class="loader" id="loaderRepMas"></div>
-                            <button class="btn btn-primary mt-8 mb-12" onclick="cargarMasVendidos()">📊 Generar reporte</button>
+                            <button class="btn btn-orange mt-8 mb-12" onclick="cargarMasVendidos()"><i class="fa-solid fa-magnifying-glass"></i> Generar reporte</button>
+                            <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteMasVendidos()" id="btnPdfMasVendidos" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                             <div id="totalesMas" class="reporte-totales" style="display:none"></div>
                             <div id="tablaRepMas"></div>
                         </div>
                         <div id="rep-MENOS" class="oculto">
                             <div class="loader" id="loaderRepMenos"></div>
-                            <button class="btn btn-orange mt-8 mb-12" onclick="cargarMenosVendidos()">📉 Generar reporte</button>
+                            <button class="btn btn-orange mt-8 mb-12" onclick="cargarMenosVendidos()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
+                            <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteMenosVendidos()" id="btnPdfMenosVendidos" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                             <div id="totalesMenos" class="reporte-totales" style="display:none"></div>
                             <div id="tablaRepMenos"></div>
                         </div>
@@ -2850,7 +2889,8 @@
                                     <select id="alertaEstado"><option value="">Todos</option><option value="AGOTADO">&#128308; Agotado</option><option value="BAJO">&#128992; Bajo</option><option value="OK">&#128994; OK</option></select>
                                 </div>
                                 <div class="loader" id="loaderAlerta"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarStockAlertas()">&#128269; Consultar alertas</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarStockAlertas()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteAlertas()" id="btnPdfAlertas" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128269; Consultar alertas</button>
                                 <div id="tablaAlertas"></div>
                             </div>
                             <div id="stock-ROTACION" class="oculto">
@@ -2863,7 +2903,8 @@
                                     <select id="rotacionTipo"><option value="">Todas</option><option value="NUNCA VENDIDO">Nunca vendido</option><option value=">30 DIAS">Mas de 30 dias</option><option value=">60 DIAS">Mas de 60 dias</option><option value=">90 DIAS">Mas de 90 dias</option><option value="ACTIVO">Activo</option></select>
                                 </div>
                                 <div class="loader" id="loaderRotacion"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarRotacionInventario()">&#128269; Consultar rotacion</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarRotacionInventario()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteRotacion()" id="btnPdfRotacion" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128269; Consultar rotacion</button>
                                 <div id="totalesRotacion" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaRotacion"></div>
                             </div>
@@ -2879,7 +2920,8 @@
                                     </div>
                                 </div>
                                 <div class="loader" id="loaderValorizacion"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarValorizacionInventario()">&#128142; Calcular valorizacion</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarValorizacionInventario()"><i class="fa-solid fa-magnifying-glass"></i> Calcular</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteValorizacion()" id="btnPdfValorizacion" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128142; Calcular valorizacion</button>
                                 <div id="totalesValorizacion" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaValorizacion"></div>
                             </div>
@@ -2909,7 +2951,8 @@
                                     </div>
                                 </div>
                                 <div class="loader" id="loaderMovimientos"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarHistorialMovimientos(1)">&#128203; Cargar movimientos</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarHistorialMovimientos(1)"><i class="fa-solid fa-magnifying-glass"></i> Cargar</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteMovimientos()" id="btnPdfMovimientos" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128203; Cargar movimientos</button>
                                 <div id="tablaMovimientos"></div>
                                 <div id="paginMovimientos" style="display:none;align-items:center;gap:8px;margin-top:12px">
                                     <button class="btn btn-ghost btn-sm" onclick="cambiarPaginaMov(-1)">&#8592; Anterior</button>
@@ -2955,7 +2998,8 @@
                                     <div class="field-group" style="margin:0">&nbsp;</div>
                                 </div>
                                 <div class="loader" id="loaderVentasPeriodo"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarVentasPeriodo()">&#128202; Generar reporte</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarVentasPeriodo()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteVentas()" id="btnPdfVentas" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128202; Generar reporte</button>
                                 <div id="totalesVentasPeriodo" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaVentasPeriodo"></div>
                             </div>
@@ -2979,7 +3023,8 @@
                                     </div>
                                 </div>
                                 <div class="loader" id="loaderUtilidad"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarUtilidadBruta()">&#128200; Calcular utilidad</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarUtilidadBruta()"><i class="fa-solid fa-magnifying-glass"></i> Calcular</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteUtilidad()" id="btnPdfUtilidad" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128200; Calcular utilidad</button>
                                 <div id="totalesUtilidad" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaUtilidad"></div>
                             </div>
@@ -2999,7 +3044,8 @@
                                     </div>
                                 </div>
                                 <div class="loader" id="loaderFlujo"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarFlujoCajaReporte()">&#128181; Generar flujo</button>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarFlujoCajaReporte()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteFlujo()" id="btnPdfFlujo" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128181; Generar flujo</button>
                                 <div id="totalesFlujo" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaFlujo"></div>
                             </div>
@@ -3012,10 +3058,11 @@
                                     <label class="field-label">Cliente</label>
                                     <input id="cobrarCliente" placeholder="Filtrar por cliente (opcional)">
                                 </div>
-                                <div class="loader" id="loaderCobrar"></div>
-                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarCuentasCobrarReporte()">&#129534; Consultar cuentas</button>
+                                <div class="loader" id="loaderCobrarRep"></div>
+                                <button class="btn btn-primary mt-8 mb-12" onclick="cargarCuentasCobrarReporte()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" onclick="imprimirReporteCobrar()" id="btnPdfCobrar" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#129534; Consultar cuentas</button>
                                 <div id="totalesCobrar" class="reporte-totales" style="display:none"></div>
-                                <div id="tablaCobrar"></div>
+                                <div id="tablaCobrarRep"></div>
                             </div>
                         </div>
                     </div>
@@ -3455,6 +3502,9 @@
             let devolPaginaActual = 1
               , transfPaginaActual = 1
               , movPaginaActual = 1;
+            /* Cache para PDF de reportes */
+            let _rptCache = {};  /* { alertas: {datos:[], cols:[], title:'', resumen:null}, ... } */
+            let ultimaVenta = null;  /* { items, total, metodoPago, sucursal, cliente, fecha, hora } */
             const DEVOL_LIMITE = 20
               , TRANSF_LIMITE = 20
               , CARRITO_CHUNK_SIZE = 10;
@@ -4401,7 +4451,19 @@
                           };
                           navigator.vibrate(patrones[tipo] || [40]);
                         }
-                        mostrarMsg(metodoPago === "CREDITO" ? "📝 Venta a crédito registrada" : "✅ Venta registrada (" + items.length + " productos)", "ok");
+/* Cache venta para comprobante PDF */
+                        ultimaVenta = {
+                            items: carrito.map(function(i){return {producto:i.producto,cantidad:i.cantidad,precio:i.precio}}),
+                            total: carrito.reduce(function(s,i){return s+(i.cantidad*i.precio)},0),
+                            metodoPago: metodoPago,
+                            sucursal: sucursal,
+                            cliente: cliente,
+                            usuario: sessionUser,
+                            fecha: new Date().toISOString().slice(0,10),
+                            hora: new Date().toLocaleTimeString()
+                        };
+                        document.getElementById('btnComprobante').style.display='inline-block';
+                                                mostrarMsg(metodoPago === "CREDITO" ? "📝 Venta a crédito registrada" : "✅ Venta registrada (" + items.length + " productos)", "ok");
                         document.getElementById("mainPanel").classList.add("ok");
                         setTimeout( () => document.getElementById("mainPanel").classList.remove("ok"), 700);
                         carrito = [];
@@ -4782,8 +4844,8 @@
 
             // ══ CUENTAS COBRAR ══
             async function listarCuentasCobrar() {
-                const loader = document.getElementById("loaderCobrar")
-                  , tabla = document.getElementById("tablaCobrar");
+                const loader = document.getElementById("loaderCobrarRep")
+                  , tabla = document.getElementById("tablaCobrarRep");
                 loader.style.display = "block";
                 tabla.innerHTML = "";
                 try {
@@ -5383,7 +5445,9 @@
                         loader.style.display = "none";
                         return
                     }
-                    renderTablaReporte("tablaRepMas", "totalesMas", data.datos, data.totales, "")
+                    renderTablaReporte("tablaRepMas", "totalesMas", data.datos, data.totales, "");
+                        _rptCache.masVendidos={datos:data.datos,cols:['#','Producto','Uds','Ingresos'],title:'Productos Mas Vendidos',resumen:{cantidad:data.totales.cantidad,ingresos:data.totales.ingresos}};
+                        document.getElementById('btnPdfMasVendidos').style.display='inline-block'
                 } catch (e) {
                     document.getElementById("tablaRepMas").innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`
                 }
@@ -5411,7 +5475,9 @@
                         loader.style.display = "none";
                         return
                     }
-                    renderTablaReporte("tablaRepMenos", "totalesMenos", data.datos, data.totales, "orange")
+                    renderTablaReporte("tablaRepMenos", "totalesMenos", data.datos, data.totales, "orange");
+                        _rptCache.menosVendidos={datos:data.datos,cols:['#','Producto','Uds','Ingresos'],title:'Productos Menos Vendidos',resumen:{cantidad:data.totales.cantidad,ingresos:data.totales.ingresos}};
+                        document.getElementById('btnPdfMenosVendidos').style.display='inline-block'
                 } catch (e) {
                     document.getElementById("tablaRepMenos").innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>`
                 }
@@ -5454,7 +5520,9 @@
                             var estadoClase=d.estado==="AGOTADO"?"stock-bajo":(d.estado==="BAJO"?"estado-pendiente":"");
                             h+='<tr><td class="col-prod">'+d.producto+'</td><td style="font-size:11px;color:var(--muted)">'+d.categoria+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono)">'+d.stock+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">'+d.stock_minimo+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.precio_venta).toFixed(2)+'</td><td style="font-size:10px;color:var(--muted)">'+d.ubicacion+'</td><td class="'+estadoClase+'" style="font-size:11px">'+d.estado+'</td></tr>'
                         });
-                        tabla.innerHTML=h+'</tbody></table>'
+                        tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.alertas={datos:data.datos,cols:['Producto','Categoria','Sucursal','Stock','Minimo','Precio','Ubicacion','Estado'],title:'Alertas de Stock',resumen:null};
+                        document.getElementById('btnPdfAlertas').style.display='inline-block'
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
                 loader.style.display="none"
@@ -5473,7 +5541,9 @@
                             var rotClase=d.rotacion==="NUNCA VENDIDO"?"stock-bajo":(d.rotacion.indexOf("90")>=0?"estado-pendiente":"");
                             h+='<tr><td class="col-prod">'+d.producto+'</td><td style="font-size:11px;color:var(--muted)">'+d.categoria+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono)">'+d.stock+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.precio_venta).toFixed(2)+'</td><td style="font-size:11px;color:var(--muted)">'+(d.ultima_venta||'Nunca')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.dias_sin_venta+'</td><td class="'+rotClase+'" style="font-size:11px">'+d.rotacion+'</td></tr>'
                         });
-                        tabla.innerHTML=h+'</tbody></table>'
+tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.rotacion={datos:data.datos,cols:['Producto','Categoria','Sucursal','Stock','Precio','Ultima venta','Dias sin venta','Rotacion'],title:'Rotacion de Inventario',resumen:null};
+                        document.getElementById('btnPdfRotacion').style.display='inline-block'
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
                 loader.style.display="none"
@@ -5494,7 +5564,9 @@
                             h+='<tr><td style="font-size:11px;color:var(--muted)">'+d.categoria+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono)">'+d.productos+'</td><td style="font-family:var(--mono)">'+d.stock_total+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.costo_total).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.valor_venta_total).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.utilidad_potencial).toFixed(2)+'</td></tr>'
                         });
                         tabla.innerHTML=h+'</tbody></table>';
-                        tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Productos</div><div class="rtc-val">'+productos+'</div></div><div class="reporte-total-card"><div class="rtc-label">Stock total</div><div class="rtc-val">'+stockTotal+'</div></div><div class="reporte-total-card"><div class="rtc-label">Costo total</div><div class="rtc-val">Bs '+totalCosto.toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Valor venta</div><div class="rtc-val">Bs '+totalValor.toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad potencial</div><div class="rtc-val">Bs '+totalUtilidad.toFixed(2)+'</div></div>'
+                        tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Productos</div><div class="rtc-val">'+productos+'</div></div><div class="reporte-total-card"><div class="rtc-label">Stock total</div><div class="rtc-val">'+stockTotal+'</div></div><div class="reporte-total-card"><div class="rtc-label">Costo total</div><div class="rtc-val">Bs '+totalCosto.toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Valor venta</div><div class="rtc-val">Bs '+totalValor.toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad potencial</div><div class="rtc-val">Bs '+totalUtilidad.toFixed(2)+'</div></div>';
+                        _rptCache.valorizacion={datos:data.datos,cols:['Categoria','Sucursal','Productos','Stock total','Costo total','Valor venta','Utilidad potencial'],title:'Valorizacion de Inventario',resumen:{productos:productos,stockTotal:stockTotal,costoTotal:totalCosto,valorVenta:totalValor,utilidadPotencial:totalUtilidad}};
+                        document.getElementById('btnPdfValorizacion').style.display='inline-block'
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
                 loader.style.display="none"
@@ -5515,6 +5587,8 @@
                             h+='<tr><td style="font-size:11px;color:var(--muted)">'+fc+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td class="col-prod">'+d.producto+'</td><td class="'+tipoClase+'" style="font-size:11px">'+d.tipo_mov+'</td><td style="font-size:10px;color:var(--muted)">'+(d.origen||'')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.cantidad+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.monto).toFixed(2)+'</td><td style="font-size:10px;color:var(--muted)">'+(d.usuario||'')+'</td></tr>'
                         });
                         tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.movimientos={datos:data.datos,cols:['Fecha','Sucursal','Producto','Tipo','Origen','Cant','Monto','Usuario'],title:'Historial de Movimientos',resumen:null};
+                        document.getElementById('btnPdfMovimientos').style.display='inline-block';
                         if(data.paginas>1){pdiv.style.display="flex";document.getElementById("paginMovimientos-info").textContent="Pag "+data.pagina+" de "+data.paginas+" ("+data.total+" total)";pdiv.querySelector("button:first-child").disabled=(pg<=1);pdiv.querySelector("button:last-child").disabled=(pg>=data.paginas)}else{pdiv.style.display="none"}
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
@@ -5536,6 +5610,8 @@
                             h+='<tr><td style="font-size:11px;color:var(--muted)">'+periodo+' '+(d.anio||'')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-size:11px">'+(d.tipo||'')+'</td><td style="font-size:10px;color:var(--muted)">'+(d.metodo_pago||'')+'</td><td style="font-family:var(--mono)">'+d.operaciones+'</td><td style="font-family:var(--mono)">'+d.unidades+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.total_bs).toFixed(2)+'</td></tr>'
                         });
                         tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.ventasPeriodo={datos:data.datos,cols:['Periodo','Sucursal','Tipo','Metodo','Operaciones','Unidades','Total Bs'],title:'Ventas por Periodo',resumen:data.resumen||null};
+                        document.getElementById('btnPdfVentas').style.display='inline-block';
                         if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Operaciones</div><div class="rtc-val">'+(data.resumen.operaciones||0)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Unidades</div><div class="rtc-val">'+(data.resumen.unidades||0)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Total Bs</div><div class="rtc-val">Bs '+Number(data.resumen.total_bs||0).toFixed(2)+'</div></div>'}
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
@@ -5556,6 +5632,8 @@
                             h+='<tr><td style="font-size:11px;color:var(--muted)">'+periodo+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td class="col-prod">'+d.producto+'</td><td style="font-family:var(--mono)">'+d.cantidad+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.ingresos).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.costo).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.utilidad_bruta).toFixed(2)+'</td></tr>'
                         });
                         tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.utilidad={datos:data.datos,cols:['Periodo','Sucursal','Producto','Cant','Ingresos','Costo','Utilidad'],title:'Utilidad Bruta',resumen:data.resumen||null};
+                        document.getElementById('btnPdfUtilidad').style.display='inline-block';
                         if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Ingresos totales</div><div class="rtc-val">Bs '+Number(data.resumen.ingresos||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Costos totales</div><div class="rtc-val">Bs '+Number(data.resumen.costo||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad bruta</div><div class="rtc-val">Bs '+Number(data.resumen.utilidad_bruta||0).toFixed(2)+'</div></div>'}
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
@@ -5576,6 +5654,8 @@
                             h+='<tr><td style="font-size:11px;color:var(--muted)">'+periodo+' '+(d.anio||'')+'</td><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal)">Bs '+Number(d.total_entradas).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--red)">Bs '+Number(d.total_salidas).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.saldo_neto).toFixed(2)+'</td></tr>'
                         });
                         tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.flujo={datos:data.datos,cols:['Periodo','Sucursal','Entradas','Salidas','Saldo neto'],title:'Flujo de Caja',resumen:data.resumen||null};
+                        document.getElementById('btnPdfFlujo').style.display='inline-block';
                         if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Total entradas</div><div class="rtc-val">Bs '+Number(data.resumen.total_entradas||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Total salidas</div><div class="rtc-val">Bs '+Number(data.resumen.total_salidas||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo neto</div><div class="rtc-val">Bs '+Number(data.resumen.saldo_neto||0).toFixed(2)+'</div></div>'}
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
@@ -5595,11 +5675,138 @@
                             h+='<tr><td style="font-family:var(--mono);font-size:11px">'+d.sucursal+'</td><td style="font-size:11px">'+d.cliente+'</td><td style="font-family:var(--mono)">'+d.cuentas+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--red)">Bs '+Number(d.total_adeudado).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal)">Bs '+Number(d.total_abonado).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">Bs '+Number(d.saldo_pendiente).toFixed(2)+'</td><td style="font-family:var(--mono);font-size:11px">'+(d.canceladas||0)+'</td><td style="font-family:var(--mono);font-size:11px">'+(d.pendientes||0)+'</td></tr>'
                         });
                         tabla.innerHTML=h+'</tbody></table>';
+                        _rptCache.cobrar={datos:data.datos,cols:['Sucursal','Cliente','Cuentas','Total adeudado','Total abonado','Saldo pendiente','Canceladas','Pendientes'],title:'Cuentas por Cobrar',resumen:data.resumen||null};
+                        document.getElementById('btnPdfCobrar').style.display='inline-block';
                         if(data.resumen){tdiv.style.display="grid";tdiv.innerHTML='<div class="reporte-total-card"><div class="rtc-label">Total adeudado</div><div class="rtc-val">Bs '+Number(data.resumen.total_adeudado||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Total abonado</div><div class="rtc-val">Bs '+Number(data.resumen.total_abonado||0).toFixed(2)+'</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo pendiente</div><div class="rtc-val">Bs '+Number(data.resumen.saldo_pendiente||0).toFixed(2)+'</div></div>'}
                     }
                 }catch(e){tabla.innerHTML='<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'}
                 loader.style.display="none"
             }
+            // ===== FUNCIONES PDF PARA REPORTES =====
+            function _formatearBs(v){return 'Bs '+Number(v||0).toFixed(2)}
+
+            function imprimirReporte(title, cols, datos, resumen){
+                var pa=document.getElementById('printArea');
+                var h='';
+                h+='<div class="print-header">';
+                h+='<div class="print-logo"><i class="fa-solid fa-boxes-stacked"></i> GRUPO ERUDITOS</div>';
+                h+='<div class="print-sub">Sistema de Inventario</div>';
+                h+='</div>';
+                h+='<div class="print-title">'+title+'</div>';
+                h+='<div class="print-meta">Generado: '+new Date().toLocaleString()+' &middot; Usuario: '+sessionUser+'</div>';
+                if(resumen){
+                    h+='<div class="print-summary">';
+                    for(var k in resumen){
+                        var v=resumen[k];
+                        var label=k.replace(/([A-Z])/g,' $1').replace(/^./,function(s){return s.toUpperCase()});
+                        var val=(typeof v==='number')?(v%1===0?v.toLocaleString():_formatearBs(v)):v;
+                        h+='<div class="print-summary-card"><div class="psc-label">'+label+'</div><div class="psc-val">'+val+'</div></div>';
+                    }
+                    h+='</div>';
+                }
+                h+='<table><thead><tr>';
+                cols.forEach(function(c){h+='<th>'+c+'</th>'});
+                h+='</tr></thead><tbody>';
+                datos.forEach(function(d){
+                    h+='<tr>';
+                    cols.forEach(function(c){
+                        var v=d[c]!==undefined?d[c]:d[c.toLowerCase()];
+                        if(v===undefined||v===null)v='';
+                        h+='<td>'+v+'</td>'
+                    });
+                    h+='</tr>'
+                });
+                h+='</tbody></table>';
+                h+='<div class="print-footer">GRUPO ERUDITOS &copy; '+new Date().getFullYear()+' &middot; Este documento es una representacion impresa de los datos del sistema.</div>';
+                pa.innerHTML=h;
+                setTimeout(function(){
+                    if(navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                        if(confirm('Compartir como PDF?')){
+                            var blob=new Blob([pa.innerHTML],{type:'text/html'});
+                            var file=new File([blob],title.replace(/\s+/g,'_')+'.html',{type:'text/html'});
+                            navigator.share({title:title,text:'Reporte: '+title,files:[file]}).catch(function(){});
+                        }
+                    }
+                    window.print();
+                },200)
+            }
+
+            function imprimirReporteAlertas(){
+                var c=_rptCache.alertas;if(!c){mostrarMsg('Primero consulta las alertas','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteRotacion(){
+                var c=_rptCache.rotacion;if(!c){mostrarMsg('Primero consulta la rotacion','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteValorizacion(){
+                var c=_rptCache.valorizacion;if(!c){mostrarMsg('Primero calcula la valorizacion','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteMovimientos(){
+                var c=_rptCache.movimientos;if(!c){mostrarMsg('Primero carga los movimientos','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteVentas(){
+                var c=_rptCache.ventasPeriodo;if(!c){mostrarMsg('Primero genera el reporte de ventas','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteUtilidad(){
+                var c=_rptCache.utilidad;if(!c){mostrarMsg('Primero calcula la utilidad','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteFlujo(){
+                var c=_rptCache.flujo;if(!c){mostrarMsg('Primero genera el flujo de caja','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteCobrar(){
+                var c=_rptCache.cobrar;if(!c){mostrarMsg('Primero consulta las cuentas','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteMasVendidos(){
+                var c=_rptCache.masVendidos;if(!c){mostrarMsg('Primero genera el reporte','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+            function imprimirReporteMenosVendidos(){
+                var c=_rptCache.menosVendidos;if(!c){mostrarMsg('Primero genera el reporte','err');return}
+                imprimirReporte(c.title,c.cols,c.datos,c.resumen)
+            }
+
+            // ===== COMPROBANTE DE VENTA =====
+            function imprimirComprobante(){
+                var v=ultimaVenta;if(!v){mostrarMsg('No hay venta reciente','err');return}
+                var pa=document.getElementById('printArea');
+                var h='';
+                h+='<div class="print-header">';
+                h+='<div class="print-logo"><i class="fa-solid fa-boxes-stacked"></i> GRUPO ERUDITOS</div>';
+                h+='<div class="print-sub">Comprobante de Venta</div>';
+                h+='</div>';
+                h+='<div class="print-title">COMPROBANTE DE VENTA</div>';
+                h+='<div class="print-meta">'+v.fecha+' '+v.hora+' &middot; Sucursal: '+v.sucursal+' &middot; Vendedor: '+v.usuario+'</div>';
+                if(v.cliente&&v.cliente!=='MOSTRADOR')h+='<div class="print-meta"><strong>Cliente:</strong> '+v.cliente+'</div>';
+                h+='<table><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>';
+                v.items.forEach(function(item){
+                    h+='<tr><td>'+item.producto+'</td><td>'+item.cantidad+'</td><td>'+_formatearBs(item.precio)+'</td><td>'+_formatearBs(item.cantidad*item.precio)+'</td></tr>'
+                });
+                h+='</tbody></table>';
+                h+='<div class="print-summary">';
+                h+='<div class="print-summary-card"><div class="psc-label">Total</div><div class="psc-val">'+_formatearBs(v.total)+'</div></div>';
+                h+='<div class="print-summary-card"><div class="psc-label">Metodo</div><div class="psc-val">'+v.metodoPago+'</div></div>';
+                h+='</div>';
+                h+='<div class="print-footer">Gracias por su compra &middot; GRUPO ERUDITOS &copy; '+new Date().getFullYear()+'</div>';
+                pa.innerHTML=h;
+                setTimeout(function(){
+                    if(navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                        if(confirm('Compartir comprobante?')){
+                            var blob=new Blob([pa.innerHTML],{type:'text/html'});
+                            var file=new File([blob],'Comprobante_'+v.fecha.replace(/-/g,'')+'.html',{type:'text/html'});
+                            navigator.share({title:'Comprobante de Venta',text:'Comprobante GRUPO ERUDITOS',files:[file]}).catch(function(){});
+                        }
+                    }
+                    window.print();
+                },200)
+            }
+
             // ══ BÚSQUEDA ══
             let busquedaTimer = null;
             function buscarProductoDetalle() {
@@ -6494,6 +6701,8 @@
             history.pushState(null, null, location.href);
         })();
     </script>
+
+    <div id="printArea"></div>
     </body>
     <div id="toastContainer"></div>
 </html>
