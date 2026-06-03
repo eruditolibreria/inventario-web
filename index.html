@@ -2010,6 +2010,9 @@
           }
           body { transition: background-color 0.3s ease, padding 0.3s ease; }
 
+                /* Ocultar printArea en pantalla */
+        #printArea { display: none; }
+
         /* ===== PDF PRINT STYLES ===== */
         @media print {
           /* Hide everything except the receipt/report */
@@ -2042,7 +2045,6 @@
           #printArea .print-row-2 { display: flex; gap: 16px; margin-bottom: 8px; }
           #printArea .print-row-2 > div { flex: 1; }
         }
-        .no-print { }
         @media print {
           .no-print { display: none !important; }
         }
@@ -5727,7 +5729,8 @@ tabla.innerHTML=h+'</tbody></table>';
                             navigator.share({title:title,text:'Reporte: '+title,files:[file]}).catch(function(){});
                         }
                     }
-                    window.print();
+                                        window.print();
+                    pa.innerHTML = "";
                 },200)
             }
 
@@ -5804,6 +5807,7 @@ tabla.innerHTML=h+'</tbody></table>';
                         }
                     }
                     window.print();
+                    pa.innerHTML = "";
                 },200)
             }
 
