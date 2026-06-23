@@ -171,22 +171,30 @@ export function setModo(modo, direccion, velocidad) {
                 sec.style.animation = "";
                 sec.style.transform = "";
                 sec.style.willChange = "";
+                sec.style.position = "";
                 sec.classList.remove("push-transitioning", "push-dragging");
             } else {
                 sec.classList.add("oculto");
                 sec.style.animation = "";
                 sec.style.transform = "";
                 sec.style.willChange = "";
+                sec.style.position = "";
                 sec.classList.remove("push-transitioning", "push-dragging");
             }
         });
     } else if (direccion === 1) {
         secEntrante.classList.remove("oculto", "push-dragging");
+        secSaliente.classList.remove("push-dragging");
+
+        secEntrante.style.position = "absolute";
+        secEntrante.style.top = "0"; secEntrante.style.left = "0"; secEntrante.style.width = "100%";
+        secSaliente.style.position = "absolute";
+        secSaliente.style.top = "0"; secSaliente.style.left = "0"; secSaliente.style.width = "100%";
+
         secEntrante.style.transform = "";
         secEntrante.style.willChange = "transform";
         secEntrante.style.animation = "pushInFromRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
 
-        secSaliente.classList.remove("push-dragging");
         secSaliente.style.transform = "";
         secSaliente.style.willChange = "transform";
         secSaliente.classList.add("push-transitioning");
@@ -198,23 +206,22 @@ export function setModo(modo, direccion, velocidad) {
             secSaliente.style.animation = "";
             secSaliente.style.transform = "";
             secSaliente.style.willChange = "";
+            secSaliente.style.position = "";
             secSaliente.removeEventListener("animationend", onEnd);
             secEntrante.style.animation = "";
             secEntrante.style.transform = "";
             secEntrante.style.willChange = "";
+            secEntrante.style.position = "";
         };
         secSaliente.addEventListener("animationend", onEnd, { once: true });
     } else if (direccion === -1) {
         secEntrante.classList.remove("oculto", "push-dragging");
-        secEntrante.style.transform = "";
-        secEntrante.style.willChange = "transform";
-        secEntrante.style.animation = "pushInFromLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
-
         secSaliente.classList.remove("push-dragging");
-        secSaliente.style.transform = "";
-        secSaliente.style.willChange = "transform";
-        secSaliente.classList.add("push-transitioning");
-        secSaliente.style.animation = "pushOutToRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+
+        secEntrante.style.position = "absolute";
+        secEntrante.style.top = "0"; secEntrante.style.left = "0"; secEntrante.style.width = "100%";
+        secSaliente.style.position = "absolute";
+        secSaliente.style.top = "0"; secSaliente.style.left = "0"; secSaliente.style.width = "100%";
 
         var onEnd = function() {
             secSaliente.classList.add("oculto");
@@ -222,10 +229,12 @@ export function setModo(modo, direccion, velocidad) {
             secSaliente.style.animation = "";
             secSaliente.style.transform = "";
             secSaliente.style.willChange = "";
+            secSaliente.style.position = "";
             secSaliente.removeEventListener("animationend", onEnd);
             secEntrante.style.animation = "";
             secEntrante.style.transform = "";
             secEntrante.style.willChange = "";
+            secEntrante.style.position = "";
         };
         secSaliente.addEventListener("animationend", onEnd, { once: true });
     }
@@ -287,6 +296,10 @@ function _swipeMove(e) {
         secSaliente.classList.add("push-dragging");
         secEntrante.classList.add("push-dragging");
         secEntrante.classList.remove("oculto");
+        secSaliente.style.position = "absolute";
+        secSaliente.style.top = "0"; secSaliente.style.left = "0"; secSaliente.style.width = "100%";
+        secEntrante.style.position = "absolute";
+        secEntrante.style.top = "0"; secEntrante.style.left = "0"; secEntrante.style.width = "100%";
         secSaliente.style.willChange = "transform";
         secEntrante.style.willChange = "transform";
     }
@@ -313,8 +326,10 @@ function _swipeEnd(e) {
         secEntrante.classList.remove("push-dragging");
         secSaliente.style.transform = "";
         secSaliente.style.willChange = "";
+        secSaliente.style.position = "";
         secEntrante.style.transform = "";
         secEntrante.style.willChange = "";
+        secEntrante.style.position = "";
         setModo(modoDestino, _swipeDireccion, velocidad);
     } else {
         _resetSwipe(secSaliente, secEntrante);
@@ -339,12 +354,14 @@ function _resetSwipe(secSaliente, secEntrante) {
         secSaliente.classList.remove("push-dragging");
         secSaliente.style.transform = "";
         secSaliente.style.willChange = "";
+        secSaliente.style.position = "";
     }
     if (secEntrante) {
         secEntrante.classList.remove("push-dragging");
         secEntrante.classList.add("oculto");
         secEntrante.style.transform = "";
         secEntrante.style.willChange = "";
+        secEntrante.style.position = "";
     }
 }
 
