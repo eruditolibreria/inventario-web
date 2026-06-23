@@ -1,0 +1,189 @@
+/* === TEMA: Variables CSS (claro/oscuro), reset, panel base, theme toggle === */
+
+            :root {
+                --bg: #080b0f;
+                --surface: #0f1318;
+                --surface2: #161c24;
+                --surface3: #1c2530;
+                --border: #1e2d3d;
+                --accent: #00e676;
+                --accent-dim: rgba(0,230,118,0.12);
+                --accent-glow: rgba(0,230,118,0.25);
+                --orange: #ff9800;
+                --red: #ff4757;
+                --blue: #2979ff;
+                --purple: #b388ff;
+                --teal: #00bcd4;
+                --text: #dde6f0;
+                --muted: #4a6278;
+                --red-dim: rgba(255,71,87,0.12);
+                --orange-dim: rgba(255,152,0,0.15);
+                --blue-dim: rgba(41,121,255,0.15);
+                --font: 'Outfit',sans-serif;
+                --mono: 'DM Mono',monospace;
+            }
+
+            [data-theme='light'] {
+                --bg: #f0f2f5;
+                --surface: #ffffff;
+                --surface2: #f4f6f9;
+                --surface3: #e8ecf1;
+                --border: #d0d7de;
+                --accent: #00c853;
+                --accent-dim: rgba(0,200,83,0.10);
+                --accent-glow: rgba(0,200,83,0.20);
+                --orange: #e65100;
+                --red: #d32f2f;
+                --blue: #1565c0;
+                --purple: #7c4dff;
+                --teal: #00838f;
+                --red-dim: rgba(211,47,47,0.12);
+                --orange-dim: rgba(230,81,0,0.12);
+                --blue-dim: rgba(21,101,192,0.12);
+                --text: #1a2332;
+                --muted: #6b7f94;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                background: var(--bg);
+                font-family: var(--font);
+                color: var(--text);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                padding: 20px 12px 40px;
+            }
+
+            html { transition: padding 0.3s ease; }
+
+            @media (min-width: 768px) {
+                body { padding: 24px 32px 48px; }
+            }
+
+            @media (min-width: 1024px) {
+                body { padding: 32px 48px 64px; }
+            }
+
+            @media (min-width: 1440px) {
+                body { padding: 40px 64px 80px; }
+            }
+
+            .panel {
+                background: var(--surface);
+                width: 100%;
+                max-width: 480px;
+                border-radius: 18px;
+                border: 1px solid var(--border);
+                box-shadow: 0 0 40px rgba(0,230,118,0.06);
+                overflow: hidden;
+                transition: box-shadow 0.4s, max-width 0.3s ease;
+            }
+
+            @media (min-width: 768px) {
+                .panel { max-width: 720px; border-radius: 20px; }
+            }
+            @media (min-width: 1024px) {
+                .panel { max-width: 960px; border-radius: 24px; }
+            }
+            @media (min-width: 1440px) {
+                .panel { max-width: 1200px; border-radius: 28px; }
+            }
+
+          .theme-toggle {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.3s ease, transform 0.2s ease;
+            flex-shrink: 0;
+            margin-right: 6px;
+            position: relative;
+            z-index: 100;
+          }
+
+          .theme-toggle:hover {
+            border-color: var(--accent);
+            transform: scale(1.08);
+          }
+
+          .theme-toggle:active {
+            transform: scale(0.94);
+          }
+
+                    .theme-toggle-icon {
+            font-size: 17px;
+            line-height: 1;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .theme-toggle-icon .fa-moon {
+            color: #f5c542;
+          }
+
+          [data-theme='light'] .theme-toggle-icon {
+            transform: rotate(180deg);
+          }
+
+          @media (min-width: 1024px) {
+            .theme-toggle { width: 42px; height: 42px; }
+            .theme-toggle-icon { font-size: 19px; }
+          }
+
+          ::view-transition {
+            background-color: var(--bg, #080b0f);
+          }
+
+          [data-theme-direction="expand"]::view-transition-new(root) {
+            animation: circularRevealExpand 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          }
+          [data-theme-direction="expand"]::view-transition-old(root) {
+            animation: none;
+          }
+          [data-theme-direction="retract"]::view-transition-old(root) {
+            animation: circularRevealRetract 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          }
+          [data-theme-direction="retract"]::view-transition-new(root) {
+            animation: none;
+            opacity: 0;
+          }
+
+                    @keyframes circularRevealExpand {
+            from { clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%)); }
+            to   { clip-path: circle(var(--tr, 150vmax) at var(--tx, 50%) var(--ty, 50%)); }
+          }
+          @keyframes circularRevealRetract {
+            from { clip-path: circle(var(--tr, 150vmax) at var(--tx, 50%) var(--ty, 50%)); }
+            to   { clip-path: circle(0% at var(--tx, 50%) var(--ty, 50%)); }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            ::view-transition-new(root) {
+              animation: none !important;
+            }
+            ::view-transition-old(root) {
+              animation: none !important;
+            }
+          }
+
+          *, *::before, *::after {
+            transition: background-color 0.3s ease,
+                        border-color 0.25s ease,
+                        color 0.25s ease,
+                        box-shadow 0.25s ease;
+          }
+          body { transition: background-color 0.3s ease, padding 0.3s ease; }
