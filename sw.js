@@ -1,5 +1,5 @@
 // Nombre de caché con versión (cámbialo cada vez que actualices la app)
-const CACHE_NAME = 'eruditos-v22';
+const CACHE_NAME = 'eruditos-v23';
 
 // Archivos a cachear (offline)
 const urlsToCache = [
