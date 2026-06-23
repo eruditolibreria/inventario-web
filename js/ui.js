@@ -56,6 +56,8 @@ export function renderSearchCard(p) {
     const div = document.createElement("div");
     div.className = "search-result show";
     div.setAttribute("data-clave", p.clave || "");
+    div.style.cursor = "pointer";
+    div.addEventListener("click", function() { abrirDetalleProducto(p); });
     const sc = p.stock <= 0 ? "warn" : p.stock <= 5 ? "orange" : "ok",
           sl = p.stock <= 0 ? "🚫 Sin stock" : p.stock <= 5 ? "⚠️ Stock bajo" : "✅ En stock";
     div.innerHTML = `<div class="sr-name">🔍 ${p.producto}</div>
@@ -68,6 +70,33 @@ export function renderSearchCard(p) {
 <div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor || '—'}</div></div>
 </div>`;
     return div;
+}
+
+// ══ DETALLE DE PRODUCTO (overlay al hacer clic en card de búsqueda) ══
+export function abrirDetalleProducto(p) {
+    const overlay = document.getElementById("productoDetalleOverlay");
+    const imgDiv = document.getElementById("productoDetalleImg");
+    const infoDiv = document.getElementById("productoDetalleInfo");
+    if (p.imagen) {
+        imgDiv.innerHTML = `<img src="${p.imagen}" alt="${p.producto}" loading="lazy">`;
+    } else {
+        imgDiv.innerHTML = `<div class="detalle-sin-img">Sin vista previa</div>`;
+    }
+    infoDiv.innerHTML = `<div class="detalle-nombre">${p.producto}</div>
+<div class="detalle-item"><span class="detalle-key">Precio Venta</span><span class="detalle-val">${formatearBs(p.precioVenta)}</span></div>
+<div class="detalle-item"><span class="detalle-key">Precio Unidad</span><span class="detalle-val">${formatearBs(p.precioUnidad)}</span></div>
+<div class="detalle-item"><span class="detalle-key">Stock</span><span class="detalle-val">${p.stock} ud.</span></div>
+<div class="detalle-item"><span class="detalle-key">Sucursal</span><span class="detalle-val">${p.sucursal || '—'}</span></div>
+<div class="detalle-item"><span class="detalle-key">Ubicación</span><span class="detalle-val">${p.ubicacion || '—'}</span></div>
+<div class="detalle-item"><span class="detalle-key">Proveedor</span><span class="detalle-val">${p.proveedor || '—'}</span></div>`;
+    overlay.style.display = "flex";
+}
+
+export function cerrarDetalleProducto(e) {
+    var overlay = document.getElementById("productoDetalleOverlay");
+    if (!overlay) return;
+    if (e && e.target !== overlay) return;
+    overlay.style.display = "none";
 }
 
 

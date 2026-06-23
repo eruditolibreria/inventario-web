@@ -149,6 +149,7 @@ export function cerrarSesion() {
     }
     // Limpiar estado
     clearSession();
+    try { localStorage.removeItem("eruditos_modo"); } catch (_) {}
     setInventario([]);
     clearCarrito();
     // Limpiar UI

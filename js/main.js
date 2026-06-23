@@ -21,16 +21,16 @@ import { hoy, horaActual, formatearBs, sonidoCaja, vibrar,
 import { initUI, manejarRespuesta, renderSearchCard,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          confirmarEliminar, abrirModalRol, cerrarModalRol,
-         abrirModalPass, cerrarModalPass, confirmarResetPass }
+         abrirModalPass, cerrarModalPass, confirmarResetPass,
+         abrirDetalleProducto, cerrarDetalleProducto }
   from './ui.js';
 import { initNavegacion, setModo, aplicarRol, actualizarIndicador,
          setSubModoCaja, setSubModoCuentas, setSubModoDevol,
          setSubModoReportes, setSubModoTransf, setSubModoLaminas,
-         setSubModoServicios }
+         setSubModoServicios, initSwipe }
   from './navegacion.js';
 import { initInventario, cargarInventario, iniciarIntervalos,
-         detenerIntervalos, construirAC, ejecutarBusquedaDetalle as busquedaDetalleInv,
-         cargarInventarioAdmin, toggleEstadoUsuario }
+         detenerIntervalos, construirAC, ejecutarBusquedaDetalle as busquedaDetalleInv }
   from './inventario.js';
 
 // Modos
@@ -79,9 +79,10 @@ import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
          imprimirComprobante }
   from './modos/reportes.js';
 import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
-         cargarInventarioAdmin as adminCargarInventario, cargarUsuarios,
-         crearUsuario, confirmarCambioRol, toggleEstadoUsuario as adminToggleEstado,
-         initAdminMode }
+         cargarInventarioAdmin, cargarUsuarios,
+         crearUsuario, confirmarCambioRol, toggleEstadoUsuario,
+         initAdminMode, abrirEditarProducto, cerrarEditarProducto,
+         guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen }
   from './modos/admin.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -259,6 +260,11 @@ function inicializarApp() {
     window.crearUsuario = crearUsuario;
     window.confirmarCambioRol = confirmarCambioRol;
     window.toggleEstadoUsuario = toggleEstadoUsuario;
+    window.abrirEditarProducto = abrirEditarProducto;
+    window.cerrarEditarProducto = cerrarEditarProducto;
+    window.guardarEdicionProducto = guardarEdicionProducto;
+    window.abrirZoomImagen = abrirZoomImagen;
+    window.cerrarZoomImagen = cerrarZoomImagen;
     window.confirmarEliminar = confirmarEliminar;
     window.abrirModalImagen = abrirModalImagen;
     window.cerrarModalImagen = cerrarModalImagen;
@@ -268,6 +274,8 @@ function inicializarApp() {
     window.abrirModalPass = abrirModalPass;
     window.cerrarModalPass = cerrarModalPass;
     window.confirmarResetPass = confirmarResetPass;
+    window.abrirDetalleProducto = abrirDetalleProducto;
+    window.cerrarDetalleProducto = cerrarDetalleProducto;
     window.mostrarToast = mostrarToast;
     window.cerrarToast = cerrarToast;
     window.mostrarMsg = mostrarMsg;
@@ -321,6 +329,7 @@ function inicializarApp() {
 
     // ── 5. Configurar doble toque atrás ────────────────────────
     setupBackHandler();
+    initSwipe();
 
     // ── 6. Registrar Service Worker ────────────────────────────
     registrarServiceWorker();

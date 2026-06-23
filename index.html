@@ -1552,6 +1552,39 @@
         
     
 
+    <div id="productoDetalleOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarDetalleProducto(event)">
+        <div class="producto-detalle-card" onclick="event.stopPropagation()">
+            <div id="productoDetalleImg" class="producto-detalle-img"></div>
+            <div id="productoDetalleInfo" class="producto-detalle-info"></div>
+        </div>
+    </div>
+    
+
+    <!-- Overlay editar producto (ubicación / proveedor) -->
+    <div id="inventarioEditOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarEditarProducto(event)">
+        <div class="producto-detalle-card" onclick="event.stopPropagation()">
+            <div id="inventarioEditImg" class="producto-detalle-img" style="cursor:zoom-in"></div>
+            <div id="inventarioEditNombre" style="font-size:20px;font-weight:800;margin-bottom:16px;color:var(--text)"></div>
+            <div class="field-group" style="margin-bottom:10px">
+                <label class="field-label">Ubicación</label>
+                <input id="inventarioEditUbicacion" type="text" placeholder="Ej: Estante A-3">
+            </div>
+            <div class="field-group" style="margin-bottom:16px">
+                <label class="field-label">Proveedor</label>
+                <input id="inventarioEditProveedor" type="text" placeholder="Ej: Papelera del Sur">
+            </div>
+            <div class="row-2">
+                <button class="btn btn-primary" onclick="guardarEdicionProducto()">✅ Guardar</button>
+                <button class="btn btn-ghost" onclick="cerrarEditarProducto()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay zoom de imagen -->
+    <div id="imagenZoomOverlay" class="producto-detalle-overlay" style="display:none;cursor:zoom-out" onclick="cerrarZoomImagen()">
+        <img id="imagenZoomImg" src="" alt="" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:10px">
+    </div>
+
     <div id="printArea"></div>
     <script type="module" src="js/main.js"></script>
     </body>

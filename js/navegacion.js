@@ -95,7 +95,8 @@ export function aplicarRol(rol) {
     else
         setSubModoCuentas("COBRAR");
     document.getElementById("subtab-lam-AGREGAR").classList.toggle("hidden-tab", !["ADMIN", "ALMACEN"].includes(ru));
-    setModo(inicio);
+    var modoRestaurado = _leerModoGuardado();
+    setModo(modoRestaurado && tabs.includes(modoRestaurado) ? modoRestaurado : inicio);
 }
 
 
@@ -111,7 +112,7 @@ export function actualizarIndicador(modo) {
 }
 
 
-// ══ SETMODO CON ANIMACION PUSH ══
+// ══ SETMODO CON PUSH EFFECT ══
 export function setModo(modo, direccion, velocidad) {
     var modoAnterior = store.modoActual;
     if (modoAnterior === modo) {
@@ -120,7 +121,7 @@ export function setModo(modo, direccion, velocidad) {
             secMisma.classList.remove("oculto", "push-transitioning", "push-dragging");
             secMisma.style.animation = "";
             secMisma.style.transform = "";
-            secMisma.style.opacity = "";
+            secMisma.style.willChange = "";
         }
         actualizarIndicador(modo);
         return;
@@ -140,11 +141,12 @@ export function setModo(modo, direccion, velocidad) {
     }
 
     setModoActual(modo);
+    _guardarModo(modo);
     var duracion = 300;
     if (velocidad && velocidad > 0 && direccion !== 0) {
         var anchoPanel = document.querySelector('.panel-body')?.offsetWidth || 360;
         duracion = Math.round(anchoPanel / velocidad);
-        duracion = Math.max(120, Math.min(500, duracion));
+        duracion = Math.max(180, Math.min(400, duracion));
     }
 
     var secEntrante = document.getElementById("seccion-" + modo);
@@ -168,62 +170,62 @@ export function setModo(modo, direccion, velocidad) {
                 sec.classList.remove("oculto");
                 sec.style.animation = "";
                 sec.style.transform = "";
-                sec.style.opacity = "";
+                sec.style.willChange = "";
                 sec.classList.remove("push-transitioning", "push-dragging");
             } else {
                 sec.classList.add("oculto");
                 sec.style.animation = "";
                 sec.style.transform = "";
-                sec.style.opacity = "";
+                sec.style.willChange = "";
                 sec.classList.remove("push-transitioning", "push-dragging");
             }
         });
     } else if (direccion === 1) {
         secEntrante.classList.remove("oculto", "push-dragging");
         secEntrante.style.transform = "";
-        secEntrante.style.opacity = "";
-        secEntrante.style.animation = "slideInFromRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+        secEntrante.style.willChange = "transform";
+        secEntrante.style.animation = "pushInFromRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
 
         secSaliente.classList.remove("push-dragging");
         secSaliente.style.transform = "";
-        secSaliente.style.opacity = "";
+        secSaliente.style.willChange = "transform";
         secSaliente.classList.add("push-transitioning");
-        secSaliente.style.animation = "slideOutToLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+        secSaliente.style.animation = "pushOutToLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
 
         var onEnd = function() {
             secSaliente.classList.add("oculto");
             secSaliente.classList.remove("push-transitioning");
             secSaliente.style.animation = "";
             secSaliente.style.transform = "";
-            secSaliente.style.opacity = "";
+            secSaliente.style.willChange = "";
             secSaliente.removeEventListener("animationend", onEnd);
             secEntrante.style.animation = "";
             secEntrante.style.transform = "";
-            secEntrante.style.opacity = "";
+            secEntrante.style.willChange = "";
         };
         secSaliente.addEventListener("animationend", onEnd, { once: true });
     } else if (direccion === -1) {
         secEntrante.classList.remove("oculto", "push-dragging");
         secEntrante.style.transform = "";
-        secEntrante.style.opacity = "";
-        secEntrante.style.animation = "slideInFromLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+        secEntrante.style.willChange = "transform";
+        secEntrante.style.animation = "pushInFromLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
 
         secSaliente.classList.remove("push-dragging");
         secSaliente.style.transform = "";
-        secSaliente.style.opacity = "";
+        secSaliente.style.willChange = "transform";
         secSaliente.classList.add("push-transitioning");
-        secSaliente.style.animation = "slideOutToRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+        secSaliente.style.animation = "pushOutToRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
 
         var onEnd = function() {
             secSaliente.classList.add("oculto");
             secSaliente.classList.remove("push-transitioning");
             secSaliente.style.animation = "";
             secSaliente.style.transform = "";
-            secSaliente.style.opacity = "";
+            secSaliente.style.willChange = "";
             secSaliente.removeEventListener("animationend", onEnd);
             secEntrante.style.animation = "";
             secEntrante.style.transform = "";
-            secEntrante.style.opacity = "";
+            secEntrante.style.willChange = "";
         };
         secSaliente.addEventListener("animationend", onEnd, { once: true });
     }
@@ -248,6 +250,121 @@ export function setModo(modo, direccion, velocidad) {
         setSubModoServicios("COPIAS");
         document.getElementById("srvResumenFecha").value = hoy();
     }
+}
+
+// ══ SWIPE TÁCTIL (push con arrastre de dedo) ══
+var _swipeStartX = 0;
+var _swipeModoOrigen = "";
+var _swipeActive = false;
+var _swipeDireccion = 0;
+
+export function initSwipe() {
+    var panel = document.querySelector(".panel-body");
+    if (!panel) return;
+    panel.addEventListener("touchstart", _swipeStart, { passive: true });
+    panel.addEventListener("touchmove", _swipeMove, { passive: true });
+    panel.addEventListener("touchend", _swipeEnd, { passive: true });
+}
+
+function _swipeStart(e) {
+    if (_swipeActive) return;
+    _swipeStartX = e.touches[0].clientX;
+    _swipeModoOrigen = store.modoActual;
+    _swipeDireccion = 0;
+}
+
+function _swipeMove(e) {
+    var deltaX = e.touches[0].clientX - _swipeStartX;
+    if (!_swipeActive) {
+        if (Math.abs(deltaX) < 15) return;
+        _swipeActive = true;
+        _swipeDireccion = deltaX > 0 ? -1 : 1;
+        var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
+        if (!modoDestino || modoDestino === _swipeModoOrigen) { _swipeActive = false; return; }
+        var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
+        var secEntrante = document.getElementById("seccion-" + modoDestino);
+        if (!secSaliente || !secEntrante) { _swipeActive = false; return; }
+        secSaliente.classList.add("push-dragging");
+        secEntrante.classList.add("push-dragging");
+        secEntrante.classList.remove("oculto");
+        secSaliente.style.willChange = "transform";
+        secEntrante.style.willChange = "transform";
+    }
+    var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
+    var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
+    var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
+    if (!secSaliente || !secEntrante) return;
+    _actualizarSwipePosicion(deltaX, secEntrante, secSaliente);
+}
+
+function _swipeEnd(e) {
+    if (!_swipeActive) { _swipeStartX = 0; return; }
+    _swipeActive = false;
+    var deltaX = e.changedTouches[0].clientX - _swipeStartX;
+    var panelAncho = document.querySelector(".panel-body")?.offsetWidth || 360;
+    var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
+    var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
+    var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
+    if (!secSaliente || !secEntrante) { _resetSwipe(secSaliente, secEntrante); return; }
+    var umbral = panelAncho * 0.3;
+    if (Math.abs(deltaX) > umbral) {
+        var velocidad = Math.abs(deltaX) / 0.3;
+        secSaliente.classList.remove("push-dragging");
+        secEntrante.classList.remove("push-dragging");
+        secSaliente.style.transform = "";
+        secSaliente.style.willChange = "";
+        secEntrante.style.transform = "";
+        secEntrante.style.willChange = "";
+        setModo(modoDestino, _swipeDireccion, velocidad);
+    } else {
+        _resetSwipe(secSaliente, secEntrante);
+    }
+    _swipeStartX = 0;
+}
+
+function _actualizarSwipePosicion(deltaX, secEntrante, secSaliente) {
+    var panelAncho = document.querySelector(".panel-body")?.offsetWidth || 360;
+    var porcentaje = Math.max(-1, Math.min(1, deltaX / panelAncho));
+    if (_swipeDireccion === 1) {
+        secEntrante.style.transform = "translateX(" + ((1 + porcentaje) * 100) + "%)";
+        secSaliente.style.transform = "translateX(" + (porcentaje * 100) + "%)";
+    } else {
+        secEntrante.style.transform = "translateX(" + ((porcentaje - 1) * 100) + "%)";
+        secSaliente.style.transform = "translateX(" + (porcentaje * 100) + "%)";
+    }
+}
+
+function _resetSwipe(secSaliente, secEntrante) {
+    if (secSaliente) {
+        secSaliente.classList.remove("push-dragging");
+        secSaliente.style.transform = "";
+        secSaliente.style.willChange = "";
+    }
+    if (secEntrante) {
+        secEntrante.classList.remove("push-dragging");
+        secEntrante.classList.add("oculto");
+        secEntrante.style.transform = "";
+        secEntrante.style.willChange = "";
+    }
+}
+
+function _modoVecino(modoActual, direccion) {
+    var idx = ORDEN_MODOS.indexOf(modoActual);
+    if (idx < 0) return null;
+    if (direccion === 1) {
+        for (var i = idx + 1; i < ORDEN_MODOS.length; i++) {
+            var t = ORDEN_MODOS[i];
+            var sec = document.getElementById("seccion-" + t);
+            if (sec && !sec.classList.contains("hidden-tab") && !document.getElementById("tab-" + t)?.classList.contains("hidden-tab")) return t;
+        }
+    } else {
+        for (var i = idx - 1; i >= 0; i--) {
+            var t = ORDEN_MODOS[i];
+            var sec = document.getElementById("seccion-" + t);
+            if (sec && !sec.classList.contains("hidden-tab") && !document.getElementById("tab-" + t)?.classList.contains("hidden-tab")) return t;
+        }
+    }
+    return null;
 }
 
 
@@ -315,6 +432,14 @@ export function setSubModoServicios(s) {
     if (s === "RESUMEN" && _cargarResumenServicios) _cargarResumenServicios();
 }
 
+
+// ── Persistencia del modo activo en localStorage ──────────
+function _guardarModo(modo) {
+    try { localStorage.setItem("eruditos_modo", modo); } catch (_) {}
+}
+function _leerModoGuardado() {
+    try { return localStorage.getItem("eruditos_modo"); } catch (_) { return null; }
+}
 
 // ── Registrar listener resize para indicador ──────────────────
 window.addEventListener('resize', function() {

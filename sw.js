@@ -1,5 +1,5 @@
 // Nombre de caché con versión (cámbialo cada vez que actualices la app)
-const CACHE_NAME = 'eruditos-v21';
+const CACHE_NAME = 'eruditos-v22';
 
 // Archivos a cachear (offline)
 const urlsToCache = [
@@ -34,8 +34,8 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  // Tomar control de todos los clientes inmediatamente
-  self.clients.claim();
+  // No tomar control de paginas ya abiertas (evita recargas inesperadas)
+  // self.clients.claim();
 });
 
 // Estrategia: Network First (intenta red primero, luego caché)

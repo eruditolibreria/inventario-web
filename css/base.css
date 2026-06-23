@@ -22,33 +22,33 @@
                 }
             }
 
-            @keyframes slideInFromRight {
-                from { opacity: 0; transform: translateX(20px); }
-                to   { opacity: 1; transform: translateX(0); }
+            @keyframes pushInFromRight {
+                from { transform: translateX(100%); }
+                to   { transform: translateX(0); }
             }
 
-            @keyframes slideInFromLeft {
-                from { opacity: 0; transform: translateX(-20px); }
-                to   { opacity: 1; transform: translateX(0); }
+            @keyframes pushInFromLeft {
+                from { transform: translateX(-100%); }
+                to   { transform: translateX(0); }
             }
 
-            @keyframes slideOutToLeft {
-                from { opacity: 1; transform: translateX(0); }
-                to   { opacity: 0; transform: translateX(-60px); }
+            @keyframes pushOutToLeft {
+                from { transform: translateX(0); }
+                to   { transform: translateX(-100%); }
             }
 
-            @keyframes slideOutToRight {
-                from { opacity: 1; transform: translateX(0); }
-                to   { opacity: 0; transform: translateX(60px); }
+            @keyframes pushOutToRight {
+                from { transform: translateX(0); }
+                to   { transform: translateX(100%); }
             }
 
             .seccion.push-transitioning {
-                transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.35s ease;
-                will-change: transform, opacity;
+                will-change: transform;
             }
 
             .seccion.push-dragging {
                 transition: none !important;
+                animation: none !important;
                 will-change: transform;
                 pointer-events: none;
             }

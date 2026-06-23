@@ -33,7 +33,8 @@ export function buscarProductoDetalle() {
     }
     let sg = store.inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t.toLowerCase()));
     if (sucFiltro) {
-        sg = sg.filter(p => p.sucursal === sucFiltro);
+        var sfUp = sucFiltro.toUpperCase();
+        sg = sg.filter(function(p) { return (p.sucursal || "").toUpperCase() === sfUp; });
     }
     l.innerHTML = "";
     if (sg.length > 0) {
@@ -80,7 +81,8 @@ export async function ejecutarBusquedaDetalle(t) {
             loader.style.display = "none";
             return
         }
-        const rs = data.datos || [];
+        var rs = data.datos || [];
+        if (sucActual) rs = rs.filter(function(p) { return (p.sucursal || "").toUpperCase() === sucActual.toUpperCase(); });
         if (rs.length === 0) {
             co.innerHTML = `<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${t}</b>"</div>`
         } else {
@@ -122,6 +124,7 @@ export async function cargarInventarioAdmin() {
             datos.forEach(p => {
                 const card = document.createElement("div");
                 card.className = "inventario-card";
+                card.style.cursor = "pointer";
                 card.innerHTML = `<div class="inventario-img">${p.imagen ? `<img src="${p.imagen}" alt="${p.producto}">` : ``}</div>
                 <div class="inventario-info">
                   <div class="nombre">${p.producto}</div>
@@ -134,6 +137,18 @@ export async function cargarInventarioAdmin() {
                   <button class="btn-xs btn-xs-edit" data-accion="imagen" data-producto="${p.producto}" data-sucursal="${p.sucursal}" data-imagen="${p.imagen || ''}">Imagen</button>
                   <button class="btn-xs btn-xs-del" data-accion="eliminar" data-id="${p.id}" data-producto="${p.producto}">Eliminar</button>
                 </div>`;
+                card.addEventListener("click", function(e) {
+                    if (e.target.closest(".btn-xs")) return;
+                    abrirEditarProducto(p);
+                });
+                var imgDiv = card.querySelector(".inventario-img");
+                if (imgDiv && p.imagen) {
+                    imgDiv.style.cursor = "zoom-in";
+                    imgDiv.addEventListener("click", function(e) {
+                        e.stopPropagation();
+                        abrirZoomImagen(p.imagen);
+                    });
+                }
                 grid.appendChild(card)
             });
             // Delegated listeners
@@ -178,7 +193,7 @@ export async function cargarUsuarios() {
                 const card = document.createElement("div");
                 card.className = "usuario-card";
                 const esYo = u.usuario === store.sessionUser;
-                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tu)</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}</span></div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol"></button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave"></button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}"></button>` : ''}</div>`;
+                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span></div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : ''}</div>`;
                 lista.appendChild(card)
             });
             // Delegated listeners
@@ -305,6 +320,74 @@ export async function toggleEstadoUsuario(usuario, estadoActual) {
     } catch (e) {
         mostrarMsg("Error de conexion", "err")
     }
+}
+
+// ══ Editar producto (ubicación / proveedor) ══
+var _productoEditando = null;
+
+export function abrirEditarProducto(p) {
+    _productoEditando = p;
+    var ubicacion = p.ubicacion || "", proveedor = p.proveedor || "";
+    if (!ubicacion || !proveedor) {
+        var encontrado = store.inventarioGlobal.find(function(x) { return x.id === p.id; });
+        if (encontrado) {
+            if (!ubicacion) ubicacion = encontrado.ubicacion || "";
+            if (!proveedor) proveedor = encontrado.proveedor || "";
+        }
+    }
+    document.getElementById("inventarioEditNombre").textContent = p.producto;
+    document.getElementById("inventarioEditUbicacion").value = ubicacion;
+    document.getElementById("inventarioEditProveedor").value = proveedor;
+    var imgDiv = document.getElementById("inventarioEditImg");
+    if (p.imagen) {
+        imgDiv.innerHTML = `<img src="${p.imagen}" alt="${p.producto}" loading="lazy">`;
+        imgDiv.onclick = function(e) { e.stopPropagation(); abrirZoomImagen(p.imagen); };
+    } else {
+        imgDiv.innerHTML = `<div class="detalle-sin-img">Sin vista previa</div>`;
+        imgDiv.onclick = null;
+    }
+    document.getElementById("inventarioEditOverlay").style.display = "flex";
+}
+
+export async function guardarEdicionProducto() {
+    if (!_productoEditando || !store.sessionToken) return;
+    var id = _productoEditando.id;
+    var ubicacion = document.getElementById("inventarioEditUbicacion").value.trim();
+    var proveedor = document.getElementById("inventarioEditProveedor").value.trim();
+    try {
+        var data = await api({
+            ACCION: "ACTUALIZAR_PRODUCTO",
+            ID: id,
+            UBICACION: ubicacion,
+            PROVEEDOR: proveedor,
+            TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) return;
+        if (data.ok) {
+            mostrarMsg("✅ Producto actualizado", "ok");
+            cerrarEditarProducto();
+            cargarInventarioAdmin();
+        } else {
+            mostrarMsg("Error: " + (data.error || "desconocido"), "err");
+        }
+    } catch (e) {
+        mostrarMsg("Error de conexion", "err");
+    }
+}
+
+export function cerrarEditarProducto(e) {
+    if (e && e.target !== document.getElementById("inventarioEditOverlay")) return;
+    document.getElementById("inventarioEditOverlay").style.display = "none";
+    _productoEditando = null;
+}
+
+export function abrirZoomImagen(url) {
+    document.getElementById("imagenZoomImg").src = url;
+    document.getElementById("imagenZoomOverlay").style.display = "flex";
+}
+
+export function cerrarZoomImagen() {
+    document.getElementById("imagenZoomOverlay").style.display = "none";
 }
 
 // ── Init admin ──
