@@ -178,8 +178,18 @@ function registrarServiceWorker() {
 function restaurarCarritoDraft(draft) {
     if (draft && draft.carrito && draft.carrito.length) {
         setCarrito(draft.carrito);
+        if (draft.sucursal) {
+            var sucEl = document.getElementById("sucursalVenta");
+            if (sucEl) sucEl.value = draft.sucursal;
+        }
+        renderCarritoVenta();
+        var carrito = store.carrito;
+        mostrarToast(
+            "📦 Carrito restaurado (" + carrito.length + " productos)",
+            "Limpiar",
+            function() { clearCarrito(); limpiarCarritoDraft(); renderCarritoVenta(); }
+        );
     }
-    try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════════════════════
