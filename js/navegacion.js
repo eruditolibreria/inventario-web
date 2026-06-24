@@ -120,16 +120,10 @@ export function initPushContainer() {
     if (secciones.length === 0) return;
     var stack = document.createElement("div");
     stack.id = "seccionesStack";
-    stack.style.display = "grid";
-    stack.style.gridTemplateAreas = "\"cell\"";
-    stack.style.gridTemplateColumns = "1fr";
-    stack.style.gridTemplateRows = "minmax(0, auto)";
+    panel.appendChild(stack);
     secciones.forEach(function(sec) {
-        sec.style.gridArea = "cell";
-        sec.style.minWidth = "0";
         stack.appendChild(sec);
     });
-    panel.appendChild(stack);
 }
 
 export function setModo(modo, direccion, velocidad) {

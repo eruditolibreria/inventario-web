@@ -273,7 +273,7 @@
                         </div>
                         <div class="loader" id="loaderVenta"></div>
                         <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()"><i class="fa-solid fa-cash-register"></i> COBRAR</button>
-                        <button class="btn btn-ghost btn-sm no-print" id="btnComprobante" style="display:none;margin-top:8px"><i class="fa-solid fa-file-pdf"></i> Comprobante</button>
+                        <button class="btn btn-ghost btn-sm no-print" id="btnComprobante" style="display:none;margin-top:8px" onclick="imprimirComprobante()"><i class="fa-solid fa-file-pdf"></i> Comprobante</button>
                     </div>
                     <!-- COMPRA -->
                     <div id="seccion-COMPRA" class="oculto">
@@ -920,14 +920,14 @@
                         <div id="rep-MAS">
                             <div class="loader" id="loaderRepMas"></div>
                             <button class="btn btn-orange mt-8 mb-12" onclick="cargarMasVendidos()"><i class="fa-solid fa-magnifying-glass"></i> Generar reporte</button>
-                            <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfMasVendidos" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfMasVendidos" style="display:none" onclick="imprimirReporteMasVendidos()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                             <div id="totalesMas" class="reporte-totales" style="display:none"></div>
                             <div id="tablaRepMas"></div>
                         </div>
                         <div id="rep-MENOS" class="oculto">
                             <div class="loader" id="loaderRepMenos"></div>
                             <button class="btn btn-orange mt-8 mb-12" onclick="cargarMenosVendidos()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
-                            <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfMenosVendidos" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfMenosVendidos" style="display:none" onclick="imprimirReporteMenosVendidos()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                             <div id="totalesMenos" class="reporte-totales" style="display:none"></div>
                             <div id="tablaRepMenos"></div>
                         </div>
@@ -950,7 +950,7 @@
                                 </div>
                                 <div class="loader" id="loaderAlerta"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarStockAlertas()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfAlertas" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128269; Consultar alertas</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfAlertas" style="display:none" onclick="imprimirReporteAlertas()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128269; Consultar alertas</button>
                                 <div id="tablaAlertas"></div>
                             </div>
                             <div id="stock-ROTACION" class="oculto">
@@ -964,7 +964,7 @@
                                 </div>
                                 <div class="loader" id="loaderRotacion"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarRotacionInventario()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfRotacion" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128269; Consultar rotacion</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfRotacion" style="display:none" onclick="imprimirReporteRotacion()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128269; Consultar rotacion</button>
                                 <div id="totalesRotacion" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaRotacion"></div>
                             </div>
@@ -981,7 +981,7 @@
                                 </div>
                                 <div class="loader" id="loaderValorizacion"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarValorizacionInventario()"><i class="fa-solid fa-magnifying-glass"></i> Calcular</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfValorizacion" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128142; Calcular valorizacion</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfValorizacion" style="display:none" onclick="imprimirReporteValorizacion()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128142; Calcular valorizacion</button>
                                 <div id="totalesValorizacion" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaValorizacion"></div>
                             </div>
@@ -1012,7 +1012,7 @@
                                 </div>
                                 <div class="loader" id="loaderMovimientos"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarHistorialMovimientos()"><i class="fa-solid fa-magnifying-glass"></i> Cargar</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfMovimientos" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128203; Cargar movimientos</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfMovimientos" style="display:none" onclick="imprimirReporteMovimientos()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128203; Cargar movimientos</button>
                                 <div id="tablaMovimientos"></div>
                                 <div id="paginMovimientos" style="display:none;align-items:center;gap:8px;margin-top:12px">
                                     <button class="btn btn-ghost btn-sm">&#8592; Anterior</button>
@@ -1059,7 +1059,7 @@
                                 </div>
                                 <div class="loader" id="loaderVentasPeriodo"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarVentasPeriodo()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfVentas" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128202; Generar reporte</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfVentas" style="display:none" onclick="imprimirReporteVentas()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128202; Generar reporte</button>
                                 <div id="totalesVentasPeriodo" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaVentasPeriodo"></div>
                             </div>
@@ -1084,7 +1084,7 @@
                                 </div>
                                 <div class="loader" id="loaderUtilidad"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarUtilidadBruta()"><i class="fa-solid fa-magnifying-glass"></i> Calcular</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfUtilidad" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128200; Calcular utilidad</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfUtilidad" style="display:none" onclick="imprimirReporteUtilidad()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128200; Calcular utilidad</button>
                                 <div id="totalesUtilidad" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaUtilidad"></div>
                             </div>
@@ -1105,7 +1105,7 @@
                                 </div>
                                 <div class="loader" id="loaderFlujo"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarFlujoCajaReporte()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfFlujo" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128181; Generar flujo</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfFlujo" style="display:none" onclick="imprimirReporteFlujo()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#128181; Generar flujo</button>
                                 <div id="totalesFlujo" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaFlujo"></div>
                             </div>
@@ -1120,7 +1120,7 @@
                                 </div>
                                 <div class="loader" id="loaderCobrarRep"></div>
                                 <button class="btn btn-primary mt-8 mb-12" onclick="cargarCuentasCobrarReporte()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
-                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfCobrar" style="display:none"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#129534; Consultar cuentas</button>
+                                <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfCobrar" style="display:none" onclick="imprimirReporteCobrar()"><i class="fa-solid fa-file-pdf"></i> PDF</button>&#129534; Consultar cuentas</button>
                                 <div id="totalesCobrar" class="reporte-totales" style="display:none"></div>
                                 <div id="tablaCobrarRep"></div>
                             </div>

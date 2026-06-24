@@ -136,7 +136,12 @@ export function initVenta(callbacks) {
         if (it.imagen) {
             const mini = document.createElement("div");
             mini.className = "miniatura";
+            mini.style.cursor = "zoom-in";
             mini.innerHTML = `<img src="${it.imagen}" alt="${it.producto}"><div class="miniatura-badge">${it.cantidad}</div>`;
+            mini.addEventListener("click", function(e) {
+                e.stopPropagation();
+                if (window.abrirZoomImagen) window.abrirZoomImagen(it.imagen);
+            });
             minis.appendChild(mini)
         }
     });
