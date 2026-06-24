@@ -121,11 +121,20 @@
             }
 
             .panel-body {
-                position: relative;
-                overflow-x: hidden;
-                overflow-y: auto;
                 padding: 20px 24px;
                 max-height: calc(100vh - 160px);
+                overflow-y: auto;
+            }
+
+            #seccionesStack {
+                display: grid;
+                grid-template-rows: minmax(0, auto);
+                grid-template-columns: 1fr;
+            }
+
+            #seccionesStack > .seccion {
+                grid-area: 1 / 1;
+                min-width: 0;
             }
 
             @media (min-width: 1024px) {

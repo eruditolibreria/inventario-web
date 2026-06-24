@@ -27,7 +27,7 @@ import { initUI, manejarRespuesta, renderSearchCard,
 import { initNavegacion, setModo, aplicarRol, actualizarIndicador,
          setSubModoCaja, setSubModoCuentas, setSubModoDevol,
          setSubModoReportes, setSubModoTransf, setSubModoLaminas,
-         setSubModoServicios, initSwipe }
+         setSubModoServicios, initSwipe, initPushContainer }
   from './navegacion.js';
 import { initInventario, cargarInventario, iniciarIntervalos,
          detenerIntervalos, construirAC, ejecutarBusquedaDetalle as busquedaDetalleInv }
@@ -329,6 +329,7 @@ function inicializarApp() {
 
     // ── 5. Configurar doble toque atrás ────────────────────────
     setupBackHandler();
+    initPushContainer();
     initSwipe();
 
     // ── 6. Registrar Service Worker ────────────────────────────
