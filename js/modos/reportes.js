@@ -327,16 +327,21 @@ export function imprimirReporte(title, cols, datos, resumen) {
     h += '<div class="print-footer">GRUPO ERUDITOS &copy; ' + new Date().getFullYear() + ' · Este documento es una representacion impresa de los datos del sistema.</div>';
     pa.innerHTML = h;
     setTimeout(function () {
-        if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            if (confirm('Compartir como PDF?')) {
-                var blob = new Blob([pa.innerHTML], { type: 'text/html' });
-                var file = new File([blob], title.replace(/\s+/g, '_') + '.html', { type: 'text/html' });
-                navigator.share({ title: title, text: 'Reporte: ' + title, files: [file] }).catch(function () { });
-            }
-        }
-        window.print();
+        _imprimirOMostrar(pa);
         pa.innerHTML = "";
     }, 200);
+}
+
+function _imprimirOMostrar(pa) {
+    var esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (esMovil) {
+        var blob = new Blob(['<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;padding:16px;color:#000;max-width:600px;margin:0 auto}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}th{background:#eee;padding:6px 8px;text-align:left;border-bottom:2px solid #000}td{padding:5px 8px;border-bottom:1px solid #ddd}.print-header{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px}.print-header .print-logo{font-size:20px;font-weight:700}.print-header .print-sub{font-size:11px;color:#555}.print-title{font-size:16px;font-weight:700;text-align:center;margin:12px 0}.print-meta{font-size:11px;color:#555;margin-bottom:10px;text-align:center}.print-summary{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.print-summary-card{border:1px solid #ddd;padding:10px 16px;border-radius:6px;flex:1;min-width:100px;text-align:center}.print-summary-card .psc-label{font-size:10px;color:#555}.print-summary-card .psc-val{font-size:16px;font-weight:700}.print-footer{text-align:center;font-size:10px;color:#888;margin-top:20px;border-top:1px solid #ccc;padding-top:10px}</style></head><body>' + pa.innerHTML + '</body></html>'], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(function() { URL.revokeObjectURL(url); }, 60000);
+    } else {
+        window.print();
+    }
 }
 
 // ══ IMPRIMIR ALERTAS ═══════════════════════════════════════════
@@ -420,14 +425,7 @@ export function imprimirComprobante() {
     h += '<div class="print-footer">Gracias por su compra · GRUPO ERUDITOS &copy; ' + new Date().getFullYear() + '</div>';
     pa.innerHTML = h;
     setTimeout(function () {
-        if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            if (confirm('Compartir comprobante?')) {
-                var blob = new Blob([pa.innerHTML], { type: 'text/html' });
-                var file = new File([blob], 'Comprobante_' + v.fecha.replace(/-/g, '') + '.html', { type: 'text/html' });
-                navigator.share({ title: 'Comprobante de Venta', text: 'Comprobante GRUPO ERUDITOS', files: [file] }).catch(function () { });
-            }
-        }
-        window.print();
+        _imprimirOMostrar(pa);
         pa.innerHTML = "";
     }, 200);
 }
