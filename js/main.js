@@ -38,7 +38,8 @@ import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          renderCarrito as renderCarritoVenta, eliminarItem,
          toggleClienteVenta, limpiarCarritoDraft }
   from './modos/venta.js';
-import { verificarEstadoCaja, abrirCaja, cerrarCaja, registrarAporteRetiro }
+import { verificarEstadoCaja, abrirCaja, cerrarCaja, registrarAporteRetiro,
+         abrirDetalleCaja, cerrarDetalleCaja }
   from './modos/caja.js';
 import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra }
   from './modos/compra.js';
@@ -120,6 +121,16 @@ let exitToast = null;
 function setupBackHandler() {
     window.addEventListener('popstate', function(e) {
         e.preventDefault();
+        // Si hay un overlay abierto, cerrarlo en vez de salir
+        var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "cajaDetalleOverlay", "imagenZoomOverlay"];
+        for (var i = 0; i < overlays.length; i++) {
+            var ov = document.getElementById(overlays[i]);
+            if (ov && ov.style.display === "flex") {
+                ov.style.display = "none";
+                history.pushState(null, null, location.href);
+                return;
+            }
+        }
         if (backPressTimer) {
             // Segundo toque: salir
             if (exitToast) cerrarToast(exitToast);
@@ -175,6 +186,9 @@ function restaurarCarritoDraft(draft) {
 // INICIALIZACIÓN PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
 function inicializarApp() {
+    // ── 0. Preparar grid de secciones ANTES de cualquier setModo ──
+    initPushContainer();
+
     // ── 1. Restaurar sesión desde localStorage ─────────────────
     const sesionRestaurada = restaurarSesion();
 
@@ -205,6 +219,8 @@ function inicializarApp() {
     window.abrirCaja = abrirCaja;
     window.cerrarCaja = cerrarCaja;
     window.registrarAporteRetiro = registrarAporteRetiro;
+    window.abrirDetalleCaja = abrirDetalleCaja;
+    window.cerrarDetalleCaja = cerrarDetalleCaja;
     window.listarCuentasCobrar = listarCuentasCobrar;
     window.abrirFormAbonoCobrar = abrirFormAbonoCobrar;
     window.confirmarAbonoCobrar = confirmarAbonoCobrar;
@@ -329,7 +345,6 @@ function inicializarApp() {
 
     // ── 5. Configurar doble toque atrás ────────────────────────
     setupBackHandler();
-    initPushContainer();
     initSwipe();
 
     // ── 6. Registrar Service Worker ────────────────────────────

@@ -755,6 +755,32 @@
             #inventarioEditImg:hover {
                 opacity: 0.85;
             }
+            .caja-mov-fila {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 5px 0;
+                border-bottom: 1px solid var(--border);
+                gap: 6px;
+            }
+            .caja-mov-fila:last-child { border-bottom: none; }
+            .caja-mov-tipo {
+                font-weight: 600;
+                font-size: 10px;
+                padding: 1px 6px;
+                border-radius: 4px;
+                white-space: nowrap;
+            }
+            .caja-mov-tipo.entrada { background: rgba(0,200,100,0.15); color: var(--accent); }
+            .caja-mov-tipo.salida { background: rgba(255,100,100,0.15); color: var(--red); }
+            .caja-mov-concepto { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text) }
+            .caja-mov-monto { font-family:var(--mono); font-weight:600; font-size:12px; white-space:nowrap }
+            .caja-mov-monto.entrada { color: var(--accent) }
+            .caja-mov-monto.salida { color: var(--red) }
+            .caja-mov-mp { font-size:9px; color:var(--muted); white-space:nowrap }
+            .caja-detalle-item { display:flex; flex-direction:column; }
+            .caja-detalle-item .cdi-key { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px }
+            .caja-detalle-item .cdi-val { font-size:14px; font-weight:600; color:var(--text); font-family:var(--mono) }
             .producto-detalle-img .detalle-sin-img {
                 color: var(--muted);
                 font-size: 13px;

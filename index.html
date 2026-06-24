@@ -1585,6 +1585,20 @@
         <img id="imagenZoomImg" src="" alt="" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:10px">
     </div>
 
+    <!-- Overlay detalle de caja -->
+    <div id="cajaDetalleOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarDetalleCaja(event)">
+        <div class="producto-detalle-card" style="max-width:480px" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div id="cajaDetalleTitulo" style="font-size:20px;font-weight:800;color:var(--text)"></div>
+                <span id="cajaDetalleEstado" class="rol-pill" style="font-size:11px"></span>
+            </div>
+            <div id="cajaDetalleResumen" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:16px"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Últimos movimientos</div>
+            <div id="cajaDetalleMovimientos" style="max-height:250px;overflow-y:auto;font-size:11px"></div>
+        </div>
+    </div>
+
     <div id="printArea"></div>
+    <div id="toastContainer"></div>
     <script type="module" src="js/main.js"></script>
     </body>

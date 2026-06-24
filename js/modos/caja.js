@@ -17,8 +17,10 @@
 
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg } from '../utils.js';
+import { mostrarMsg, formatearBs } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
+
+var _cajasCache = [];
 
 
 // Verifica el estado de caja en todas las sucursales y actualiza badges
@@ -54,6 +56,7 @@ import { manejarRespuesta } from '../ui.js';
                     }
                     );
                     const ca = data.cajas || [];
+                    _cajasCache = ca;
                     let hay = false;
                     ca.forEach(c => {
                         const s = (c.sucursal || "").toUpperCase()
@@ -75,8 +78,23 @@ import { manejarRespuesta } from '../ui.js';
                     cb.style.display = hay ? "inline-block" : "none";
                     if (ca.length === 1 && cs)
                         cs.value = ca[0].cajaId;
+                    _bindCajaCardClicks(ca);
                 } catch (e) {}
             }
+
+function _bindCajaCardClicks(cajas) {
+    var map = { ERUDITOS: "cajaCardEruditos", CENTRAL: "cajaCardCentral" };
+    cajas.forEach(function(c) {
+        var id = map[c.sucursal];
+        if (!id) return;
+        var el = document.getElementById(id);
+        if (el && !el._cajaClickBound) {
+            el._cajaClickBound = true;
+            el.style.cursor = "pointer";
+            el.addEventListener("click", function() { abrirDetalleCaja(c.sucursal); });
+        }
+    });
+}
 
 // Abre una caja con saldo inicial para una sucursal
             export async function abrirCaja() {
@@ -235,5 +253,51 @@ import { manejarRespuesta } from '../ui.js';
                 }
                 loader.style.display = "none";
             }
+
+// ══ Detalle de caja (overlay al hacer clic en la card) ══
+export function abrirDetalleCaja(sucursal) {
+    var c = _cajasCache.find(function(x) { return x.sucursal === sucursal; });
+    if (!c) return;
+    document.getElementById("cajaDetalleTitulo").textContent = c.sucursal || "";
+    var estadoEl = document.getElementById("cajaDetalleEstado");
+    estadoEl.textContent = "ABIERTA";
+    estadoEl.className = "rol-pill";
+    estadoEl.style.background = "rgba(0,200,100,0.15)";
+    estadoEl.style.color = "var(--accent)";
+    estadoEl.style.border = "1px solid var(--accent)";
+
+    var resumen = document.getElementById("cajaDetalleResumen");
+    resumen.innerHTML =
+        '<div class="caja-detalle-item"><span class="cdi-key">Saldo inicial</span><span class="cdi-val">' + formatearBs(c.saldoInicial) + '</span></div>' +
+        '<div class="caja-detalle-item"><span class="cdi-key">Saldo actual</span><span class="cdi-val">' + formatearBs(c.saldoActual) + '</span></div>' +
+        '<div class="caja-detalle-item"><span class="cdi-key">Apertura</span><span class="cdi-val" style="font-size:12px">' + (c.usuarioApertura || "—") + '</span></div>' +
+        '<div class="caja-detalle-item"><span class="cdi-key">Fecha</span><span class="cdi-val" style="font-size:12px">' + (c.fecha || "—") + '</span></div>';
+
+    var movDiv = document.getElementById("cajaDetalleMovimientos");
+    var movs = c.movimientos || [];
+    if (movs.length === 0) {
+        movDiv.innerHTML = '<div style="color:var(--muted);padding:8px 0;text-align:center">Sin movimientos</div>';
+    } else {
+        var h = '';
+        movs.forEach(function(m) {
+            var esEntrada = Number(m.entrada || 0) > 0;
+            var tipo = esEntrada ? "ENTRADA" : "SALIDA";
+            var monto = esEntrada ? Number(m.entrada || 0) : Number(m.salida || 0);
+            h += '<div class="caja-mov-fila">' +
+                '<span class="caja-mov-tipo ' + (esEntrada ? 'entrada' : 'salida') + '">' + tipo + '</span>' +
+                '<span class="caja-mov-concepto">' + (m.concepto || "—") + '</span>' +
+                '<span class="caja-mov-monto ' + (esEntrada ? 'entrada' : 'salida') + '">' + (esEntrada ? '+' : '−') + formatearBs(monto) + '</span>' +
+                '<span class="caja-mov-mp">' + (m.metodoPago || "") + '</span>' +
+                '</div>';
+        });
+        movDiv.innerHTML = h;
+    }
+    document.getElementById("cajaDetalleOverlay").style.display = "flex";
+}
+
+export function cerrarDetalleCaja(e) {
+    if (e && e.target !== document.getElementById("cajaDetalleOverlay")) return;
+    document.getElementById("cajaDetalleOverlay").style.display = "none";
+}
 
 // ── Init: main.js llamara initCaja() en fase 5 ──────────────

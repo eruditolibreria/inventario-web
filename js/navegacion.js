@@ -135,6 +135,7 @@ export function setModo(modo, direccion, velocidad) {
             secMisma.style.animation = "";
             secMisma.style.transform = "";
             secMisma.style.willChange = "";
+            secMisma.style.display = "";
         }
         actualizarIndicador(modo);
         return;
@@ -272,6 +273,7 @@ var _swipeStartX = 0;
 var _swipeModoOrigen = "";
 var _swipeActive = false;
 var _swipeDireccion = 0;
+var _swipeBloqueado = false;
 
 export function initSwipe() {
     var panel = document.querySelector(".panel-body");
@@ -282,20 +284,21 @@ export function initSwipe() {
 }
 
 function _swipeStart(e) {
-    if (_swipeActive) return;
+    if (_swipeActive || _swipeBloqueado) return;
     _swipeStartX = e.touches[0].clientX;
     _swipeModoOrigen = store.modoActual;
     _swipeDireccion = 0;
 }
 
 function _swipeMove(e) {
+    if (_swipeBloqueado) return;
     var deltaX = e.touches[0].clientX - _swipeStartX;
     if (!_swipeActive) {
         if (Math.abs(deltaX) < 15) return;
+        var modoDestino = _modoVecino(_swipeModoOrigen, deltaX > 0 ? -1 : 1);
+        if (!modoDestino || modoDestino === _swipeModoOrigen) return;
         _swipeActive = true;
         _swipeDireccion = deltaX > 0 ? -1 : 1;
-        var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
-        if (!modoDestino || modoDestino === _swipeModoOrigen) { _swipeActive = false; return; }
         var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
         var secEntrante = document.getElementById("seccion-" + modoDestino);
         if (!secSaliente || !secEntrante) { _swipeActive = false; return; }
@@ -309,37 +312,8 @@ function _swipeMove(e) {
     var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
     var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
     if (!secSaliente || !secEntrante) return;
-    _actualizarSwipePosicion(deltaX, secEntrante, secSaliente);
-}
-
-function _swipeEnd(e) {
-    if (!_swipeActive) { _swipeStartX = 0; return; }
-    _swipeActive = false;
-    var deltaX = e.changedTouches[0].clientX - _swipeStartX;
     var panelAncho = document.querySelector(".panel-body")?.offsetWidth || 360;
-    var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
-    var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
-    var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
-    if (!secSaliente || !secEntrante) { _resetSwipe(secSaliente, secEntrante); return; }
-    var umbral = panelAncho * 0.3;
-    if (Math.abs(deltaX) > umbral) {
-        var velocidad = Math.abs(deltaX) / 0.3;
-        secSaliente.classList.remove("push-dragging");
-        secEntrante.classList.remove("push-dragging");
-        secSaliente.style.transform = "";
-        secSaliente.style.willChange = "";
-        secEntrante.style.transform = "";
-        secEntrante.style.willChange = "";
-        setModo(modoDestino, _swipeDireccion, velocidad);
-    } else {
-        _resetSwipe(secSaliente, secEntrante);
-    }
-    _swipeStartX = 0;
-}
-
-function _actualizarSwipePosicion(deltaX, secEntrante, secSaliente) {
-    var panelAncho = document.querySelector(".panel-body")?.offsetWidth || 360;
-    var porcentaje = Math.max(-1, Math.min(1, deltaX / panelAncho));
+    var porcentaje = Math.max(-1, Math.min(1, deltaX / panelAncho * 0.7));
     if (_swipeDireccion === 1) {
         secEntrante.style.transform = "translateX(" + ((1 + porcentaje) * 100) + "%)";
         secSaliente.style.transform = "translateX(" + (porcentaje * 100) + "%)";
@@ -347,6 +321,32 @@ function _actualizarSwipePosicion(deltaX, secEntrante, secSaliente) {
         secEntrante.style.transform = "translateX(" + ((porcentaje - 1) * 100) + "%)";
         secSaliente.style.transform = "translateX(" + (porcentaje * 100) + "%)";
     }
+}
+
+function _swipeEnd(e) {
+    if (!_swipeActive) { _swipeStartX = 0; return; }
+    _swipeActive = false;
+    _swipeBloqueado = true;
+    var deltaX = e.changedTouches[0].clientX - _swipeStartX;
+    var panelAncho = document.querySelector(".panel-body")?.offsetWidth || 360;
+    var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
+    var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
+    var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
+    var umbral = panelAncho * 0.2;
+    if (Math.abs(deltaX) > umbral && secSaliente && secEntrante) {
+        secSaliente.classList.remove("push-dragging");
+        secEntrante.classList.remove("push-dragging");
+        secSaliente.style.transform = "";
+        secSaliente.style.willChange = "";
+        secEntrante.style.transform = "";
+        secEntrante.style.willChange = "";
+        setModo(modoDestino, _swipeDireccion, 0);
+        setTimeout(function() { _swipeBloqueado = false; }, 350);
+    } else {
+        _resetSwipe(secSaliente, secEntrante);
+        setTimeout(function() { _swipeBloqueado = false; }, 50);
+    }
+    _swipeStartX = 0;
 }
 
 function _resetSwipe(secSaliente, secEntrante) {
