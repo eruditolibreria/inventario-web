@@ -1,0 +1,573 @@
+/* === DESKTOP LAYOUT: Sidebar fijo, header, VENTA 2-columnas === */
+/* Se carga DESPUES de base/tema/layout/componentes/login */
+/* No modifica ningun archivo CSS existente */
+
+/* ── Body override: quitar padding/centrado movil ── */
+body.desktop {
+  padding: 0;
+  margin: 0;
+  display: block;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+/* ── App shell: full viewport ── */
+.desktop-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER FIJO
+   ═══════════════════════════════════════════════ */
+.desktop-header {
+  height: 56px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  box-shadow: 0 1px 12px rgba(0,0,0,0.15);
+}
+
+.desktop-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.desktop-header .brand h1 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.desktop-header .brand h1 span {
+  color: var(--accent);
+}
+
+.desktop-header .brand small {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  letter-spacing: 1.5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.desktop-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.desktop-header .user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.desktop-header .user-badge:hover {
+  border-color: var(--red);
+}
+
+.desktop-header .user-badge .avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.desktop-header .user-badge .uname {
+  font-weight: 600;
+  color: #fff;
+}
+
+.desktop-header .user-badge .logout-hint {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.desktop-header .caja-badge {
+  display: none;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: var(--mono);
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  margin-top: 2px;
+}
+
+.desktop-header .rol-pill {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-family: var(--mono);
+}
+
+/* ═══════════════════════════════════════════════
+   BODY: sidebar + main
+   ═══════════════════════════════════════════════ */
+.desktop-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════ */
+.desktop-sidebar {
+  width: 230px;
+  min-width: 230px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.desktop-sidebar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.desktop-sidebar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.desktop-sidebar .sidebar-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 16px 16px 6px;
+  font-family: var(--mono);
+}
+
+.desktop-sidebar .sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin: 1px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.desktop-sidebar .sidebar-item:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.desktop-sidebar .sidebar-item.active {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+}
+
+.desktop-sidebar .sidebar-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.desktop-sidebar .sidebar-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-family: var(--mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* ── Sidebar footer (version, logout visual) ── */
+.desktop-sidebar-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.desktop-sidebar-footer .version-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════ */
+.desktop-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  padding: 24px 32px;
+}
+
+/* ── Panel: sin max-width movil ── */
+.desktop-main .panel {
+  max-width: none;
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(0,230,118,0.04);
+  border: 1px solid var(--border);
+}
+
+/* ── Panel body: sin max-height ── */
+.desktop .panel-body {
+  max-height: none;
+  overflow-y: visible;
+  padding: 24px 28px;
+}
+
+/* ── Ocultar mode-tabs horizontal (se usa sidebar) ── */
+.desktop .mode-tabs {
+  display: none !important;
+}
+
+/* ═══════════════════════════════════════════════
+   LOGIN CENTRADO (desktop)
+   ═══════════════════════════════════════════════ */
+.desktop-login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.desktop-login-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -20vh;
+  left: -15vw;
+  width: 50vw;
+  height: 50vh;
+  background: radial-gradient(ellipse, rgba(0,230,118,0.05) 0%, transparent 70%);
+  pointer-events: none;
+  animation: orb 10s ease-in-out infinite alternate;
+}
+
+.desktop-login-card {
+  width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 48px 40px 40px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  position: relative;
+  z-index: 1;
+  animation: scaleIn 0.4s ease forwards;
+}
+
+.desktop-login-card .login-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.desktop-login-card .login-logo .logo-icon {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.desktop-login-card .login-logo h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.desktop-login-card .login-logo p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.desktop-login-card .field-group {
+  margin-bottom: 18px;
+}
+
+.desktop-login-card .field-label {
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+
+.desktop-login-card input {
+  padding: 13px 16px;
+  font-size: 15px;
+  border-radius: 10px;
+}
+
+.desktop-login-card .btn-primary {
+  padding: 14px;
+  font-size: 15px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.desktop-login-card .access-notice {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 16px;
+  letter-spacing: 0.3px;
+}
+
+/* ═══════════════════════════════════════════════
+   VENTA: DOS COLUMNAS
+   ═══════════════════════════════════════════════ */
+.desktop-venta-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+.desktop-venta-form {
+  min-width: 0;
+}
+
+.desktop-venta-cart {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+.desktop-venta-cart .carrito-header {
+  margin-top: 0;
+}
+
+.desktop-venta-cart .carrito-total {
+  font-size: 24px;
+}
+
+.desktop-venta-cart table {
+  font-size: 11px;
+}
+
+.desktop-venta-cart td,
+.desktop-venta-cart th {
+  padding: 6px 4px;
+}
+
+.desktop-venta-cart .btn-del {
+  font-size: 12px;
+}
+
+/* ── Cart sticky scrollbar ── */
+.desktop-venta-cart::-webkit-scrollbar {
+  width: 4px;
+}
+
+.desktop-venta-cart::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════════
+   SECCIONES: ajustes de espaciado
+   ═══════════════════════════════════════════════ */
+.desktop .section-label {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.desktop .row-2 {
+  gap: 16px;
+}
+
+.desktop .row-3 {
+  gap: 14px;
+}
+
+.desktop table {
+  font-size: 13px;
+}
+
+.desktop td,
+.desktop th {
+  padding: 10px 10px;
+}
+
+/* ═══════════════════════════════════════════════
+   MODALES: mas espacioso en desktop
+   ═══════════════════════════════════════════════ */
+.desktop .modal-content {
+  max-width: 520px;
+  padding: 28px;
+  border-radius: 16px;
+}
+
+.desktop .modal-header {
+  font-size: 18px;
+}
+
+.desktop .producto-detalle-card {
+  max-width: 480px;
+  padding: 24px;
+}
+
+/* ═══════════════════════════════════════════════
+   CAJA OVERLAY: ajuste de columnas desktop
+   ═══════════════════════════════════════════════ */
+.desktop #cajaDetalleOverlay .producto-detalle-card {
+  max-width: 560px;
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST: centrado en top
+   ═══════════════════════════════════════════════ */
+.desktop #toastContainer {
+  top: 70px;
+}
+
+/* ═══════════════════════════════════════════════
+   OVERLAYS: fondo mas oscuro en escritorio
+   ═══════════════════════════════════════════════ */
+.desktop .modal-overlay,
+.desktop .producto-detalle-overlay {
+  background: rgba(0,0,0,0.75);
+}
+
+/* ═══════════════════════════════════════════════
+   SKELETON LOADING (shimmer cards para carga)
+   ═══════════════════════════════════════════════ */
+.desktop-skeleton {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.desktop-skeleton-item {
+  height: 80px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMACIONES EXTRA
+   ═══════════════════════════════════════════════ */
+@keyframes sidebarFadeIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.desktop-sidebar .sidebar-item {
+  animation: sidebarFadeIn 0.3s ease forwards;
+}
+
+.desktop-sidebar .sidebar-item:nth-child(1) { animation-delay: 0.02s; }
+.desktop-sidebar .sidebar-item:nth-child(2) { animation-delay: 0.04s; }
+.desktop-sidebar .sidebar-item:nth-child(3) { animation-delay: 0.06s; }
+.desktop-sidebar .sidebar-item:nth-child(4) { animation-delay: 0.08s; }
+.desktop-sidebar .sidebar-item:nth-child(5) { animation-delay: 0.10s; }
+.desktop-sidebar .sidebar-item:nth-child(6) { animation-delay: 0.12s; }
+.desktop-sidebar .sidebar-item:nth-child(7) { animation-delay: 0.14s; }
+.desktop-sidebar .sidebar-item:nth-child(8) { animation-delay: 0.16s; }
+.desktop-sidebar .sidebar-item:nth-child(9) { animation-delay: 0.18s; }
+.desktop-sidebar .sidebar-item:nth-child(10) { animation-delay: 0.20s; }
+.desktop-sidebar .sidebar-item:nth-child(11) { animation-delay: 0.22s; }
+.desktop-sidebar .sidebar-item:nth-child(12) { animation-delay: 0.24s; }
+.desktop-sidebar .sidebar-item:nth-child(13) { animation-delay: 0.26s; }
+
+/* ── Responsive: sidebar colapsable en pantallas menores a 1200px ── */
+@media (max-width: 1200px) {
+  .desktop-sidebar {
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .desktop-venta-wrapper {
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .desktop-sidebar {
+    width: 68px;
+    min-width: 68px;
+  }
+
+  .desktop-sidebar .sidebar-item span:not(.sidebar-icon) {
+    display: none;
+  }
+
+  .desktop-sidebar .sidebar-section-title {
+    display: none;
+  }
+
+  .desktop-sidebar .sidebar-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .desktop-sidebar .sidebar-icon {
+    margin: 0;
+  }
+}
