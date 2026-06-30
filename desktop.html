@@ -1694,7 +1694,7 @@
      ═══════════════════════════════════════════════════════════ -->
 <script type="module" src="js/main.js"></script>
 
-<!-- Sidebar sync: mantiene activo sincronizado con tabs ocultos -->
+<!-- Sidebar sync + reordenar mensajeApp despues seccionesStack -->
 <script>
 (function() {
   // Al hacer clic en sidebar item, actualizar visualmente
@@ -1720,6 +1720,29 @@
   var tabsContainer = document.querySelector('.mode-tabs');
   if (tabsContainer) {
     observer.observe(tabsContainer, { attributes: true, subtree: true, attributeFilter: ['class'] });
+  }
+
+  // Reordenar #mensajeApp al final de .panel-body
+  // initPushContainer() appendea #seccionesStack al final, dejando #mensajeApp arriba.
+  // Con este observer lo movemos justo despues del stack para que quede abajo del contenido.
+  var panelBody = document.querySelector('.panel-body');
+  if (panelBody) {
+    var reorderObserver = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mut) {
+        for (var i = 0; i < mut.addedNodes.length; i++) {
+          var node = mut.addedNodes[i];
+          if (node.id === 'seccionesStack') {
+            var msg = document.getElementById('mensajeApp');
+            if (msg && msg.parentNode === panelBody) {
+              panelBody.insertBefore(msg, node.nextSibling);
+            }
+            reorderObserver.disconnect();
+            return;
+          }
+        }
+      });
+    });
+    reorderObserver.observe(panelBody, { childList: true });
   }
 })();
 </script>

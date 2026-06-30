@@ -373,7 +373,7 @@ body.desktop {
    ═══════════════════════════════════════════════ */
 .desktop-venta-wrapper {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 480px;
   gap: 24px;
   align-items: start;
 }
@@ -386,7 +386,7 @@ body.desktop {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   position: sticky;
   top: 0;
   max-height: calc(100vh - 180px);
@@ -397,21 +397,25 @@ body.desktop {
   margin-top: 0;
 }
 
+.desktop-venta-cart .carrito-header h3 {
+  font-size: 16px;
+}
+
 .desktop-venta-cart .carrito-total {
   font-size: 24px;
 }
 
 .desktop-venta-cart table {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .desktop-venta-cart td,
 .desktop-venta-cart th {
-  padding: 6px 4px;
+  padding: 8px 6px;
 }
 
 .desktop-venta-cart .btn-del {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* ── Cart sticky scrollbar ── */
@@ -510,6 +514,41 @@ body.desktop {
 }
 
 /* ═══════════════════════════════════════════════
+   INVENTARIO: evitar overflow horizontal
+   ═══════════════════════════════════════════════ */
+.desktop .inventario-grid {
+  overflow-x: hidden;
+}
+
+.desktop .inventario-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.desktop .inventario-info .nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desktop .inventario-info .detalle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════
+   MENSAJE APP: initPushContainer() appendea
+   #seccionesStack al final de .panel-body, dejando
+   #mensajeApp arriba del stack.
+   Un script en desktop.html lo reordena al final.
+   Aqui solo ocultamos el divider sobrante.
+   ═══════════════════════════════════════════════ */
+.desktop #mensajeApp + .divider {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════
    ANIMACIONES EXTRA
    ═══════════════════════════════════════════════ */
 @keyframes sidebarFadeIn {
@@ -543,7 +582,7 @@ body.desktop {
   }
 
   .desktop-venta-wrapper {
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 400px;
     gap: 16px;
   }
 }

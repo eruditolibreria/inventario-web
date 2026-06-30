@@ -1601,4 +1601,27 @@
     <div id="printArea"></div>
     <div id="toastContainer"></div>
     <script type="module" src="js/main.js"></script>
+    <!-- Reordenar #mensajeApp despues de #seccionesStack -->
+    <script>
+    (function() {
+      var panelBody = document.querySelector('.panel-body');
+      if (!panelBody) return;
+      var reorderObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mut) {
+          for (var i = 0; i < mut.addedNodes.length; i++) {
+            var node = mut.addedNodes[i];
+            if (node.id === 'seccionesStack') {
+              var msg = document.getElementById('mensajeApp');
+              if (msg && msg.parentNode === panelBody) {
+                panelBody.insertBefore(msg, node.nextSibling);
+              }
+              reorderObserver.disconnect();
+              return;
+            }
+          }
+        });
+      });
+      reorderObserver.observe(panelBody, { childList: true });
+    })();
+    </script>
     </body>
