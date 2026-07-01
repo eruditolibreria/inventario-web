@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 // Módulos base
-import { baseURL, DEVOL_LIMITE, TRANSF_LIMITE, CARRITO_CHUNK_SIZE,
+import { BASE_URL_ERUDITOS, DEVOL_LIMITE, TRANSF_LIMITE, CARRITO_CHUNK_SIZE,
          CARRITO_KEY, TODOS_MODOS, ORDEN_MODOS, PERMISOS, PERMISOS_DEFAULT }
   from './config.js';
 import { store, setSession, setTokens, setToken, setInventario, setCarrito,

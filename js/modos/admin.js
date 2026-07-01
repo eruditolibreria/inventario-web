@@ -338,6 +338,7 @@ export function abrirEditarProducto(p) {
     document.getElementById("inventarioEditNombre").textContent = p.producto;
     document.getElementById("inventarioEditUbicacion").value = ubicacion;
     document.getElementById("inventarioEditProveedor").value = proveedor;
+    document.getElementById("inventarioEditPrecioVenta").value = p.precioVenta ?? "";
     var imgDiv = document.getElementById("inventarioEditImg");
     if (p.imagen) {
         imgDiv.innerHTML = `<img src="${p.imagen}" alt="${p.producto}" loading="lazy">`;
@@ -354,12 +355,14 @@ export async function guardarEdicionProducto() {
     var id = _productoEditando.id;
     var ubicacion = document.getElementById("inventarioEditUbicacion").value.trim();
     var proveedor = document.getElementById("inventarioEditProveedor").value.trim();
+    var precioVenta = parseFloat(document.getElementById("inventarioEditPrecioVenta").value);
     try {
         var data = await api({
             ACCION: "ACTUALIZAR_PRODUCTO",
             ID: id,
             UBICACION: ubicacion,
             PROVEEDOR: proveedor,
+            PRECIO_VENTA: isNaN(precioVenta) ? undefined : precioVenta,
             TOKEN: store.sessionToken
         });
         if (!manejarRespuesta(data)) return;

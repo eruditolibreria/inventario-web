@@ -7,7 +7,7 @@
  *
  * Dependencias:
  *   - store.js: sessionRefreshToken, sessionExpiresAt, sessionToken
- *   - config.js: baseURL
+ *   - config.js: BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS
  *
  * Uso:
  *   import { api } from './api.js';
@@ -15,7 +15,7 @@
  *   if (!data.ok) { manejarRespuesta(data); return; }
  */
 
-import { baseURL } from './config.js';
+import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS } from './config.js';
 import { store, setTokens, setToken } from './store.js';
 
 /**
@@ -24,11 +24,31 @@ import { store, setTokens, setToken } from './store.js';
  * @param {Object} params - Parametros de la llamada (ACCION, TOKEN, etc.)
  * @returns {Promise<Object>} Respuesta JSON del servidor
  */
+function resolverBaseUrl(accion) {
+    const RUTAS = {
+        LOGIN: BASE_URL_USUARIOS,
+        REFRESH_TOKEN: BASE_URL_USUARIOS,
+        LOGOUT: BASE_URL_USUARIOS,
+        LISTAR_USUARIOS_ADMIN: BASE_URL_USUARIOS,
+        CREAR_USUARIO: BASE_URL_USUARIOS,
+        CAMBIAR_ROL_USUARIO: BASE_URL_USUARIOS,
+        CAMBIAR_ESTADO_USUARIO: BASE_URL_USUARIOS,
+        CAMBIAR_PASSWORD_USUARIO: BASE_URL_USUARIOS,
+        BUSCAR_LAMINAS: BASE_URL_LAMINAS,
+        AGREGAR_LAMINA: BASE_URL_LAMINAS,
+        ACTUALIZAR_ESTADO_LAMINA: BASE_URL_LAMINAS,
+        REGISTRAR_SERVICIO: BASE_URL_SERVICIOS,
+        LISTAR_SERVICIOS: BASE_URL_SERVICIOS,
+        ELIMINAR_SERVICIO: BASE_URL_SERVICIOS,
+    };
+    return RUTAS[accion] || BASE_URL_ERUDITOS;
+}
+
 async function api(params) {
     const ahora = Math.floor(Date.now() / 1000);
     if (store.sessionRefreshToken && store.sessionExpiresAt && (store.sessionExpiresAt - ahora) < 180) {
         try {
-            const r = await fetch(baseURL, {
+            const r = await fetch(resolverBaseUrl("REFRESH_TOKEN"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -46,7 +66,7 @@ async function api(params) {
         } catch (_) {}
     }
     const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
-    const res = await fetch(baseURL, {
+    const res = await fetch(resolverBaseUrl(params.ACCION), {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

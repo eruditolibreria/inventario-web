@@ -1,6 +1,9 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-export const baseURL = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos";
+export const BASE_URL_ERUDITOS  = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos";
+export const BASE_URL_USUARIOS  = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/usuarios";
+export const BASE_URL_LAMINAS   = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/laminas";
+export const BASE_URL_SERVICIOS = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/servicios";
 
 export const DEVOL_LIMITE = 20
   , TRANSF_LIMITE = 20
