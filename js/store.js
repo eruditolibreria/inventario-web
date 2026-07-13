@@ -9,6 +9,7 @@ const _state = {
     sessionToken: null,
     sessionUser: null,
     sessionRol: null,
+    sessionSucursal: null,
     sessionRefreshToken: null,
     sessionExpiresAt: 0,
     inventarioGlobal: [],
@@ -31,6 +32,7 @@ export const store = {
     get sessionToken() { return _state.sessionToken; },
     get sessionUser() { return _state.sessionUser; },
     get sessionRol() { return _state.sessionRol; },
+    get sessionSucursal() { return _state.sessionSucursal; },
     get sessionRefreshToken() { return _state.sessionRefreshToken; },
     get sessionExpiresAt() { return _state.sessionExpiresAt; },
     get inventarioGlobal() { return _state.inventarioGlobal; },
@@ -48,10 +50,11 @@ export const store = {
 // ========== FUNCIONES DE ACTUALIZACION ==========
 
 /** Actualiza los datos de sesion tras login exitoso */
-export function setSession(token, user, rol) {
+export function setSession(token, user, rol, sucursal) {
     _state.sessionToken = token;
     _state.sessionUser = user;
     _state.sessionRol = rol;
+    _state.sessionSucursal = sucursal || null;
     _persistSession();
 }
 
@@ -70,6 +73,7 @@ function _persistSession() {
             token: _state.sessionToken,
             usuario: _state.sessionUser,
             rol: _state.sessionRol || "VENDEDOR",
+            sucursal: _state.sessionSucursal || null,
             refreshToken: _state.sessionRefreshToken,
             expiresAt: _state.sessionExpiresAt,
         }));

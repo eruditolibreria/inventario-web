@@ -1,9 +1,21 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-export const BASE_URL_ERUDITOS  = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/eruditos";
-export const BASE_URL_USUARIOS  = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/usuarios";
-export const BASE_URL_LAMINAS   = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/laminas";
-export const BASE_URL_SERVICIOS = "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/servicios";
+const LOCAL = true; // cambiar a true para desarrollo local
+
+const HOST = LOCAL
+  ? "http://127.0.0.1:54321/functions/v1"
+  : "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1";
+
+export const BASE_URL_ERUDITOS      = `${HOST}/eruditos`;
+export const BASE_URL_USUARIOS      = `${HOST}/usuarios`;
+export const BASE_URL_LAMINAS       = `${HOST}/laminas`;
+export const BASE_URL_SERVICIOS     = `${HOST}/servicios`;
+export const BASE_URL_INVENTARIO    = `${HOST}/inventario`;
+export const BASE_URL_VENTAS        = `${HOST}/ventas`;
+export const BASE_URL_CAJA          = `${HOST}/caja`;
+export const BASE_URL_REPORTES      = `${HOST}/reportes`;
+export const BASE_URL_CUENTAS       = `${HOST}/cuentas`;
+export const BASE_URL_DEVOLUCIONES  = `${HOST}/devoluciones`;
 
 export const DEVOL_LIMITE = 20
   , TRANSF_LIMITE = 20

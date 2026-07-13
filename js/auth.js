@@ -27,6 +27,7 @@ import { CARRITO_KEY } from './config.js';
 import { store, setSession, setTokens, clearSession, setInventario, clearCarrito } from './store.js';
 import { api } from './api.js';
 import { hoy, mostrarToast } from './utils.js';
+import { cargarSucursalesEnDropdowns } from './modos/admin.js';
 
 // ── CALLBACKS (inyectados por initAuth) ────────────────────────
 let _aplicarRol = null;
@@ -71,7 +72,7 @@ export async function loginSubmit() {
             PASSWORD: password
         });
         if (data.ok) {
-            setSession(data.token, data.usuario, (data.rol || "").toUpperCase());
+            setSession(data.token, data.usuario, (data.rol || "").toUpperCase(), data.sucursal || null);
             setTokens(data.refreshToken || null, data.expiresAt || 0);
 
             // UI post-login
@@ -119,6 +120,7 @@ export async function loginSubmit() {
             }
 
             if (_verificarEstadoCaja) _verificarEstadoCaja();
+            cargarSucursalesEnDropdowns();
         } else {
             mostrarMensajeLogin(data.motivo || "Usuario o contraseña incorrectos", "err");
         }

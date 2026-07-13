@@ -1468,12 +1468,26 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="field-group mt-8">
-                            <label class="field-label">Contraseña (mín. 6 caracteres)</label>
-                            <input id="nuevoUsuarioPass" type="password" placeholder="••••••••">
+                        <div class="row-2 mt-8">
+                            <div class="field-group" style="margin:0">
+                                <label class="field-label">Sucursal</label>
+                                <select id="nuevoUsuarioSucursal">
+                                    <option value="">Sin sucursal</option>
+                                </select>
+                            </div>
+                            <div class="field-group" style="margin:0">
+                                <label class="field-label">Contraseña (mín. 6 caracteres)</label>
+                                <input id="nuevoUsuarioPass" type="password" placeholder="••••••••">
+                            </div>
                         </div>
                         <div class="loader" id="loaderCrearUsuario"></div>
                         <button class="btn btn-primary mt-8" onclick="crearUsuario()">➕ Crear usuario</button>
+                        <div class="divider"></div>
+                        <div class="section-label">Crear nueva sucursal</div>
+                        <div class="field-group">
+                            <input id="nuevaSucursalNombre" placeholder="Nombre de la sucursal" style="text-transform:uppercase">
+                        </div>
+                        <button class="btn btn-primary mt-8" onclick="crearSucursal()">🏪 Crear sucursal</button>
                     </div>
                     <div id="mensajeApp" class="mensaje"></div>
                     <div class="divider"></div>

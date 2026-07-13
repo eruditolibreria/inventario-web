@@ -172,6 +172,7 @@ export async function cargarInventarioAdmin() {
 // ── cargarUsuarios ──
 export async function cargarUsuarios() {
     if (!store.sessionToken) return;
+    cargarSucursalesEnDropdowns();
     const loader = document.getElementById("loaderUsuarios")
       , lista = document.getElementById("listaUsuarios");
     loader.style.display = "block";
@@ -193,7 +194,7 @@ export async function cargarUsuarios() {
                 const card = document.createElement("div");
                 card.className = "usuario-card";
                 const esYo = u.usuario === store.sessionUser;
-                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span></div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : ''}</div>`;
+                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span>${u.sucursal ? `<span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${u.sucursal}</span>` : ''}</div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : ''}</div>`;
                 lista.appendChild(card)
             });
             // Delegated listeners
@@ -227,7 +228,8 @@ export async function crearUsuario() {
     }
     const nombre = document.getElementById("nuevoUsuarioNombre").value.trim().toUpperCase()
       , pass = document.getElementById("nuevoUsuarioPass").value
-      , rol = document.getElementById("nuevoUsuarioRol").value;
+      , rol = document.getElementById("nuevoUsuarioRol").value
+      , sucursal = document.getElementById("nuevoUsuarioSucursal").value;
     if (!nombre) {
         mostrarMsg("Ingresa un nombre de usuario", "err");
         return
@@ -239,22 +241,25 @@ export async function crearUsuario() {
     const loader = document.getElementById("loaderCrearUsuario");
     loader.style.display = "block";
     try {
-        const data = await api({
+        const body = {
             ACCION: "CREAR_USUARIO",
             USUARIO: nombre,
             PASSWORD: pass,
             ROL: rol,
             TOKEN: store.sessionToken
-        });
+        };
+        if (sucursal) body.SUCURSAL = sucursal;
+        const data = await api(body);
         if (!manejarRespuesta(data)) {
             loader.style.display = "none";
             return
         }
         if (data.ok) {
-            mostrarMsg("Usuario " + data.usuario + " creado como " + (ROL_LABELS[data.rol] || data.rol), "ok");
+            mostrarMsg("Usuario " + data.usuario + " creado como " + (ROL_LABELS[data.rol] || data.rol) + (data.sucursal ? " en " + data.sucursal : ""), "ok");
             document.getElementById("nuevoUsuarioNombre").value = "";
             document.getElementById("nuevoUsuarioPass").value = "";
             document.getElementById("nuevoUsuarioRol").value = "VENDEDOR";
+            document.getElementById("nuevoUsuarioSucursal").value = "";
             await cargarUsuarios();
         } else if (data.error === "USUARIO_DUPLICADO") {
             mostrarMsg("Ese nombre de usuario ya existe", "err")
@@ -391,6 +396,64 @@ export function abrirZoomImagen(url) {
 
 export function cerrarZoomImagen() {
     document.getElementById("imagenZoomOverlay").style.display = "none";
+}
+
+// ── crearSucursal ──
+export async function crearSucursal() {
+    if (!store.sessionToken) {
+        mostrarMsg("Sesion expirada", "err");
+        return
+    }
+    const nombre = document.getElementById("nuevaSucursalNombre").value.trim().toUpperCase();
+    if (!nombre || nombre.length < 2) {
+        mostrarMsg("Ingresa un nombre valido (min. 2 caracteres)", "err");
+        return
+    }
+    try {
+        const data = await api({
+            ACCION: "CREAR_SUCURSAL",
+            NOMBRE: nombre,
+            TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) return;
+        if (data.ok) {
+            mostrarMsg("Sucursal " + data.nombre + " creada", "ok");
+            document.getElementById("nuevaSucursalNombre").value = "";
+            await cargarSucursalesEnDropdowns();
+        } else if (data.error === "SUCURSAL_DUPLICADA") {
+            mostrarMsg("Esa sucursal ya existe", "err")
+        } else {
+            mostrarMsg("Error: " + data.error, "err")
+        }
+    } catch (e) {
+        mostrarMsg("Error de conexion", "err")
+    }
+}
+
+// ── cargarSucursalesEnDropdowns ──
+export async function cargarSucursalesEnDropdowns() {
+    try {
+        const data = await api({
+            ACCION: "LISTAR_SUCURSALES",
+            TOKEN: store.sessionToken
+        });
+        if (!data.ok) return;
+        const sucursales = data.datos || [];
+        const selects = document.querySelectorAll("select[id$='Sucursal'], select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto");
+        selects.forEach(function(sel) {
+            const actual = sel.value;
+            const esMultiOpcional = sel.querySelector("option[value='']") !== null;
+            sel.innerHTML = esMultiOpcional ? '<option value="">🏪 Seleccionar sucursal</option>' : '';
+            sucursales.forEach(function(s) {
+                if (s.estado !== "ACTIVO") return;
+                sel.innerHTML += `<option value="${s.nombre}">${s.nombre}</option>`;
+            });
+            if (actual) {
+                const existe = Array.from(sel.options).some(function(o) { return o.value === actual; });
+                if (existe) sel.value = actual;
+            }
+        });
+    } catch (_) {}
 }
 
 // ── Init admin ──

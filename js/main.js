@@ -83,7 +83,8 @@ import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          cargarInventarioAdmin, cargarUsuarios,
          crearUsuario, confirmarCambioRol, toggleEstadoUsuario,
          initAdminMode, abrirEditarProducto, cerrarEditarProducto,
-         guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen }
+         guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen,
+         crearSucursal, cargarSucursalesEnDropdowns }
   from './modos/admin.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -101,7 +102,7 @@ function restaurarSesion() {
             localStorage.removeItem(SESSION_KEY);
             return false;
         }
-        setSession(ses.token, ses.usuario, ses.rol || "VENDEDOR");
+        setSession(ses.token, ses.usuario, ses.rol || "VENDEDOR", ses.sucursal || null);
         if (ses.refreshToken && ses.expiresAt) {
             setTokens(ses.refreshToken, ses.expiresAt);
         }
@@ -284,6 +285,7 @@ function inicializarApp() {
     window.buscarProductoDetalle = buscarProductoDetalle;
     window.ejecutarBusquedaDetalle = ejecutarBusquedaDetalle;
     window.crearUsuario = crearUsuario;
+    window.crearSucursal = crearSucursal;
     window.confirmarCambioRol = confirmarCambioRol;
     window.toggleEstadoUsuario = toggleEstadoUsuario;
     window.abrirEditarProducto = abrirEditarProducto;
@@ -387,6 +389,7 @@ function inicializarApp() {
         aplicarRol(rol);
         cargarInventario();
         verificarEstadoCaja();
+        cargarSucursalesEnDropdowns();
 
         // Activar intervalos de refresco
         iniciarIntervalos(verificarEstadoCaja);
