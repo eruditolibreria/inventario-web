@@ -5,6 +5,7 @@ import { DEVOL_LIMITE } from '../config.js';
 import { mostrarMsg } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { cargarInventario } from '../inventario.js';
+import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo } from '../escaner.js';
 
 const SUPABASE_URL = "https://nhysxuqxlkmvrpxdoate.supabase.co";
 let _verificarEstadoCaja = null;
@@ -25,6 +26,35 @@ export function limpiarBuscadorDevol() {
 }
 
 
+
+
+// Abre el escaner de codigo de barras para buscar producto a devolver
+export async function abrirEscanerDevol() {
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    modal.style.display = "flex";
+    estado.textContent = "Apuntando camara...";
+    try {
+        const codigo = await iniciarEscanerCamara(video);
+        const suc = store.sessionSucursal || document.getElementById("devolSucursal").value;
+        const prod = buscarPorCodigo(codigo, suc);
+        if (prod) {
+            document.getElementById("devolBuscProducto").value = prod.producto;
+            buscarTransaccionDevol();
+        } else {
+            mostrarMsg("Producto no encontrado: " + codigo, "err");
+        }
+    } catch(e) {
+        if (e.message === "NO_SOPORTADO") {
+            mostrarMsg("Escaner no soportado en este navegador", "err");
+        } else {
+            mostrarMsg("Error de camara: " + e.message, "err");
+        }
+    }
+    detenerEscanerCamara();
+    modal.style.display = "none";
+}
 
 
 // Busca transacciones en Supabase para devolucion

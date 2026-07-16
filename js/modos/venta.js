@@ -27,6 +27,7 @@ import { api } from '../api.js';
 import { mostrarMsg, mostrarToast, vibrar, sonidoCaja } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
+import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo, onInputScanner } from '../escaner.js';
 
 function _guardarCarritoDraft() {
     try {
@@ -49,6 +50,70 @@ export function initVenta(callbacks) {
             export function toggleClienteVenta() {
                 document.getElementById("campoClienteVenta").classList.toggle("oculto", document.getElementById("metodoPagoVenta").value !== "CREDITO")
             }
+
+// Agrega producto al carrito por objeto producto (usado por escaner)
+function agregarPorProducto(prod, sucursal) {
+    const carrito = [...store.carrito];
+    const ex = carrito.find(i => i.producto === prod.producto);
+    if (ex) {
+        ex.cantidad += 1;
+        ex.total = ex.precio * ex.cantidad;
+    } else {
+        carrito.push({
+            producto: prod.producto,
+            precio: prod.precio_venta || prod.precio,
+            cantidad: 1,
+            total: prod.precio_venta || prod.precio,
+            imagen: prod.imagen || ""
+        });
+    }
+    setCarrito(carrito);
+    renderCarrito();
+    vibrar("ok");
+    mostrarMsg("📷 " + prod.producto + " agregado (codigo: " + (prod.codigoBarras || "manual") + ")", "ok");
+}
+
+// Escaner via camara
+export async function abrirEscanerVenta() {
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    modal.style.display = "flex";
+    estado.textContent = "Apuntando camara...";
+    try {
+        const codigo = await iniciarEscanerCamara(video);
+        const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+        const prod = buscarPorCodigo(codigo, suc);
+        if (prod) {
+            agregarPorProducto(prod, suc);
+        } else {
+            mostrarMsg("Producto no encontrado: " + codigo, "err");
+        }
+    } catch(e) {
+        if (e.message === "NO_SOPORTADO") {
+            mostrarMsg("Escaner no soportado en este navegador", "err");
+        } else {
+            mostrarMsg("Error de camara: " + e.message, "err");
+        }
+    }
+    detenerEscanerCamara();
+    modal.style.display = "none";
+}
+
+// Escucha USB scanner en el input de producto
+function initScannerInput() {
+    const input = document.getElementById("productoVenta");
+    if (!input) return;
+    input.addEventListener("input", function() {
+        const valor = this.value.trim();
+        const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+        if (!valor || !suc) return;
+        onInputScanner(valor, suc, function(prod) {
+            agregarPorProducto(prod, suc);
+            input.value = "";
+        });
+    });
+}
 
 // Busca productos en inventario para autocompletar en la venta
             export function buscarProductoVenta() {
@@ -201,8 +266,7 @@ export function initVenta(callbacks) {
         mostrarMsg("El carrito esta vacio", "err");
         return
     }
-    const sucursal = document.getElementById("sucursalVenta").value
-      , usuario = document.getElementById("usuarioVenta").value || store.sessionUser
+    const sucursal = store.sessionSucursal || document.getElementById("sucursalVenta").value
       , metodoPago = document.getElementById("metodoPagoVenta").value
       , cliente = document.getElementById("clienteVenta").value || "MOSTRADOR";
     if (!sucursal) {

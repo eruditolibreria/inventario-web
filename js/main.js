@@ -36,12 +36,12 @@ import { initInventario, cargarInventario, iniciarIntervalos,
 // Modos
 import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          renderCarrito as renderCarritoVenta, eliminarItem,
-         toggleClienteVenta, limpiarCarritoDraft }
+         toggleClienteVenta, limpiarCarritoDraft, abrirEscanerVenta }
   from './modos/venta.js';
 import { verificarEstadoCaja, abrirCaja, cerrarCaja, registrarAporteRetiro,
          abrirDetalleCaja, cerrarDetalleCaja }
   from './modos/caja.js';
-import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra }
+import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra, abrirEscanerCompra }
   from './modos/compra.js';
 import { initGasto, toggleAcreedorGasto, registrarGasto }
   from './modos/gasto.js';
@@ -53,7 +53,7 @@ import { initCuentasPagar, listarCuentasPagar, abrirFormAbonoPagar,
   from './modos/cuentas_pagar.js';
 import { initDevoluciones, limpiarBuscadorDevol, buscarTransaccionDevol,
          seleccionarTransaccionDevol, registrarDevolucion,
-         listarDevoluciones, cambiarPaginaDevol }
+         listarDevoluciones, cambiarPaginaDevol, abrirEscanerDevol }
   from './modos/devoluciones.js';
 import { initLaminas, buscarLaminas, ejecutarBusquedaLaminas,
          renderLaminaCard, cambiarEstadoLamina, agregarLamina,
@@ -86,6 +86,7 @@ import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen,
          crearSucursal, cargarSucursalesEnDropdowns }
   from './modos/admin.js';
+import { detenerEscanerCamara } from './escaner.js';
 
 // ═══════════════════════════════════════════════════════════════
 // RESTAURAR SESIÓN DESDE localStorage
@@ -286,6 +287,10 @@ function inicializarApp() {
     window.ejecutarBusquedaDetalle = ejecutarBusquedaDetalle;
     window.crearUsuario = crearUsuario;
     window.crearSucursal = crearSucursal;
+    window.abrirEscanerVenta = abrirEscanerVenta;
+    window.abrirEscanerDevol = abrirEscanerDevol;
+    window.abrirEscanerCompra = abrirEscanerCompra;
+    window.detenerEscanerCamara = detenerEscanerCamara;
     window.confirmarCambioRol = confirmarCambioRol;
     window.toggleEstadoUsuario = toggleEstadoUsuario;
     window.abrirEditarProducto = abrirEditarProducto;

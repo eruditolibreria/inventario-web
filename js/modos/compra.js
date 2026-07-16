@@ -26,6 +26,7 @@ import { api } from '../api.js';
 import { mostrarMsg, hoy } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
+import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _verificarEstadoCaja = null;
@@ -92,6 +93,7 @@ export function initCompra(callbacks) {
                         SUCURSAL: document.getElementById("sucursalCompra").value,
                         METODO_PAGO: mp,
                         CLIENTE: cl,
+                        CODIGO_BARRAS: document.getElementById("codigoBarrasCompra").value.trim(),
                         TOKEN: store.sessionToken
                     });
                     if (!manejarRespuesta(data)) {
@@ -115,5 +117,21 @@ export function initCompra(callbacks) {
                 }
                 loader.style.display = "none";
             }
+
+export async function abrirEscanerCompra() {
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    modal.style.display = "flex";
+    estado.textContent = "Apuntando cámara...";
+    try {
+        const codigo = await iniciarEscanerCamara(video);
+        document.getElementById("codigoBarrasCompra").value = codigo;
+    } catch(e) {
+        if (e.message !== "NO_SOPORTADO") mostrarMsg("Error de cámara", "err");
+    }
+    detenerEscanerCamara();
+    modal.style.display = "none";
+}
 
 // ── Init: main.js llamara initCompra() en fase 5 ──────────────

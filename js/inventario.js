@@ -41,7 +41,7 @@ export async function cargarInventario() {
             LIMITE: 200,
             TOKEN: store.sessionToken
         });
-        setInventario(d.datos || []);
+        setInventario((d.datos || []).map(x => ({ ...x, codigoBarras: x.codigoBarras || "" })));
     } catch (e) {}
 }
 
@@ -148,7 +148,7 @@ export async function cargarInventarioAdmin() {
             loader.style.display = "none";
             return;
         }
-        let datos = data.datos || [];
+        let datos = (data.datos || []).map(x => ({ ...x, codigoBarras: x.codigoBarras || "" }));
         if (filtroSuc)
             datos = datos.filter(p => p.sucursal === filtroSuc);
         if (filtroProd)
