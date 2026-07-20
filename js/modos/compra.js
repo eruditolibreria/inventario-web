@@ -126,7 +126,25 @@ export async function abrirEscanerCompra() {
     estado.textContent = "Apuntando cámara...";
     try {
         const codigo = await iniciarEscanerCamara(video);
-        document.getElementById("codigoBarrasCompra").value = codigo;
+        const suc = document.getElementById("sucursalCompra").value;
+        const data = await api({
+            ACCION: "BUSCAR_PRODUCTO_CODIGO",
+            CODIGO: codigo,
+            SUCURSAL: suc,
+            TOKEN: store.sessionToken
+        });
+        if (data.ok && data.producto) {
+            const p = data.producto;
+            document.getElementById("productoCompra").value = p.producto || "";
+            document.getElementById("categoriaCompra").value = p.categoria || "";
+            document.getElementById("precioVentaCompra").value = p.precioVenta || "";
+            document.getElementById("codigoBarrasCompra").value = p.codigoBarras || codigo;
+            document.getElementById("ubicacionCompra").value = "";
+            mostrarMsg("Producto encontrado: " + p.producto + " | Stock: " + (p.stock || 0), "ok");
+        } else {
+            document.getElementById("codigoBarrasCompra").value = codigo;
+            mostrarMsg("Producto nuevo (" + codigo + "). Completa los datos y registra.", "ok");
+        }
     } catch(e) {
         if (e.message !== "NO_SOPORTADO") mostrarMsg("Error de cámara", "err");
     }
