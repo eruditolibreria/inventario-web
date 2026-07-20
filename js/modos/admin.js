@@ -194,7 +194,7 @@ export async function cargarUsuarios() {
                 const card = document.createElement("div");
                 card.className = "usuario-card";
                 const esYo = u.usuario === store.sessionUser;
-                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span>${u.sucursal ? `<span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${u.sucursal}</span>` : ''}</div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : ''}</div>`;
+                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span>${u.sucursal ? `<span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${u.sucursal}</span>` : '<span style="margin-left:8px;font-size:11px;color:var(--red)">🏪 Sin sucursal</span>'}</div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button><button class="btn-icon" data-accion="cambiar-sucursal" data-usuario="${u.usuario}" data-sucursal="${u.sucursal || ''}" title="Cambiar sucursal">🏪</button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : ''}</div>`;
                 lista.appendChild(card)
             });
             // Delegated listeners
@@ -211,6 +211,11 @@ export async function cargarUsuarios() {
             lista.querySelectorAll('[data-accion="toggle-estado"]').forEach(btn => {
                 btn.addEventListener("click", function() {
                     toggleEstadoUsuario(this.dataset.usuario, this.dataset.estado);
+                });
+            });
+            lista.querySelectorAll('[data-accion="cambiar-sucursal"]').forEach(btn => {
+                btn.addEventListener("click", function() {
+                    abrirCambiarSucursal(this.dataset.usuario, this.dataset.sucursal);
                 });
             });
         }
@@ -318,6 +323,46 @@ export async function toggleEstadoUsuario(usuario, estadoActual) {
         if (!manejarRespuesta(data)) return;
         if (data.ok) {
             mostrarMsg(usuario + ": " + (nuevoEstado === "ACTIVO" ? "activado" : "desactivado"), "ok");
+            await cargarUsuarios();
+        } else {
+            mostrarMsg("Error: " + data.error, "err")
+        }
+    } catch (e) {
+        mostrarMsg("Error de conexion", "err")
+    }
+}
+
+// ── cambiarSucursalUsuario ──
+let _cambiarSucursalTarget = null;
+
+export function abrirCambiarSucursal(usuario, sucursalActual) {
+    _cambiarSucursalTarget = usuario;
+    const sel = document.getElementById("cambiarSucursalSelect");
+    const overlay = document.getElementById("cambiarSucursalOverlay");
+    document.getElementById("cambiarSucursalUsuario").textContent = usuario;
+    sel.value = sucursalActual || "";
+    overlay.style.display = "flex";
+}
+
+export function cerrarCambiarSucursal() {
+    document.getElementById("cambiarSucursalOverlay").style.display = "none";
+    _cambiarSucursalTarget = null;
+}
+
+export async function confirmarCambiarSucursal() {
+    if (!_cambiarSucursalTarget || !store.sessionToken) return;
+    const sucursal = document.getElementById("cambiarSucursalSelect").value;
+    try {
+        const data = await api({
+            ACCION: "CAMBIAR_SUCURSAL_USUARIO",
+            USUARIO: _cambiarSucursalTarget,
+            SUCURSAL: sucursal || null,
+            TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) return;
+        if (data.ok) {
+            mostrarMsg(_cambiarSucursalTarget + ": sucursal " + (data.sucursal || "eliminada"), "ok");
+            cerrarCambiarSucursal();
             await cargarUsuarios();
         } else {
             mostrarMsg("Error: " + data.error, "err")
@@ -439,18 +484,23 @@ export async function cargarSucursalesEnDropdowns() {
         });
         if (!data.ok) return;
         const sucursales = data.datos || [];
+        if (sucursales.length === 0) return;
         const selects = document.querySelectorAll("select[id$='Sucursal'], select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto");
         selects.forEach(function(sel) {
+            if (sel.disabled) return;
             const actual = sel.value;
-            const esMultiOpcional = sel.querySelector("option[value='']") !== null;
-            sel.innerHTML = esMultiOpcional ? '<option value="">🏪 Seleccionar sucursal</option>' : '';
+            while (sel.options.length > 0) sel.remove(0);
+            if (sel.hasAttribute("data-opcional") || sel.querySelector("option") || true) {
+                sel.add(new Option("🏪 Seleccionar sucursal", ""));
+            }
             sucursales.forEach(function(s) {
                 if (s.estado !== "ACTIVO") return;
-                sel.innerHTML += `<option value="${s.nombre}">${s.nombre}</option>`;
+                sel.add(new Option(s.nombre, s.nombre));
             });
             if (actual) {
-                const existe = Array.from(sel.options).some(function(o) { return o.value === actual; });
-                if (existe) sel.value = actual;
+                for (let i = 0; i < sel.options.length; i++) {
+                    if (sel.options[i].value === actual) { sel.value = actual; break; }
+                }
             }
         });
     } catch (_) {}

@@ -25,6 +25,7 @@
 import { TODOS_MODOS, ORDEN_MODOS, PERMISOS, PERMISOS_DEFAULT } from './config.js';
 import { store, setModoActual } from './store.js';
 import { hoy } from './utils.js';
+import { cargarSucursalesEnDropdowns } from './modos/admin.js';
 
 // ── CALLBACKS (inyectados por initNavegacion) ──────────────────
 let _verificarEstadoCaja = null;
@@ -266,6 +267,23 @@ export function setModo(modo, direccion, velocidad) {
         setSubModoServicios("COPIAS");
         document.getElementById("srvResumenFecha").value = hoy();
     }
+    if (store.sessionToken) cargarSucursalesEnDropdowns();
+    bloquearSucursalParaNoAdmin();
+}
+
+function bloquearSucursalParaNoAdmin() {
+    const suc = store.sessionSucursal;
+    const esAdmin = store.sessionRol === "ADMIN";
+    document.querySelectorAll(
+        "select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto"
+    ).forEach(sel => {
+        if (!esAdmin) {
+            sel.value = suc || "";
+            sel.disabled = true;
+        } else {
+            sel.disabled = false;
+        }
+    });
 }
 
 // ══ SWIPE TÁCTIL (push con arrastre de dedo) ══

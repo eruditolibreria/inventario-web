@@ -84,7 +84,8 @@ import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          crearUsuario, confirmarCambioRol, toggleEstadoUsuario,
          initAdminMode, abrirEditarProducto, cerrarEditarProducto,
          guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen,
-         crearSucursal, cargarSucursalesEnDropdowns }
+         crearSucursal, cargarSucursalesEnDropdowns,
+         abrirCambiarSucursal, cerrarCambiarSucursal, confirmarCambiarSucursal }
   from './modos/admin.js';
 import { detenerEscanerCamara } from './escaner.js';
 
@@ -291,6 +292,9 @@ function inicializarApp() {
     window.abrirEscanerDevol = abrirEscanerDevol;
     window.abrirEscanerCompra = abrirEscanerCompra;
     window.detenerEscanerCamara = detenerEscanerCamara;
+    window.abrirCambiarSucursal = abrirCambiarSucursal;
+    window.cerrarCambiarSucursal = cerrarCambiarSucursal;
+    window.confirmarCambiarSucursal = confirmarCambiarSucursal;
     window.confirmarCambioRol = confirmarCambioRol;
     window.toggleEstadoUsuario = toggleEstadoUsuario;
     window.abrirEditarProducto = abrirEditarProducto;

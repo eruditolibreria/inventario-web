@@ -1483,6 +1483,8 @@
                                 <label class="field-label">Sucursal</label>
                                 <select id="nuevoUsuarioSucursal">
                                     <option value="">Sin sucursal</option>
+                                    <option value="ERUDITOS">ERUDITOS</option>
+                                    <option value="CENTRAL">CENTRAL</option>
                                 </select>
                             </div>
                             <div class="field-group" style="margin:0">
@@ -1575,6 +1577,20 @@
         </div>
         
     
+
+    <div id="cambiarSucursalOverlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)cerrarCambiarSucursal()">
+        <div class="modal-content" style="max-width:360px" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="cerrarCambiarSucursal()">✕</button>
+            <div class="modal-header">Cambiar sucursal de <span id="cambiarSucursalUsuario"></span></div>
+            <select id="cambiarSucursalSelect">
+                <option value="">Sin sucursal</option>
+                <option value="ERUDITOS">ERUDITOS</option>
+                <option value="CENTRAL">CENTRAL</option>
+            </select>
+            <button class="btn btn-primary mt-8" onclick="confirmarCambiarSucursal()">✅ Guardar</button>
+            <button class="btn btn-ghost mt-4" onclick="cerrarCambiarSucursal()">Cancelar</button>
+        </div>
+    </div>
 
     <div id="escanerModal" class="modal-overlay" style="display:none" onclick="if(event.target===this){detenerEscanerCamara();this.style.display='none'}">
         <div class="modal-content" style="max-width:400px">
