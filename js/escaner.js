@@ -19,9 +19,7 @@ export async function iniciarEscanerCamara(videoElement) {
     videoElement.play();
     _activo = true;
 
-    const detector = new BarcodeDetector({
-        formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code']
-    });
+    const detector = new BarcodeDetector();
 
     return new Promise((resolve, reject) => {
         const tick = () => {
@@ -53,8 +51,9 @@ export function detenerEscanerCamara() {
 /** Busca producto por codigo_barras + sucursal en inventarioGlobal */
 export function buscarPorCodigo(codigo, sucursal) {
     if (!store.inventarioGlobal || !store.inventarioGlobal.length) return null;
+    const c = codigo.toUpperCase();
     return store.inventarioGlobal.find(p =>
-        p.codigoBarras === codigo && p.sucursal === sucursal
+        (p.codigoBarras || "").toUpperCase() === c && p.sucursal === sucursal
     ) || null;
 }
 

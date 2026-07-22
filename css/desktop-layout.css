@@ -526,9 +526,7 @@ body.desktop {
 }
 
 .desktop .inventario-info .nombre {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
 }
 
 .desktop .inventario-info .detalle {

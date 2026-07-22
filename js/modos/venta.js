@@ -224,6 +224,14 @@ function initScannerInput() {
 // Elimina un item del carrito con animacion swipe y toast de deshacer
                   export function eliminarItem(i) {
                   const carrito = [...store.carrito];
+    const item = carrito[i];
+    if (item.cantidad > 1) {
+        item.cantidad -= 1;
+        item.total = item.precio * item.cantidad;
+        setCarrito(carrito);
+        renderCarrito();
+        return;
+    }
     const itemEliminado = { ...carrito[i] };
     const indexEliminado = i;
 

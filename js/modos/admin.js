@@ -7,6 +7,7 @@ import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
          confirmarResetPass } from '../ui.js';
 import { cargarInventario } from '../inventario.js';
+import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 let busquedaTimer = null;
 let _verif = null;
@@ -389,6 +390,7 @@ export function abrirEditarProducto(p) {
     document.getElementById("inventarioEditUbicacion").value = ubicacion;
     document.getElementById("inventarioEditProveedor").value = proveedor;
     document.getElementById("inventarioEditPrecioVenta").value = p.precioVenta ?? "";
+    document.getElementById("inventarioEditCodigoBarras").value = p.codigoBarras || "";
     var imgDiv = document.getElementById("inventarioEditImg");
     if (p.imagen) {
         imgDiv.innerHTML = `<img src="${p.imagen}" alt="${p.producto}" loading="lazy">`;
@@ -406,6 +408,7 @@ export async function guardarEdicionProducto() {
     var ubicacion = document.getElementById("inventarioEditUbicacion").value.trim();
     var proveedor = document.getElementById("inventarioEditProveedor").value.trim();
     var precioVenta = parseFloat(document.getElementById("inventarioEditPrecioVenta").value);
+    var codigoBarras = document.getElementById("inventarioEditCodigoBarras").value.trim();
     try {
         var data = await api({
             ACCION: "ACTUALIZAR_PRODUCTO",
@@ -413,6 +416,7 @@ export async function guardarEdicionProducto() {
             UBICACION: ubicacion,
             PROVEEDOR: proveedor,
             PRECIO_VENTA: isNaN(precioVenta) ? undefined : precioVenta,
+            CODIGO_BARRAS: codigoBarras || undefined,
             TOKEN: store.sessionToken
         });
         if (!manejarRespuesta(data)) return;
@@ -432,6 +436,22 @@ export function cerrarEditarProducto(e) {
     if (e && e.target !== document.getElementById("inventarioEditOverlay")) return;
     document.getElementById("inventarioEditOverlay").style.display = "none";
     _productoEditando = null;
+}
+
+export async function abrirEscanerInventarioEdit() {
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    modal.style.display = "flex";
+    estado.textContent = "Apuntando cámara...";
+    try {
+        const codigo = await iniciarEscanerCamara(video);
+        document.getElementById("inventarioEditCodigoBarras").value = codigo;
+    } catch(e) {
+        if (e.message !== "NO_SOPORTADO") mostrarMsg("Error de cámara", "err");
+    }
+    detenerEscanerCamara();
+    modal.style.display = "none";
 }
 
 export function abrirZoomImagen(url) {
