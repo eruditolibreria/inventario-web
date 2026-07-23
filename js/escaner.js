@@ -67,7 +67,7 @@ export function onInputScanner(valor, sucursal, cb) {
     clearTimeout(SCAN_TIMER._t);
     SCAN_TIMER._t = setTimeout(() => {
         const prod = buscarPorCodigo(valor, sucursal);
-        if (prod) cb(prod);
+        cb(prod);
     }, SCAN_DELAY);
     return true;
 }

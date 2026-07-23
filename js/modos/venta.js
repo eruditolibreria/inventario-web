@@ -27,7 +27,7 @@ import { api } from '../api.js';
 import { mostrarMsg, mostrarToast, vibrar, sonidoCaja } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
-import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo, onInputScanner } from '../escaner.js';
+import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
 
 function _guardarCarritoDraft() {
     try {
@@ -83,7 +83,18 @@ export async function abrirEscanerVenta() {
     try {
         const codigo = await iniciarEscanerCamara(video);
         const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
-        const prod = buscarPorCodigo(codigo, suc);
+        let prod = buscarPorCodigo(codigo, suc);
+        if (!prod) {
+            const data = await api({
+                ACCION: "BUSCAR_PRODUCTO_CODIGO",
+                CODIGO: codigo,
+                SUCURSAL: suc,
+                TOKEN: store.sessionToken
+            });
+            if (data.ok && data.producto) {
+                prod = data.producto;
+            }
+        }
         if (prod) {
             agregarPorProducto(prod, suc);
         } else {
@@ -108,8 +119,20 @@ function initScannerInput() {
         const valor = this.value.trim();
         const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
         if (!valor || !suc) return;
-        onInputScanner(valor, suc, function(prod) {
-            agregarPorProducto(prod, suc);
+        onInputScanner(valor, suc, async function(prod) {
+            if (prod) {
+                agregarPorProducto(prod, suc);
+            } else if (CODIGO_REGEX.test(valor)) {
+                const data = await api({
+                    ACCION: "BUSCAR_PRODUCTO_CODIGO",
+                    CODIGO: valor,
+                    SUCURSAL: suc,
+                    TOKEN: store.sessionToken
+                });
+                if (data.ok && data.producto) {
+                    agregarPorProducto(data.producto, suc);
+                }
+            }
             input.value = "";
         });
     });
