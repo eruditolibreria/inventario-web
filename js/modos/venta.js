@@ -332,7 +332,6 @@ function initScannerInput() {
                         ACCION: "VENTA_POS",
                         ...carritoParam,
                         SUCURSAL: sucursal,
-                        USUARIO: usuario,
                         METODO_PAGO: metodoPago,
                         CLIENTE: cliente,
                         TOKEN: store.sessionToken
