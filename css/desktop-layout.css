@@ -418,6 +418,12 @@ body.desktop {
   font-size: 13px;
 }
 
+.desktop-venta-cart .btn-plus {
+  font-size: 13px;
+  width: 22px;
+  height: 22px;
+}
+
 /* ── Cart sticky scrollbar ── */
 .desktop-venta-cart::-webkit-scrollbar {
   width: 4px;

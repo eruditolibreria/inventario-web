@@ -336,6 +336,38 @@
                 background: var(--red-dim);
             }
 
+            .qty-cell {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+
+            .btn-plus {
+                background: var(--accent-dim);
+                border: 1px solid var(--accent);
+                color: var(--accent);
+                cursor: pointer;
+                font-size: 15px;
+                line-height: 1;
+                width: 24px;
+                height: 24px;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.15s, transform 0.1s;
+            }
+
+            .btn-plus:hover {
+                background: var(--accent);
+                color: #fff;
+            }
+
+            .btn-plus:active {
+                transform: scale(0.92);
+            }
+
             .estado-pendiente {
                 color: var(--orange);
                 font-weight: 700;

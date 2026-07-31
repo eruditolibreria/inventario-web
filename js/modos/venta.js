@@ -220,7 +220,7 @@ function initScannerInput() {
     const carrito = store.carrito;
     carrito.forEach( (it, i) => {
         tot += it.total;
-        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td>${it.cantidad}</td><td>Bs ${it.precio}</td><td>Bs ${it.total.toFixed(2)}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
+        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>Bs ${it.precio}</td><td>Bs ${it.total.toFixed(2)}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
         if (it.imagen) {
             const mini = document.createElement("div");
             mini.className = "miniatura";
@@ -237,6 +237,12 @@ function initScannerInput() {
     tb.querySelectorAll('[data-accion="eliminar"]').forEach(btn => {
         btn.addEventListener('click', function() {
             eliminarItem(Number(this.dataset.index));
+        });
+    });
+    // Vincular eventos a los botones de sumar generados dinamicamente
+    tb.querySelectorAll('[data-accion="sumar"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            incrementarCantidad(Number(this.dataset.index));
         });
     });
     _guardarCarritoDraft();
@@ -286,6 +292,25 @@ function initScannerInput() {
         }
     );
                 }
+
+// Aumenta la cantidad de un item del carrito en 1 (con validacion de stock)
+            function incrementarCantidad(i) {
+                const carrito = [...store.carrito]
+                  , item = carrito[i];
+                if (!item) return;
+                const su = store.sessionSucursal || document.getElementById("sucursalVenta").value
+                  , p = store.inventarioGlobal.find(x => x.producto === item.producto && x.sucursal === su)
+                  , nueva = item.cantidad + 1;
+                if (p && p.stock < nueva) {
+                    mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
+                    return;
+                }
+                item.cantidad = nueva;
+                item.total = item.precio * item.cantidad;
+                setCarrito(carrito);
+                renderCarrito();
+                vibrar("ok");
+            }
 
 // Procesa la venta POS: envia carrito a la API, maneja chunking para carritos grandes
             export async function cobrar() {
