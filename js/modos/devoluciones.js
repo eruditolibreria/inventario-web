@@ -23,6 +23,9 @@ export function limpiarBuscadorDevol() {
     document.getElementById("devolProductoSeleccionado").style.display = "none";
     document.getElementById("devolBuscProducto").value = "";
     document.getElementById("devolBuscClienteProv").value = "";
+    document.getElementById("devolCantidad").value = "";
+    document.getElementById("devolPrecio").value = "";
+    document.getElementById("devolClienteProveedor").value = "";
 }
 
 
@@ -125,11 +128,15 @@ export function seleccionarTransaccionDevol(transaccion) {
     document.getElementById("devolReferenciaId").value = transaccion.id;
     const seleccionadoDiv = document.getElementById("devolProductoSeleccionado");
     const seleccionadoTexto = document.getElementById("devolProductoSeleccionadoTexto");
-    const personaDisplay = document.getElementById("devolTipo").value === "VENTA"
-        ? (transaccion.cliente || "—")
-        : (transaccion.proveedor || "—");
+    const esVenta = document.getElementById("devolTipo").value === "VENTA";
+    const personaValue = esVenta ? (transaccion.cliente || "") : (transaccion.proveedor || "");
+    const personaDisplay = personaValue || "—";
     seleccionadoTexto.innerHTML = `${transaccion.producto} · ${transaccion.cantidad} ud. · Bs ${transaccion.precio} · ${personaDisplay}`;
     seleccionadoDiv.style.display = "block";
+    document.getElementById("devolCantidad").value = transaccion.cantidad;
+    document.getElementById("devolCantidad").max = transaccion.cantidad;
+    document.getElementById("devolPrecio").value = transaccion.precio;
+    document.getElementById("devolClienteProveedor").value = personaValue;
     document.getElementById("resultadosBuscDevol").innerHTML = "";
     document.getElementById("devolBuscProducto").value = "";
     document.getElementById("devolBuscClienteProv").value = "";
@@ -152,6 +159,7 @@ export function seleccionarTransaccionDevol(transaccion) {
     if (isNaN(ca) || ca <= 0) { mostrarMsg("Ingresa una cantidad válida", "err"); return }
     if (isNaN(pc) || pc <= 0) { mostrarMsg("Ingresa un precio unitario válido", "err"); return }
     const tx = store.devolTransaccionSeleccionada;
+    if (tx && ca > Number(tx.cantidad)) { mostrarMsg("No puedes devolver más de " + tx.cantidad + " ud.", "err"); return; }
     const productoNombre = tx?.producto || "—";
     if (!confirm(`¿Confirmar devolución de ${ca} ud. de "${productoNombre}" por Bs ${(ca * pc).toFixed(2)}?`)) return;
     const loader = document.getElementById("loaderDevol");

@@ -49,7 +49,7 @@
             }
             [data-theme='light'] select option {
                 background: #ffffff;
-                color: #1a2332;
+                color: var(--text);
             }
 
             textarea {
@@ -126,7 +126,7 @@
 
             .btn-ghost:hover {
                 border-color: var(--accent);
-                color: var(--accent);
+                color: var(--accent-text);
             }
 
             .btn-sm {
@@ -213,7 +213,7 @@
             }
 
             .ac-item strong {
-                color: var(--accent);
+                color: var(--accent-text);
                 font-weight: 600;
             }
 
@@ -261,7 +261,7 @@
             .carrito-total {
                 font-size: 22px;
                 font-weight: 800;
-                color: var(--accent);
+                color: var(--accent-text);
                 font-family: var(--mono);
                 text-align: right;
                 margin: 10px 0 12px;
@@ -304,7 +304,7 @@
 
             th {
                 background: var(--surface3);
-                color: var(--accent);
+                color: var(--accent-text);
                 font-size: 10px;
                 letter-spacing: 1px;
                 text-transform: uppercase;
@@ -346,7 +346,7 @@
             .btn-plus {
                 background: var(--accent-dim);
                 border: 1px solid var(--accent);
-                color: var(--accent);
+                color: var(--accent-text);
                 cursor: pointer;
                 font-size: 15px;
                 line-height: 1;
@@ -375,7 +375,7 @@
             }
 
             .estado-cancelado {
-                color: var(--accent);
+                color: var(--accent-text);
                 font-weight: 700;
                 font-size: 10px;
             }
@@ -434,7 +434,7 @@
 
             .msg-ok {
                 background: var(--accent-dim);
-                color: var(--accent);
+                color: var(--accent-text);
                 border: 1px solid var(--accent);
             }
 
@@ -531,7 +531,7 @@
             }
 
             .sr-val.ok {
-                color: var(--accent);
+                color: var(--accent-text);
             }
 
             .sr-val.warn {
@@ -664,7 +664,7 @@
 
             .btn-icon:hover {
                 border-color: var(--accent);
-                color: var(--accent);
+                color: var(--accent-text);
             }
 
             .btn-icon.danger:hover {
@@ -803,11 +803,11 @@
                 border-radius: 4px;
                 white-space: nowrap;
             }
-            .caja-mov-tipo.entrada { background: rgba(0,200,100,0.15); color: var(--accent); }
+            .caja-mov-tipo.entrada { background: rgba(0,200,100,0.15); color: var(--accent-text); }
             .caja-mov-tipo.salida { background: rgba(255,100,100,0.15); color: var(--red); }
             .caja-mov-concepto { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text) }
             .caja-mov-monto { font-family:var(--mono); font-weight:600; font-size:12px; white-space:nowrap }
-            .caja-mov-monto.entrada { color: var(--accent) }
+            .caja-mov-monto.entrada { color: var(--accent-text) }
             .caja-mov-monto.salida { color: var(--red) }
             .caja-mov-mp { font-size:9px; color:var(--muted); white-space:nowrap }
             .caja-detalle-item { display:flex; flex-direction:column; }
@@ -883,3 +883,6 @@
           #printArea .print-row-2 { display: flex; gap: 16px; margin-bottom: 8px; }
           #printArea .print-row-2 > div { flex: 1; }
         }
+
+            [data-theme='light'] .sr-val { color: var(--text); }
+            [data-theme='light'] .tipo-compra { color: var(--blue); }
