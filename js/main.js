@@ -36,7 +36,8 @@ import { initInventario, cargarInventario, iniciarIntervalos,
 // Modos
 import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          renderCarrito as renderCarritoVenta, eliminarItem,
-         toggleClienteVenta, limpiarCarritoDraft, abrirEscanerVenta }
+         toggleClienteVenta, cargarClientes, buscarClienteVenta,
+         limpiarCarritoDraft, abrirEscanerVenta }
   from './modos/venta.js';
 import { verificarEstadoCaja, abrirCaja, cerrarCaja, registrarAporteRetiro,
          abrirDetalleCaja, cerrarDetalleCaja }
@@ -166,6 +167,7 @@ function registrarServiceWorker() {
     try {
         navigator.serviceWorker.register('/sw.js')
             .then(reg => {
+                reg.update();
                 console.log('[SW] Service Worker registrado:', reg.scope);
             })
             .catch(err => {
@@ -224,6 +226,7 @@ function inicializarApp() {
     window.eliminarItem = eliminarItem;
     window.renderCarrito = renderCarritoVenta;
     window.toggleClienteVenta = toggleClienteVenta;
+    window.buscarClienteVenta = buscarClienteVenta;
     window.limpiarCarritoDraft = limpiarCarritoDraft;
     window.buscarProductoCompra = buscarProductoCompra;
     window.registrarCompra = registrarCompra;
@@ -326,6 +329,7 @@ function inicializarApp() {
         cargarInventario,
         verificarEstadoCaja,
         toggleClienteVenta,
+        cargarClientes,
         toggleClienteCompra,
         toggleAcreedorGasto,
         restaurarCarritoDraft,
@@ -399,6 +403,7 @@ function inicializarApp() {
         // Aplicar rol y cargar datos iniciales
         aplicarRol(rol);
         cargarInventario();
+        cargarClientes();
         verificarEstadoCaja();
         cargarSucursalesEnDropdowns();
 

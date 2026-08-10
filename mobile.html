@@ -90,7 +90,9 @@
             // CODIGO ORIGINAL
             if ('serviceWorker'in navigator) {
                 window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js');
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => reg.update())
+                        .catch(err => console.warn('[SW] Error al actualizar:', err));
                 }
                 );
             }
@@ -266,9 +268,10 @@
                                     <option value="CREDITO">📝 Crédito</option>
                                 </select>
                             </div>
-                            <div class="field-group oculto" style="margin:0" id="campoClienteVenta">
+                            <div class="field-group" style="margin:0" id="campoClienteVenta">
                                 <label class="field-label">Cliente</label>
-                                <input id="clienteVenta" placeholder="Nombre del cliente">
+                                <input id="clienteVenta" placeholder="Nombre del cliente" autocomplete="off" oninput="buscarClienteVenta()">
+                                <div class="autocomplete" id="listaClienteVenta"></div>
                             </div>
                         </div>
                         <div class="loader" id="loaderVenta"></div>

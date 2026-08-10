@@ -1,8 +1,8 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-const LOCAL = false; // cambiar a true para desarrollo local
+const LOCAL = true; // cambiar a true para desarrollo local
 
-const HOST = LOCAL
+export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
   : "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1";
 

@@ -41,15 +41,55 @@ function _guardarCarritoDraft() {
 
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _verificarEstadoCaja = null;
+let _clientesVenta = [];
 
 export function initVenta(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
 }
 
-// Muestra/oculta el campo de cliente segun metodo de pago (CREDITO)
+// Mantiene visible el campo de cliente para cualquier metodo de pago
             export function toggleClienteVenta() {
-                document.getElementById("campoClienteVenta").classList.toggle("oculto", document.getElementById("metodoPagoVenta").value !== "CREDITO")
+                document.getElementById("campoClienteVenta")?.classList.remove("oculto");
             }
+
+// Carga clientes existentes para el autocompletado de ventas
+export async function cargarClientes() {
+    if (!store.sessionToken) return;
+    try {
+        const data = await api({
+            ACCION: "LISTAR_CLIENTES",
+            TOKEN: store.sessionToken
+        });
+        if (data.ok) _clientesVenta = data.datos || [];
+    } catch (_) {}
+}
+
+// Muestra sugerencias de clientes mientras se escribe
+export function buscarClienteVenta() {
+    const input = document.getElementById("clienteVenta");
+    const lista = document.getElementById("listaClienteVenta");
+    if (!input || !lista) return;
+    const texto = input.value.trim().toLowerCase();
+    lista.innerHTML = "";
+    if (!texto) {
+        lista.classList.remove("show");
+        return;
+    }
+    _clientesVenta
+        .filter(cliente => cliente.toLowerCase().includes(texto))
+        .slice(0, 8)
+        .forEach(cliente => {
+            const item = document.createElement("div");
+            item.className = "ac-item";
+            item.textContent = cliente;
+            item.addEventListener("click", () => {
+                input.value = cliente;
+                lista.classList.remove("show");
+            });
+            lista.appendChild(item);
+        });
+    lista.classList.toggle("show", lista.children.length > 0);
+}
 
 // Agrega producto al carrito por objeto producto (usado por escaner)
 function agregarPorProducto(prod, sucursal) {

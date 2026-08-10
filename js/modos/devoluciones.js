@@ -1,13 +1,12 @@
 /* === MODO DEVOLUCIONES: Busqueda, seleccion y registro de devoluciones === */
 import { store, setDevolPagina, setDevolTransaccionSeleccionada } from '../store.js';
 import { api } from '../api.js';
-import { DEVOL_LIMITE } from '../config.js';
+import { DEVOL_LIMITE, HOST } from '../config.js';
 import { mostrarMsg } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo } from '../escaner.js';
 
-const SUPABASE_URL = "https://nhysxuqxlkmvrpxdoate.supabase.co";
 let _verificarEstadoCaja = null;
 
 export function initDevoluciones(cb) {
@@ -76,7 +75,7 @@ export async function buscarTransaccionDevol() {
     resultados.innerHTML = "";
 
     try {
-        const response = await fetch(SUPABASE_URL + "/functions/v1/buscar_transacciones", {
+        const response = await fetch(HOST + "/buscar_transacciones", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
