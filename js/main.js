@@ -37,7 +37,8 @@ import { initInventario, cargarInventario, iniciarIntervalos,
 import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          renderCarrito as renderCarritoVenta, eliminarItem,
          toggleClienteVenta, cargarClientes, buscarClienteVenta,
-         limpiarCarritoDraft, abrirEscanerVenta }
+         limpiarCarritoDraft, abrirEscanerVenta, cerrarEscanerVenta,
+         revisarOrdenEscaner }
   from './modos/venta.js';
 import { verificarEstadoCaja, abrirCaja, cerrarCaja, registrarAporteRetiro,
          abrirDetalleCaja, cerrarDetalleCaja }
@@ -130,11 +131,15 @@ function setupBackHandler() {
     window.addEventListener('popstate', function(e) {
         e.preventDefault();
         // Si hay un overlay abierto, cerrarlo en vez de salir
-        var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "cajaDetalleOverlay", "imagenZoomOverlay"];
+        var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "cajaDetalleOverlay", "imagenZoomOverlay", "escanerModal"];
         for (var i = 0; i < overlays.length; i++) {
             var ov = document.getElementById(overlays[i]);
             if (ov && ov.style.display === "flex") {
-                ov.style.display = "none";
+                if (ov.id === "escanerModal" && window.cerrarEscanerVenta) {
+                    window.cerrarEscanerVenta();
+                } else {
+                    ov.style.display = "none";
+                }
                 history.pushState(null, null, location.href);
                 return;
             }
@@ -301,6 +306,8 @@ function inicializarApp() {
     window.crearUsuario = crearUsuario;
     window.crearSucursal = crearSucursal;
     window.abrirEscanerVenta = abrirEscanerVenta;
+    window.cerrarEscanerVenta = cerrarEscanerVenta;
+    window.revisarOrdenEscaner = revisarOrdenEscaner;
     window.abrirEscanerDevol = abrirEscanerDevol;
     window.abrirEscanerCompra = abrirEscanerCompra;
     window.detenerEscanerCamara = detenerEscanerCamara;

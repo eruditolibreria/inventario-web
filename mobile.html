@@ -1616,12 +1616,24 @@
         </div>
     </div>
 
-    <div id="escanerModal" class="modal-overlay" style="display:none" onclick="if(event.target===this){detenerEscanerCamara();this.style.display='none'}">
-        <div class="modal-content" style="max-width:400px">
-            <button class="modal-close" onclick="detenerEscanerCamara();document.getElementById('escanerModal').style.display='none'">✕</button>
-            <div class="modal-header">Escanear codigo</div>
-            <video id="escanerVideo" autoplay playsinline style="width:100%;border-radius:8px;background:#000"></video>
-            <div id="escanerEstado" style="text-align:center;padding:12px;color:var(--muted);font-size:14px">Apuntando camara...</div>
+    <div id="escanerModal" class="modal-overlay" style="display:none" onclick="if(event.target===this && !this.classList.contains('scanner-mobile-mode')){detenerEscanerCamara();this.style.display='none'}">
+        <div class="modal-content scanner-modal-panel" style="max-width:400px">
+            <div class="scanner-mobile-camera">
+                <div class="scanner-mobile-topbar">
+                    <div class="modal-header">Escanear código</div>
+                    <button class="modal-close" onclick="cerrarEscanerVenta()">✕</button>
+                </div>
+                <video id="escanerVideo" autoplay playsinline style="width:100%;border-radius:8px;background:#000"></video>
+                <div id="escanerEstado" style="text-align:center;padding:12px;color:var(--muted);font-size:14px">Apuntando cámara...</div>
+            </div>
+            <div class="scanner-mobile-only scanner-mobile-cart">
+                <div class="scanner-mobile-cart-title">🛒 Orden escaneada</div>
+                <div id="scannerCarritoLista"></div>
+                <div class="scanner-mobile-total"><span>Total</span><strong id="scannerTotalVenta">Bs 0.00</strong></div>
+            </div>
+            <div class="scanner-mobile-only scanner-mobile-footer">
+                <button class="btn btn-orange" onclick="revisarOrdenEscaner()">↳ REVISAR ORDEN</button>
+            </div>
         </div>
     </div>
 

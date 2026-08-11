@@ -27,7 +27,7 @@ import { api } from '../api.js';
 import { mostrarMsg, mostrarToast, vibrar, sonidoCaja } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
-import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
+import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
 import { registrarComprobante, listarComprobantes } from './comprobantes.js';
 
 function _guardarCarritoDraft() {
@@ -43,6 +43,7 @@ function _guardarCarritoDraft() {
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _verificarEstadoCaja = null;
 let _clientesVenta = [];
+let _escanerVentaMovilActivo = false;
 
 export function initVenta(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
@@ -114,8 +115,97 @@ function agregarPorProducto(prod, sucursal) {
     mostrarMsg("📷 " + prod.producto + " agregado (codigo: " + (prod.codigoBarras || "manual") + ")", "ok");
 }
 
+function renderCarritoEscaner() {
+    const lista = document.getElementById("scannerCarritoLista");
+    const totalEl = document.getElementById("scannerTotalVenta");
+    if (!lista || !totalEl) return;
+    lista.innerHTML = "";
+    let total = 0;
+    store.carrito.forEach(function (it) {
+        total += Number(it.total || 0);
+        const fila = document.createElement("div");
+        fila.className = "scanner-carrito-item";
+        fila.innerHTML = `<div class="scanner-carrito-producto">${it.producto}</div><div class="scanner-carrito-detalle"><span>${it.cantidad} x Bs ${Number(it.precio).toFixed(2)}</span><strong>Bs ${Number(it.total).toFixed(2)}</strong></div>`;
+        lista.appendChild(fila);
+    });
+    if (!store.carrito.length) {
+        lista.innerHTML = '<div class="scanner-carrito-vacio">Aún no hay productos escaneados</div>';
+    }
+    totalEl.textContent = "Bs " + total.toFixed(2);
+}
+
+export function cerrarEscanerVenta() {
+    detenerEscanerCamara();
+    _escanerVentaMovilActivo = false;
+    const modal = document.getElementById("escanerModal");
+    if (modal) {
+        modal.classList.remove("scanner-mobile-mode");
+        modal.style.display = "none";
+    }
+    renderCarrito();
+}
+
+export function revisarOrdenEscaner() {
+    cerrarEscanerVenta();
+    setTimeout(function () {
+        document.getElementById("tituloCarrito")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+}
+
+async function procesarCodigoEscanerVenta(codigo) {
+    const estado = document.getElementById("escanerEstado");
+    const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+    if (!suc) {
+        if (estado) estado.textContent = "Selecciona una sucursal antes de escanear";
+        return;
+    }
+    if (estado) estado.textContent = "Buscando producto...";
+    let prod = buscarPorCodigo(codigo, suc);
+    if (!prod) {
+        const data = await api({
+            ACCION: "BUSCAR_PRODUCTO_CODIGO",
+            CODIGO: codigo,
+            SUCURSAL: suc,
+            TOKEN: store.sessionToken
+        });
+        if (data.ok && data.producto) prod = data.producto;
+    }
+    if (prod) {
+        agregarPorProducto(prod, suc);
+        if (estado) estado.textContent = "Producto agregado. Listo para el siguiente escaneo";
+    } else if (estado) {
+        estado.textContent = "Producto no encontrado: " + codigo;
+    }
+}
+
+async function abrirEscanerVentaMovil() {
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    if (!modal || !video) return;
+    _escanerVentaMovilActivo = true;
+    modal.classList.add("scanner-mobile-mode");
+    modal.style.display = "flex";
+    renderCarritoEscaner();
+    if (estado) estado.textContent = "Apuntando cámara... Escanea un código";
+    try {
+        await iniciarEscanerContinuo(video, procesarCodigoEscanerVenta);
+    } catch (e) {
+        _escanerVentaMovilActivo = false;
+        if (e.message === "NO_SOPORTADO") {
+            mostrarMsg("Escaner no soportado en este navegador", "err");
+        } else {
+            mostrarMsg("Error de camara: " + e.message, "err");
+        }
+        cerrarEscanerVenta();
+    }
+}
+
 // Escaner via camara
 export async function abrirEscanerVenta() {
+    if (!document.body.classList.contains("desktop")) {
+        return abrirEscanerVentaMovil();
+    }
     const modal = document.getElementById("escanerModal");
     const video = document.getElementById("escanerVideo");
     const estado = document.getElementById("escanerEstado");
@@ -288,7 +378,8 @@ function initScannerInput() {
     });
     _guardarCarritoDraft();
     document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
-    document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`
+    document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`;
+    renderCarritoEscaner();
             }
 
 // Elimina un item del carrito con animacion swipe y toast de deshacer

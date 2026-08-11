@@ -39,6 +39,47 @@ export async function iniciarEscanerCamara(videoElement) {
     });
 }
 
+/** Inicia la camara y mantiene el escaneo activo hasta detenerlo explicitamente. */
+export async function iniciarEscanerContinuo(videoElement, onCodigo) {
+    if (!('BarcodeDetector' in window)) {
+        throw new Error("NO_SOPORTADO");
+    }
+    _stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    videoElement.srcObject = _stream;
+    videoElement.play();
+    _activo = true;
+
+    const detector = new BarcodeDetector();
+    let ultimoCodigo = "";
+    let ultimoEscaneo = 0;
+    let procesando = false;
+
+    const tick = () => {
+        if (!_activo) return;
+        detector.detect(videoElement).then(async barcodes => {
+            const codigo = barcodes[0]?.rawValue || "";
+            const ahora = Date.now();
+            const repetido = codigo === ultimoCodigo && (ahora - ultimoEscaneo) < 1200;
+            if (codigo && !procesando && !repetido) {
+                procesando = true;
+                ultimoCodigo = codigo;
+                try {
+                    await onCodigo(codigo);
+                } finally {
+                    ultimoEscaneo = Date.now();
+                    procesando = false;
+                }
+            }
+            if (_activo) requestAnimationFrame(tick);
+        }).catch(() => {
+            if (_activo) requestAnimationFrame(tick);
+        });
+    };
+    requestAnimationFrame(tick);
+}
+
 /** Detiene camara */
 export function detenerEscanerCamara() {
     _activo = false;
