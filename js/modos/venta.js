@@ -28,6 +28,7 @@ import { mostrarMsg, mostrarToast, vibrar, sonidoCaja } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
+import { registrarComprobante, listarComprobantes } from './comprobantes.js';
 
 function _guardarCarritoDraft() {
     try {
@@ -434,7 +435,7 @@ function initScannerInput() {
                         vibrar("caja");
                         /* Cache venta para comprobante PDF */
                         const carrito = store.carrito;
-                        setUltimaVenta({
+                        const ventaResumen = {
                             items: carrito.map(function(i){return {producto:i.producto,cantidad:i.cantidad,precio:i.precio}}),
                             total: totalOriginal,
                             totalRedondeado: totalRedondeado,
@@ -445,9 +446,18 @@ function initScannerInput() {
                             usuario: store.sessionUser,
                             fecha: new Date().toISOString().slice(0,10),
                             hora: new Date().toLocaleTimeString()
-                        });
+                        };
+                        setUltimaVenta(ventaResumen);
+                        const reg = await registrarComprobante(ventaResumen);
+                        if (reg && reg.numero !== undefined && reg.numero !== null) {
+                            ventaResumen.numero = reg.numero;
+                            setUltimaVenta(ventaResumen);
+                        }
                         document.getElementById('btnComprobante').style.display='inline-block';
                         var msgVenta = metodoPago === "CREDITO" ? "📝 Venta a crédito registrada" : "✅ Venta registrada (" + items.length + " productos)";
+                        if (reg && reg.numero !== undefined && reg.numero !== null) {
+                            msgVenta += " · N° " + reg.numero;
+                        }
                         if (metodoPago === "EFECTIVO" && ajusteRedondeo !== 0) {
                             msgVenta += " · Redondeo: " + (ajusteRedondeo > 0 ? "+" : "") + "Bs " + ajusteRedondeo.toFixed(2);
                         }
@@ -459,6 +469,7 @@ function initScannerInput() {
                             renderCarrito();
                         document.getElementById("clienteVenta").value = "";
                         cargarInventario();
+                        listarComprobantes();
                         if (_verificarEstadoCaja) _verificarEstadoCaja();
                     } else if (data.error === "STOCK_INSUFICIENTE") {
                         mostrarMsg("⚠ Stock insuficiente: " + data.producto + " (disponible: " + data.disponible + ")", "err")

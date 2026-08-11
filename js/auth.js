@@ -35,6 +35,7 @@ let _cargarInventario = null;
 let _verificarEstadoCaja = null;
 let _toggleClienteVenta = null;
 let _cargarClientes = null;
+let _cargarComprobantes = null;
 let _toggleClienteCompra = null;
 let _toggleAcreedorGasto = null;
 let _restaurarCarritoDraft = null;
@@ -49,6 +50,7 @@ export function initAuth(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
     if (callbacks.toggleClienteVenta) _toggleClienteVenta = callbacks.toggleClienteVenta;
     if (callbacks.cargarClientes) _cargarClientes = callbacks.cargarClientes;
+    if (callbacks.cargarComprobantes) _cargarComprobantes = callbacks.cargarComprobantes;
     if (callbacks.toggleClienteCompra) _toggleClienteCompra = callbacks.toggleClienteCompra;
     if (callbacks.toggleAcreedorGasto) _toggleAcreedorGasto = callbacks.toggleAcreedorGasto;
     if (callbacks.restaurarCarritoDraft) _restaurarCarritoDraft = callbacks.restaurarCarritoDraft;
@@ -101,6 +103,7 @@ export async function loginSubmit() {
             // Callbacks a modulos externos
             if (_toggleClienteVenta) _toggleClienteVenta();
             if (_cargarClientes) _cargarClientes();
+            if (_cargarComprobantes) _cargarComprobantes();
             if (_toggleClienteCompra) _toggleClienteCompra();
             if (_toggleAcreedorGasto) _toggleAcreedorGasto();
             if (_aplicarRol) _aplicarRol(store.sessionRol);

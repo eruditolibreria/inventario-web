@@ -77,9 +77,12 @@ import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
          imprimirReporteValorizacion, imprimirReporteMovimientos,
          imprimirReporteVentas, imprimirReporteUtilidad,
          imprimirReporteFlujo, imprimirReporteCobrar,
-         imprimirReporteMasVendidos, imprimirReporteMenosVendidos,
-         imprimirComprobante }
+         imprimirReporteMasVendidos, imprimirReporteMenosVendidos }
   from './modos/reportes.js';
+import { initComprobantes, imprimirComprobante, listarComprobantes,
+         buscarComprobante, imprimirComprobanteGuardado,
+         cambiarAnchoComprobante, cambiarPaginaComp }
+  from './modos/comprobantes.js';
 import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          cargarInventarioAdmin, cargarUsuarios,
          crearUsuario, confirmarCambioRol, toggleEstadoUsuario,
@@ -288,6 +291,11 @@ function inicializarApp() {
     window.imprimirReporteFlujo = imprimirReporteFlujo;
     window.imprimirReporteCobrar = imprimirReporteCobrar;
     window.imprimirComprobante = imprimirComprobante;
+    window.listarComprobantes = listarComprobantes;
+    window.buscarComprobante = buscarComprobante;
+    window.imprimirComprobanteGuardado = imprimirComprobanteGuardado;
+    window.cambiarAnchoComprobante = cambiarAnchoComprobante;
+    window.cambiarPaginaComp = cambiarPaginaComp;
     window.buscarProductoDetalle = buscarProductoDetalle;
     window.ejecutarBusquedaDetalle = ejecutarBusquedaDetalle;
     window.crearUsuario = crearUsuario;
@@ -330,6 +338,7 @@ function inicializarApp() {
         verificarEstadoCaja,
         toggleClienteVenta,
         cargarClientes,
+        cargarComprobantes: initComprobantes,
         toggleClienteCompra,
         toggleAcreedorGasto,
         restaurarCarritoDraft,
@@ -404,6 +413,7 @@ function inicializarApp() {
         aplicarRol(rol);
         cargarInventario();
         cargarClientes();
+        initComprobantes();
         toggleClienteVenta();
         verificarEstadoCaja();
         cargarSucursalesEnDropdowns();

@@ -16,6 +16,9 @@ export const BASE_URL_CAJA          = `${HOST}/caja`;
 export const BASE_URL_REPORTES      = `${HOST}/reportes`;
 export const BASE_URL_CUENTAS       = `${HOST}/cuentas`;
 export const BASE_URL_DEVOLUCIONES  = `${HOST}/devoluciones`;
+export const BASE_URL_COMPROBANTES  = `${HOST}/comprobantes`;
+
+export const COMPROBANTE_ANCHO_DEFAULT = "57";
 
 export const DEVOL_LIMITE = 20
   , TRANSF_LIMITE = 20

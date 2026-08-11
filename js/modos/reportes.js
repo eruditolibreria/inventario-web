@@ -395,40 +395,5 @@ export function imprimirReporteMenosVendidos() {
     imprimirReporte(c.title, c.cols, c.datos, c.resumen);
 }
 
-// ══ COMPROBANTE DE VENTA ══════════════════════════════════════
-export function imprimirComprobante() {
-    var v = store.ultimaVenta; if (!v) { mostrarMsg('No hay venta reciente', 'err'); return; }
-    var pa = document.getElementById('printArea');
-    var h = '';
-    h += '<div class="print-header">';
-    h += '<div class="print-logo"><i class="fa-solid fa-boxes-stacked"></i> GRUPO ERUDITOS</div>';
-    h += '<div class="print-sub">Comprobante de Venta</div>';
-    h += '</div>';
-    h += '<div class="print-title">COMPROBANTE DE VENTA</div>';
-    h += '<div class="print-meta">' + v.fecha + ' ' + v.hora + ' · Sucursal: ' + v.sucursal + ' · Vendedor: ' + v.usuario + '</div>';
-    if (v.cliente && v.cliente !== 'MOSTRADOR') h += '<div class="print-meta"><strong>Cliente:</strong> ' + v.cliente + '</div>';
-    h += '<table><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>';
-    v.items.forEach(function (item) {
-        h += '<tr><td>' + item.producto + '</td><td>' + item.cantidad + '</td><td>' + _formatearBs(item.precio) + '</td><td>' + _formatearBs(item.cantidad * item.precio) + '</td></tr>';
-    });
-    h += '</tbody></table>';
-    h += '<div class="print-summary">';
-    h += '<div class="print-summary-card"><div class="psc-label">Subtotal</div><div class="psc-val">' + _formatearBs(v.total) + '</div></div>';
-    if (v.ajusteRedondeo && v.ajusteRedondeo !== 0) {
-        h += '<div class="print-summary-card"><div class="psc-label">Redondeo</div><div class="psc-val">' + (v.ajusteRedondeo > 0 ? '+' : '') + _formatearBs(v.ajusteRedondeo) + '</div></div>';
-        h += '<div class="print-summary-card"><div class="psc-label">Total a pagar</div><div class="psc-val" style="font-size:1.3em">' + _formatearBs(v.totalRedondeado) + '</div></div>';
-    } else {
-        h += '<div class="print-summary-card"><div class="psc-label">Total</div><div class="psc-val">' + _formatearBs(v.total) + '</div></div>';
-    }
-    h += '<div class="print-summary-card"><div class="psc-label">Metodo</div><div class="psc-val">' + v.metodoPago + '</div></div>';
-    h += '</div>';
-    h += '<div class="print-footer">Gracias por su compra · GRUPO ERUDITOS &copy; ' + new Date().getFullYear() + '</div>';
-    pa.innerHTML = h;
-    setTimeout(function () {
-        _imprimirOMostrar(pa);
-        pa.innerHTML = "";
-    }, 200);
-}
-
 // ── Init: main.js llamará initReportes() en fase 5 ──────────
 export function initReportes() {}
