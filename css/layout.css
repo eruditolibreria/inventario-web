@@ -750,6 +750,6 @@
 
             [data-theme='light'] .brand h1 { color: var(--text); }
             [data-theme='light'] .user-badge .uname { color: var(--text); }
-            [data-theme='light'] .sub-tab.active { color: var(--text); }
+            [data-theme='light'] .sub-tab.active { color: var(--text) !important; }
             [data-theme='light'] .inventario-info .nombre { color: var(--text); }
-            [data-theme='light'] .rol-ALMACEN { color: var(--blue); }
+            [data-theme='light'] .rol-ALMACEN { color: var(--blue-text); }

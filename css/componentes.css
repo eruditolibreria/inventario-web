@@ -869,20 +869,44 @@
           #printArea * { color: #000 !important; }
           #printArea .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
           #printArea .print-header .print-logo { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
-          #printArea .print-header .print-sub { font-size: 11px; color: #555 !important; }
+          #printArea .print-header .print-sub { font-size: 11px; color: #1f3327 !important; }
           #printArea .print-title { font-size: 16px; font-weight: 700; text-align: center; margin: 12px 0; }
-          #printArea .print-meta { font-size: 11px; color: #555 !important; margin-bottom: 10px; text-align: center; }
+          #printArea .print-meta { font-size: 11px; color: #1f3327 !important; margin-bottom: 10px; text-align: center; }
           #printArea table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
           #printArea table th { background: #eee; padding: 6px 8px; text-align: left; border-bottom: 2px solid #000; font-weight: 700; font-size: 10px; }
           #printArea table td { padding: 5px 8px; border-bottom: 1px solid #ddd; }
           #printArea .print-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
           #printArea .print-summary-card { border: 1px solid #ddd; padding: 10px 16px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; }
-          #printArea .print-summary-card .psc-label { font-size: 10px; color: #555 !important; }
+          #printArea .print-summary-card .psc-label { font-size: 10px; color: #1f3327 !important; }
           #printArea .print-summary-card .psc-val { font-size: 18px; font-weight: 700; }
-          #printArea .print-footer { text-align: center; font-size: 10px; color: #888 !important; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+          #printArea .print-footer { text-align: center; font-size: 10px; color: #1f3327 !important; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
           #printArea .print-row-2 { display: flex; gap: 16px; margin-bottom: 8px; }
           #printArea .print-row-2 > div { flex: 1; }
         }
 
             [data-theme='light'] .sr-val { color: var(--text); }
-            [data-theme='light'] .tipo-compra { color: var(--blue); }
+            [data-theme='light'] .tipo-compra { color: var(--blue-text); }
+
+            /* Estados seleccionados y controles: contraste alto en tema claro */
+            [data-theme='light'] .sub-tab.active {
+                color: var(--text) !important;
+            }
+
+            [data-theme='light'] .mode-tab.active,
+            [data-theme='light'] .desktop-sidebar .sidebar-item.active,
+            [data-theme='light'] .desktop-sidebar .sidebar-badge,
+            [data-theme='light'] .caja-badge,
+            [data-theme='light'] .rol-ADMIN {
+                color: var(--accent-text) !important;
+            }
+
+            [data-theme='light'] .btn-ghost:hover,
+            [data-theme='light'] .btn-ghost:focus,
+            [data-theme='light'] .btn-icon:hover,
+            [data-theme='light'] .btn-plus:hover {
+                color: var(--accent-text) !important;
+            }
+
+            [data-theme='light'] .btn-icon.danger:hover {
+                color: var(--red-text) !important;
+            }

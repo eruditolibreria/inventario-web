@@ -65,7 +65,7 @@ export function renderSearchCard(p) {
 <div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">${formatearBs(p.precioVenta)}</div></div>
 <div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">${formatearBs(p.precioUnidad)}</div></div>
 <div class="sr-field ${sc === 'warn' ? 'red' : sc === 'orange' ? 'orange' : 'accent'}"><div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud.  ${sl}</div></div>
-<div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:#6eb4ff">${p.sucursal ?? '—'}</div></div>
+        <div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:var(--blue-text)">${p.sucursal ?? '—'}</div></div>
 <div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${p.ubicacion || '—'}</div></div>
 <div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor || '—'}</div></div>
 </div>`;

@@ -120,7 +120,7 @@ export async function listarTransferencias(pg) {
             let h = `<table><thead><tr><th class="col-prod">Producto</th><th>Ruta</th><th>Cant</th><th>Fecha</th></tr></thead><tbody>`;
             data.datos.forEach(t => {
                 const fc = String(t.fecha).slice(0, 10);
-                h += `<tr><td class="col-prod">${t.producto}${t.motivo ? `<br><small style="color:var(--muted)">${t.motivo}</small>` : ""}</td><td style="font-size:11px;font-family:var(--mono)">${t.sucursalOrigen}<br><span style="color:var(--teal)">↓</span><br>${t.sucursalDestino}</td><td style="font-family:var(--mono)">${t.cantidad}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${t.usuario}</td></tr>`
+                h += `<tr><td class="col-prod">${t.producto}${t.motivo ? `<br><small style="color:var(--muted)">${t.motivo}</small>` : ""}</td><td style="font-size:11px;font-family:var(--mono)">${t.sucursalOrigen}<br><span style="color:var(--teal-text)">↓</span><br>${t.sucursalDestino}</td><td style="font-family:var(--mono)">${t.cantidad}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${t.usuario}</td></tr>`
             });
             tabla.innerHTML = h + `</tbody></table>`;
             if (data.paginas > 1) {
@@ -136,4 +136,3 @@ export async function listarTransferencias(pg) {
 
 // Cambia de pagina en el listado de transferencias
 export function cambiarPaginaTransf(d) { listarTransferencias(store.transfPaginaActual + d) }
-

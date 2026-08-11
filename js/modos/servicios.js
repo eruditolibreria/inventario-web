@@ -86,7 +86,7 @@ export async function cargarResumenServicios() {
         let h = `<table><thead><tr><th>Hora</th><th class="col-prod">Servicio</th><th>Detalle</th><th>Cant.</th><th>Total</th><th></th></tr></thead><tbody>`;
         registros.forEach(r => {
             const detalle = r.tipo === "COPIAS" ? `${r.subTipo === "COPIA" ? "Copia" : "Imp."} ${r.color === "BN" ? "B&N" : "Color"} ${r.presentacion === "SIMPLE" ? "Simple" : "Doble"} · ${r.papel}` : r.subTipo;
-            h += `<tr class="srv-tabla-row"><td style="color:var(--muted)">${r.hora}</td><td class="col-prod">${r.tipo}</td><td style="color:var(--muted);font-size:10px">${detalle}${r.observaciones ? '<br>' + r.observaciones : ''}</td><td style="font-family:var(--mono)">${r.cantidad}</td><td style="font-family:var(--mono);color:var(--accent)">Bs ${Number(r.total).toFixed(2)}</td><td><button class="btn-del" onclick="eliminarServicio('${r.id}')">✕</button></td></tr>`;
+            h += `<tr class="srv-tabla-row"><td style="color:var(--muted)">${r.hora}</td><td class="col-prod">${r.tipo}</td><td style="color:var(--muted);font-size:10px">${detalle}${r.observaciones ? '<br>' + r.observaciones : ''}</td><td style="font-family:var(--mono)">${r.cantidad}</td><td style="font-family:var(--mono);color:var(--accent-text)">Bs ${Number(r.total).toFixed(2)}</td><td><button class="btn-del" onclick="eliminarServicio('${r.id}')">✕</button></td></tr>`;
         });
         document.getElementById("srvTablaRegistros").innerHTML = h + "</tbody></table>";
     } catch (e) { mostrarMsg("Error de conexión", "err") }

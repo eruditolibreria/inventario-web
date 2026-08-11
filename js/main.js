@@ -404,6 +404,7 @@ function inicializarApp() {
         aplicarRol(rol);
         cargarInventario();
         cargarClientes();
+        toggleClienteVenta();
         verificarEstadoCaja();
         cargarSucursalesEnDropdowns();
 

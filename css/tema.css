@@ -11,10 +11,15 @@
                 --accent-dim: rgba(0,230,118,0.12);
                 --accent-glow: rgba(0,230,118,0.25);
                 --orange: #ff9800;
+                --orange-text: #ff9800;
                 --red: #ff4757;
+                --red-text: #ff4757;
                 --blue: #2979ff;
+                --blue-text: #6eb4ff;
                 --purple: #b388ff;
+                --purple-text: #b388ff;
                 --teal: #00bcd4;
+                --teal-text: #00bcd4;
                 --text: #dde6f0;
                 --muted: #4a6278;
                 --red-dim: rgba(255,71,87,0.12);
@@ -31,19 +36,63 @@
                 --surface3: #e8ecf1;
                 --border: #d0d7de;
                 --accent: #00c853;
-                --accent-text: #007a3d;
+                --accent-text: #006b35;
                 --accent-dim: rgba(0,200,83,0.10);
                 --accent-glow: rgba(0,200,83,0.20);
-                --orange: #e65100;
-                --red: #d32f2f;
-                --blue: #1565c0;
-                --purple: #7c4dff;
-                --teal: #00838f;
+                --orange: #9a3412;
+                --orange-text: #9a3412;
+                --red: #a61b1b;
+                --red-text: #a61b1b;
+                --blue: #0b4f9c;
+                --blue-text: #0b4f9c;
+                --purple: #512da8;
+                --purple-text: #512da8;
+                --teal: #00695c;
+                --teal-text: #00695c;
                 --red-dim: rgba(211,47,47,0.12);
                 --orange-dim: rgba(230,81,0,0.12);
                 --blue-dim: rgba(21,101,192,0.12);
                 --text: #000000;
-                --muted: #37474f;
+                --muted: #1f3327;
+            }
+
+            [data-theme='light'] .btn-orange {
+                background: #f59e0b;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-blue {
+                background: #3b82f6;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-red {
+                background: #ef4444;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-purple {
+                background: #8b5cf6;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-teal {
+                background: #14b8a6;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-xs-edit {
+                background: #3b82f6;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-xs-del {
+                background: #ef4444;
+                color: #000;
+            }
+
+            [data-theme='light'] .btn-plus:hover {
+                color: #000;
             }
 
             * {

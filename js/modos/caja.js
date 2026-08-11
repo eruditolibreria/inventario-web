@@ -263,7 +263,7 @@ export function abrirDetalleCaja(sucursal) {
     estadoEl.textContent = "ABIERTA";
     estadoEl.className = "rol-pill";
     estadoEl.style.background = "rgba(0,200,100,0.15)";
-    estadoEl.style.color = "var(--accent)";
+    estadoEl.style.color = "var(--accent-text)";
     estadoEl.style.border = "1px solid var(--accent)";
 
     var resumen = document.getElementById("cajaDetalleResumen");

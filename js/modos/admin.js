@@ -131,7 +131,7 @@ export async function cargarInventarioAdmin() {
                   <div class="nombre">${p.producto}</div>
                   <div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2) || '—'}</div>
                   <div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2) || '—'}</div>
-                  <div class="detalle">Stock: <b style="color:var(--accent)">${p.stock}</b></div>
+                  <div class="detalle">Stock: <b style="color:var(--accent-text)">${p.stock}</b></div>
                   <div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div>
                 </div>
                 <div class="inventario-actions">
