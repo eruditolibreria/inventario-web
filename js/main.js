@@ -13,7 +13,7 @@ import { store, setSession, setTokens, setToken, setInventario, setCarrito,
          setDevolTransaccionSeleccionada, clearSession, clearCarrito }
   from './store.js';
 import { api } from './api.js';
-import { initAuth, loginSubmit, mostrarMensajeLogin, cerrarSesion }
+import { initAuth, loginSubmit, mostrarMensajeLogin, cerrarSesion, restaurarBloqueoSiActivo }
   from './auth.js';
 import { hoy, horaActual, formatearBs, sonidoCaja, vibrar,
          mostrarMsg, mostrarToast, cerrarToast, toastActivo }
@@ -212,6 +212,9 @@ function restaurarCarritoDraft(draft) {
 function inicializarApp() {
     // ── 0. Preparar grid de secciones ANTES de cualquier setModo ──
     initPushContainer();
+
+    // ── 0.1 Restaurar bloqueo de login si estaba activo ────────
+    restaurarBloqueoSiActivo();
 
     // ── 1. Restaurar sesión desde localStorage ─────────────────
     const sesionRestaurada = restaurarSesion();

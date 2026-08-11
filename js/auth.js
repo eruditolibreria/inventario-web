@@ -29,6 +29,46 @@ import { api } from './api.js';
 import { hoy, mostrarToast } from './utils.js';
 import { cargarSucursalesEnDropdowns } from './modos/admin.js';
 
+const BLOQUEO_KEY = "eruditos_login_bloqueo";
+let _timerCuentaRegresiva = null;
+
+// ══ CUENTA REGRESIVA DE BLOQUEO ══
+export function iniciarCuentaRegresiva(hasta) {
+    const btn = document.querySelector("#loginScreen .btn");
+    const msg = document.getElementById("loginMsg");
+    if (_timerCuentaRegresiva) clearInterval(_timerCuentaRegresiva);
+
+    function tick() {
+        const restante = Math.max(0, Math.ceil((hasta - Date.now()) / 1000));
+        if (btn) btn.disabled = true;
+        if (msg) {
+            msg.className = "mensaje msg-err";
+            msg.style.display = "block";
+            msg.textContent = restante > 0
+                ? "🔒 Demasiados intentos. Intenta de nuevo en " + restante + "s..."
+                : "✅ Listo. Puedes intentar de nuevo.";
+        }
+        if (restante <= 0) {
+            clearInterval(_timerCuentaRegresiva);
+            _timerCuentaRegresiva = null;
+            try { localStorage.removeItem(BLOQUEO_KEY); } catch(_) {}
+            if (btn) btn.disabled = false;
+            setTimeout(() => { if (msg) msg.style.display = "none"; }, 2500);
+        }
+    }
+    tick();
+    _timerCuentaRegresiva = setInterval(tick, 1000);
+}
+
+// Restaura el bloqueo persistido al cargar la app (sobrevive recarga/cierre/apagado)
+export function restaurarBloqueoSiActivo() {
+    try {
+        const hasta = Number(localStorage.getItem(BLOQUEO_KEY) || 0);
+        if (hasta > Date.now()) iniciarCuentaRegresiva(hasta);
+        else if (hasta) localStorage.removeItem(BLOQUEO_KEY);
+    } catch(_) {}
+}
+
 // ── CALLBACKS (inyectados por initAuth) ────────────────────────
 let _aplicarRol = null;
 let _cargarInventario = null;
@@ -75,6 +115,12 @@ export async function loginSubmit() {
             USUARIO: usuario,
             PASSWORD: password
         });
+        if (data.error === "BLOQUEO_TEMPORAL") {
+            const hasta = Date.now() + (data.segundosRestantes || 60) * 1000;
+            try { localStorage.setItem(BLOQUEO_KEY, String(hasta)); } catch(_) {}
+            iniciarCuentaRegresiva(hasta);
+            return;
+        }
         if (data.ok) {
             setSession(data.token, data.usuario, (data.rol || "").toUpperCase(), data.sucursal || null);
             setTokens(data.refreshToken || null, data.expiresAt || 0);
