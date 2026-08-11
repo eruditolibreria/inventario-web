@@ -1,7 +1,7 @@
 /* === MODO ADMIN: Detalle, inventario, usuarios === */
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg } from '../utils.js';
+import { mostrarMsg, normBusqueda } from '../utils.js';
 import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
@@ -32,7 +32,7 @@ export function buscarProductoDetalle() {
         l.classList.remove("show");
         return
     }
-    let sg = store.inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t.toLowerCase()));
+    let sg = store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(normBusqueda(t)));
     if (sucFiltro) {
         var sfUp = sucFiltro.toUpperCase();
         sg = sg.filter(function(p) { return (p.sucursal || "").toUpperCase() === sfUp; });
@@ -118,7 +118,7 @@ export async function cargarInventarioAdmin() {
         }
         let datos = data.datos || [];
         if (filtroSuc) datos = datos.filter(p => p.sucursal === filtroSuc);
-        if (filtroProd) datos = datos.filter(p => p.producto.toLowerCase().includes(filtroProd));
+        if (filtroProd) datos = datos.filter(p => normBusqueda(p.producto).includes(normBusqueda(filtroProd)));
         if (datos.length === 0) {
             grid.innerHTML = `<div class="empty-state">Sin productos encontrados</div>`
         } else {

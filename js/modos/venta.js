@@ -24,7 +24,7 @@
 import { CARRITO_KEY, CARRITO_CHUNK_SIZE } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, mostrarToast, vibrar, sonidoCaja } from '../utils.js';
+import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
@@ -78,7 +78,7 @@ export function buscarClienteVenta() {
         return;
     }
     _clientesVenta
-        .filter(cliente => cliente.toLowerCase().includes(texto))
+        .filter(cliente => normBusqueda(cliente).includes(normBusqueda(texto)))
         .slice(0, 8)
         .forEach(cliente => {
             const item = document.createElement("div");
@@ -276,7 +276,7 @@ function initScannerInput() {
                     document.getElementById("listaVenta").classList.remove("show");
                     return
                 }
-                const t = document.getElementById("productoVenta").value.toLowerCase()
+                const t = normBusqueda(document.getElementById("productoVenta").value)
                   , l = document.getElementById("listaVenta")
                   , info = document.getElementById("infoProductoVenta");
                 info.classList.remove("show");
@@ -284,7 +284,7 @@ function initScannerInput() {
                     l.classList.remove("show");
                     return
                 }
-                construirAC(l, store.inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t) && p.sucursal === su), p => {
+                construirAC(l, store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t) && p.sucursal === su), p => {
                     document.getElementById("productoVenta").value = p.producto;
                     info.innerHTML = `Stock disponible: <b>${p.stock}</b> | Precio: <b>Bs ${p.precio}</b>` + (p.stock <= 5 ? `<br><span class="stock-bajo">⚠ Stock bajo</span>` : "");
                     info.classList.add("show")

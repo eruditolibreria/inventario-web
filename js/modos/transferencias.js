@@ -2,7 +2,7 @@
 import { store, setTransfPagina } from '../store.js';
 import { api } from '../api.js';
 import { TRANSF_LIMITE } from '../config.js';
-import { mostrarMsg } from '../utils.js';
+import { mostrarMsg, normBusqueda } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
 
@@ -19,14 +19,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Autocompleta producto origen para transferencia
 export function buscarProductoTransf() {
-    const t = document.getElementById("transfProducto").value.toLowerCase(),
+    const t = normBusqueda(document.getElementById("transfProducto").value),
         l = document.getElementById("listaTransf"),
         info = document.getElementById("infoTransf");
     info.classList.remove("show");
     if (t.length < 1) { l.classList.remove("show"); return }
     const unicos = [];
     const vistos = new Set();
-    store.inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t)).forEach(p => {
+    store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t)).forEach(p => {
         if (!vistos.has(p.producto)) { vistos.add(p.producto); unicos.push(p) }
     });
     l.innerHTML = "";

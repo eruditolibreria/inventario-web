@@ -21,7 +21,7 @@
 
 import { store, setInventario } from './store.js';
 import { api } from './api.js';
-import { mostrarMsg } from './utils.js';
+import { mostrarMsg, normBusqueda } from './utils.js';
 import { manejarRespuesta, renderSearchCard, abrirModalImagen, confirmarEliminar } from './ui.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
@@ -152,7 +152,7 @@ export async function cargarInventarioAdmin() {
         if (filtroSuc)
             datos = datos.filter(p => p.sucursal === filtroSuc);
         if (filtroProd)
-            datos = datos.filter(p => p.producto.toLowerCase().includes(filtroProd));
+            datos = datos.filter(p => normBusqueda(p.producto).includes(normBusqueda(filtroProd)));
         if (datos.length === 0) {
             grid.innerHTML = `<div class="empty-state">Sin productos encontrados</div>`;
         } else {

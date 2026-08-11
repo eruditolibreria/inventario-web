@@ -18,6 +18,17 @@ export function formatearBs(valor) {
     return 'Bs ' + Number(valor || 0).toFixed(2);
 }
 
+// Normaliza texto para busquedas: mayusculas, quita acentos pero conserva la Ñ
+export function normBusqueda(texto) {
+    return String(texto || "")
+        .trim()
+        .toUpperCase()
+        .replace(/\u00D1/g, '\uE000')
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\uE000/g, '\u00D1');
+}
+
 // Emite un sonido de caja registradora usando Web Audio API
                         export function sonidoCaja() {
                 try {

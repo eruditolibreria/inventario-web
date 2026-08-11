@@ -23,7 +23,7 @@
 
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, hoy } from '../utils.js';
+import { mostrarMsg, hoy, normBusqueda } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
@@ -43,7 +43,7 @@ export function initCompra(callbacks) {
 
 // Busca productos en inventario para autocompletar en la compra
             export function buscarProductoCompra() {
-                const t = document.getElementById("productoCompra").value.toLowerCase()
+                const t = normBusqueda(document.getElementById("productoCompra").value)
                   , s = document.getElementById("sucursalCompra").value
                   , l = document.getElementById("listaCompra")
                   , info = document.getElementById("infoCompra");
@@ -52,7 +52,7 @@ export function initCompra(callbacks) {
                     l.classList.remove("show");
                     return
                 }
-                construirAC(l, store.inventarioGlobal.filter(p => p.producto.toLowerCase().includes(t) && p.sucursal === s), p => {
+                construirAC(l, store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t) && p.sucursal === s), p => {
                     document.getElementById("productoCompra").value = p.producto;
                     document.getElementById("categoriaCompra").value = p.categoria || "";
                     document.getElementById("precioVentaCompra").value = p.precio;
