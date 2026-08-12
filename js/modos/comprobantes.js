@@ -109,7 +109,7 @@ export async function listarComprobantes(pg, termino) {
             data.datos.forEach(function (c) {
                 const card = document.createElement("div");
                 card.className = "caja-card";
-                card.style.margin = "0 0 8px 0";
+                card.style.margin = "0 0 16px 0";
                 card.style.display = "flex";
                 card.style.alignItems = "center";
                 card.style.justifyContent = "space-between";
@@ -153,6 +153,15 @@ export function buscarComprobante() {
 
 export function cambiarPaginaComp(d) {
     listarComprobantes(_paginaComp + d, _terminoComp);
+}
+
+// Muestra u oculta el historial de comprobantes en VENTAS
+export function toggleHistorialComprobantes() {
+    const cont = document.getElementById("contenedorHistorialComprobantes");
+    if (!cont) return;
+    const cerrado = cont.classList.contains("oculto");
+    cont.classList.toggle("oculto");
+    if (cerrado) listarComprobantes(_paginaComp, _terminoComp);
 }
 
 // ── REIMPRIMIR DESDE HISTORIAL ───────────────────────────────
