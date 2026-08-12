@@ -193,6 +193,25 @@
                 .mode-tab { padding: 14px 18px; font-size: 13px; }
             }
 
+            /* ── MOBILE: barra de navegacion fija al borde inferior ── */
+            body:not(.desktop) .mode-tabs {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 50;
+                margin-bottom: 0;
+                border: none;
+                border-top: 1px solid var(--border);
+                border-radius: 0;
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+                padding-bottom: calc(6px + env(safe-area-inset-bottom));
+            }
+
+            body:not(.desktop) .panel-body {
+                padding-bottom: 76px;
+            }
+
             .mode-tab {
                 flex: 0 0 auto;
                 min-width: 60px;
