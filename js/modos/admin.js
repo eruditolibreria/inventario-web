@@ -10,6 +10,7 @@ import { cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 let busquedaTimer = null;
+let _detalleSeq = 0;
 let _verif = null;
 export function initAdmin(cb) {
     if (cb && cb.verificarEstadoCaja) _verif = cb.verificarEstadoCaja;
@@ -77,7 +78,9 @@ export async function ejecutarBusquedaDetalle(t) {
             TOKEN: store.sessionToken
         };
         if (sucActual) body.SUCURSAL = sucActual;
+        const seq = ++_detalleSeq;
         const data = await api(body);
+        if (seq !== _detalleSeq) return;
         if (!manejarRespuesta(data)) {
             loader.style.display = "none";
             return
@@ -87,7 +90,13 @@ export async function ejecutarBusquedaDetalle(t) {
         if (rs.length === 0) {
             co.innerHTML = `<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${t}</b>"</div>`
         } else {
-            rs.forEach(p => co.appendChild(renderSearchCard(p)))
+            const vistos = new Set();
+            rs.forEach(p => {
+                const k = (p.producto || "") + "_" + (p.sucursal || "");
+                if (vistos.has(k)) return;
+                vistos.add(k);
+                co.appendChild(renderSearchCard(p))
+            })
         }
     } catch (e) {
         co.innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>`

@@ -18,6 +18,7 @@ const PENDING_KEY = "eruditos_comprobantes_pendientes";
 let _anchoTicket = COMPROBANTE_ANCHO_DEFAULT;
 let _paginaComp = 1;
 let _terminoComp = "";
+let _reqSeq = 0;
 
 export function getAnchoTicket() { return _anchoTicket; }
 
@@ -93,6 +94,7 @@ export async function listarComprobantes(pg, termino) {
     const pdiv = document.getElementById("paginComprobantes");
     if (loader) loader.style.display = "block";
     lista.innerHTML = "";
+    const seq = ++_reqSeq;
     try {
         const data = await api({
             ACCION: "LISTAR_COMPROBANTES",
@@ -101,12 +103,16 @@ export async function listarComprobantes(pg, termino) {
             LIMITE: 20,
             TOKEN: store.sessionToken
         });
+        if (seq !== _reqSeq) return;
         if (!manejarRespuesta(data)) { if (loader) loader.style.display = "none"; return; }
         if (!data.datos || !data.datos.length) {
             lista.innerHTML = `<div class="empty-state">Sin comprobantes encontrados</div>`;
             if (pdiv) pdiv.style.display = "none";
         } else {
+            const vistos = new Set();
             data.datos.forEach(function (c) {
+                if (vistos.has(c.numero)) return;
+                vistos.add(c.numero);
                 const card = document.createElement("div");
                 card.className = "caja-card";
                 card.style.margin = "0 0 16px 0";
