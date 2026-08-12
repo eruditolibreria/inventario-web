@@ -360,8 +360,8 @@
                                     <div class="section-label mt-12">🖨️ Historial de comprobantes</div>
                                     <div class="row-2">
                                         <div class="field-group" style="margin:0">
-                                            <label class="field-label">Buscar (cliente / fecha)</label>
-                                            <input id="buscarComprobante" placeholder="Ej: Evo Morales o Fecha" autocomplete="off" oninput="buscarComprobante()">
+                                            <label class="field-label">Buscar Cliente</label>
+                                            <input id="buscarComprobante" placeholder="Ej: Pedro, Paola" autocomplete="off" oninput="buscarComprobante()">
                                         </div>
                                         <div class="field-group" style="margin:0">
                                             <label class="field-label">Ancho ticket</label>
@@ -694,7 +694,7 @@
                                     <div class="loader" id="loaderAbonarCobrar"></div>
                                     <div class="row-2 mt-8">
                                         <button class="btn btn-primary" onclick="confirmarAbonoCobrar()">✅ Abonar</button>
-                                        <button class="btn btn-ghost" onclick="limpiarBuscadorDevol ? limpiarBuscadorDevol() : null">✕ Cancelar</button>
+                                        <button class="btn btn-ghost" onclick="cancelarAbonoCobrar()">✕ Cancelar</button>
                                     </div>
                                 </div>
                                 <div class="divider"></div>
@@ -774,7 +774,7 @@
                                     <div class="loader" id="loaderAbonarPagar"></div>
                                     <div class="row-2 mt-8">
                                         <button class="btn btn-primary" onclick="confirmarAbonoPagar()">✅ Registrar pago</button>
-                                        <button class="btn btn-ghost" onclick="limpiarBuscadorDevol ? limpiarBuscadorDevol() : null">✕ Cancelar</button>
+                                        <button class="btn btn-ghost" onclick="cancelarAbonoPagar()">✕ Cancelar</button>
                                     </div>
                                 </div>
                                 <div class="divider"></div>

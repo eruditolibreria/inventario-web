@@ -38,7 +38,7 @@ export async function cargarInventario() {
     try {
         const d = await api({
             ACCION: "LISTAR_INVENTARIO",
-            LIMITE: 200,
+            LIMITE: 999,
             TOKEN: store.sessionToken
         });
         setInventario((d.datos || []).map(x => ({ ...x, codigoBarras: x.codigoBarras || "" })));

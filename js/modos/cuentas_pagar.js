@@ -32,7 +32,7 @@ export function initCuentasPagar(cb) { if (cb && cb.verificarEstadoCaja) _verifi
                         let h = `<table><thead><tr><th class="col-prod">Proveedor</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;
                         data.datos.forEach(c => {
                             const ok = c.estado === "CANCELADO";
-                            h += `<tr><td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalCompra).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok ? "estado-cancelado" : "estado-pendiente"}">${c.estado}</td><td>${!ok ? `<button class="btn-ghost btn-sm" data-accion="abrir-form-abono-pagar" data-id="${c.id}">💳</button>` : ""}</td></tr>`
+                            h += `<tr><td class="col-prod">${c.proveedor}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalCompra).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok ? "estado-cancelado" : "estado-pendiente"}">${c.estado}</td><td>${!ok ? `<button class="btn-ghost btn-sm" data-accion="abrir-form-abono-pagar" data-id="${c.id}">💳 Pagar</button>` : ""}</td></tr>`
                         }
                         );
                         tabla.innerHTML = h + "</tbody></table>";
@@ -58,6 +58,12 @@ export function initCuentasPagar(cb) { if (cb && cb.verificarEstadoCaja) _verifi
                 document.getElementById("formAbonarPagar").scrollIntoView({
                     behavior: "smooth"
                 })
+            }
+
+            export function cancelarAbonoPagar() {
+                document.getElementById("formAbonarPagar").classList.remove("show");
+                document.getElementById("abonarPagarId").value = "";
+                document.getElementById("abonarPagarMonto").value = "";
             }
 
 // Confirma un abono a cuenta por pagar

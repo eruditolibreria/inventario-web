@@ -48,10 +48,10 @@ import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra,
 import { initGasto, toggleAcreedorGasto, registrarGasto }
   from './modos/gasto.js';
 import { initCuentasCobrar, listarCuentasCobrar, abrirFormAbonoCobrar,
-         confirmarAbonoCobrar, registrarCuentaCobrar }
+         cancelarAbonoCobrar, confirmarAbonoCobrar, registrarCuentaCobrar }
   from './modos/cuentas_cobrar.js';
 import { initCuentasPagar, listarCuentasPagar, abrirFormAbonoPagar,
-         confirmarAbonoPagar, registrarCuentaPagar }
+         cancelarAbonoPagar, confirmarAbonoPagar, registrarCuentaPagar }
   from './modos/cuentas_pagar.js';
 import { initDevoluciones, limpiarBuscadorDevol, buscarTransaccionDevol,
          seleccionarTransaccionDevol, registrarDevolucion,
@@ -251,10 +251,12 @@ function inicializarApp() {
     window.cerrarDetalleCaja = cerrarDetalleCaja;
     window.listarCuentasCobrar = listarCuentasCobrar;
     window.abrirFormAbonoCobrar = abrirFormAbonoCobrar;
+    window.cancelarAbonoCobrar = cancelarAbonoCobrar;
     window.confirmarAbonoCobrar = confirmarAbonoCobrar;
     window.registrarCuentaCobrar = registrarCuentaCobrar;
     window.listarCuentasPagar = listarCuentasPagar;
     window.abrirFormAbonoPagar = abrirFormAbonoPagar;
+    window.cancelarAbonoPagar = cancelarAbonoPagar;
     window.confirmarAbonoPagar = confirmarAbonoPagar;
     window.registrarCuentaPagar = registrarCuentaPagar;
     window.limpiarBuscadorDevol = limpiarBuscadorDevol;

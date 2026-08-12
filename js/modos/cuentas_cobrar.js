@@ -10,8 +10,8 @@ export function initCuentasCobrar(cb) { if (cb.verificarEstadoCaja) _verificarEs
 
 // Lista las cuentas por cobrar activas con saldo pendiente
             export async function listarCuentasCobrar() {
-                const loader = document.getElementById("loaderCobrarRep")
-                  , tabla = document.getElementById("tablaCobrarRep");
+                const loader = document.getElementById("loaderCobrar")
+                  , tabla = document.getElementById("tablaCobrar");
                 loader.style.display = "block";
                 tabla.innerHTML = "";
                 try {
@@ -31,7 +31,7 @@ export function initCuentasCobrar(cb) { if (cb.verificarEstadoCaja) _verificarEs
                         let h = `<table><thead><tr><th class="col-prod">Cliente</th><th>Total</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>`;
                         data.datos.forEach(c => {
                             const ok = c.estado === "CANCELADO";
-                            h += `<tr><td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalVenta).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok ? "estado-cancelado" : "estado-pendiente"}">${c.estado}</td><td>${!ok ? `<button class="btn-ghost btn-sm" data-accion="abrir-form-abono" data-id="${c.id}">💳</button>` : ""}</td></tr>`
+                            h += `<tr><td class="col-prod">${c.cliente}<br><small style="color:var(--muted)">${c.concepto}</small></td><td>Bs ${Number(c.totalVenta).toFixed(2)}</td><td>Bs ${Number(c.saldo).toFixed(2)}</td><td class="${ok ? "estado-cancelado" : "estado-pendiente"}">${c.estado}</td><td>${!ok ? `<button class="btn-ghost btn-sm" data-accion="abrir-form-abono" data-id="${c.id}">💳 Abonar</button>` : ""}</td></tr>`
                         }
                         );
                         tabla.innerHTML = h + "</tbody></table>";
@@ -57,6 +57,12 @@ export function initCuentasCobrar(cb) { if (cb.verificarEstadoCaja) _verificarEs
                 document.getElementById("formAbonarCobrar").scrollIntoView({
                     behavior: "smooth"
                 })
+            }
+
+            export function cancelarAbonoCobrar() {
+                document.getElementById("formAbonarCobrar").classList.remove("show");
+                document.getElementById("abonarCobrarId").value = "";
+                document.getElementById("abonarCobrarMonto").value = "";
             }
 
 // Confirma un abono mediante la API
