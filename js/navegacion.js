@@ -303,6 +303,7 @@ export function initSwipe() {
 
 function _swipeStart(e) {
     if (_swipeActive || _swipeBloqueado) return;
+    if (e.target.closest(".mode-tabs")) return;
     _swipeStartX = e.touches[0].clientX;
     _swipeModoOrigen = store.modoActual;
     _swipeDireccion = 0;
@@ -310,6 +311,7 @@ function _swipeStart(e) {
 
 function _swipeMove(e) {
     if (_swipeBloqueado) return;
+    if (e.target.closest(".mode-tabs")) return;
     var deltaX = e.touches[0].clientX - _swipeStartX;
     if (!_swipeActive) {
         if (Math.abs(deltaX) < 15) return;
@@ -350,7 +352,7 @@ function _swipeEnd(e) {
     var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
     var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
     var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
-    var umbral = panelAncho * 0.2;
+    var umbral = panelAncho * 0.6;
     if (Math.abs(deltaX) > umbral && secSaliente && secEntrante) {
         secSaliente.classList.remove("push-dragging");
         secEntrante.classList.remove("push-dragging");
