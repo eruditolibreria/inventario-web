@@ -369,13 +369,27 @@ body.desktop {
 }
 
 /* ═══════════════════════════════════════════════
-   VENTA: DOS COLUMNAS
+   VENTA: FORM UNA LINEA + CARRITO DEBAJO
    ═══════════════════════════════════════════════ */
 .desktop-venta-wrapper {
   display: grid;
-  grid-template-columns: 1fr 480px;
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 16px;
   align-items: start;
+}
+
+.venta-form-row {
+  display: grid;
+  grid-template-columns: 180px 150px 1fr 90px auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.venta-form-row .venta-agregar-btn {
+  width: auto;
+  height: 44px;
+  white-space: nowrap;
 }
 
 .desktop-venta-form {
@@ -387,10 +401,30 @@ body.desktop {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
-  position: sticky;
-  top: 0;
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
+}
+
+.venta-acciones {
+  display: grid;
+  grid-template-columns: 200px 1fr auto auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+.venta-acciones .venta-cobrar-btn {
+  width: auto;
+  font-size: 17px;
+  padding: 14px 34px;
+  border-radius: 12px;
+}
+
+.venta-acciones .venta-historial-btn {
+  align-self: end;
+}
+
+.desktop-venta-cart .miniatura {
+  width: 150px;
+  height: 150px;
 }
 
 .desktop-venta-cart .carrito-header {
@@ -583,11 +617,6 @@ body.desktop {
   .desktop-sidebar {
     width: 200px;
     min-width: 200px;
-  }
-
-  .desktop-venta-wrapper {
-    grid-template-columns: 1fr 400px;
-    gap: 16px;
   }
 }
 

@@ -289,7 +289,7 @@
                             <div class="desktop-venta-wrapper">
                                 <div class="desktop-venta-form">
                                     <div class="section-label">Registrar venta</div>
-                                    <div class="row-2 mb-12">
+                                    <div class="venta-form-row">
                                         <div class="field-group" style="margin:0">
                                             <label class="field-label">Sucursal</label>
                                             <select id="sucursalVenta">
@@ -302,18 +302,18 @@
                                             <label class="field-label">Escaner</label>
                                             <button class="btn btn-ghost" onclick="abrirEscanerVenta()" style="width:100%;height:38px;text-align:center" id="btnEscanerVenta">📷 Escanear</button>
                                         </div>
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Producto</label>
+                                            <input id="productoVenta" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoVenta()">
+                                            <div id="listaVenta" class="autocomplete"></div>
+                                            <div id="infoProductoVenta" class="info-prod"></div>
+                                        </div>
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Cantidad</label>
+                                            <input id="cantidadVenta" type="number" min="1" placeholder="0">
+                                        </div>
+                                        <button class="btn btn-green venta-agregar-btn" onclick="agregarCarrito()">+ Agregar al carrito</button>
                                     </div>
-                                    <div class="field-group">
-                                        <label class="field-label">Producto</label>
-                                        <input id="productoVenta" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoVenta()">
-                                        <div id="listaVenta" class="autocomplete"></div>
-                                        <div id="infoProductoVenta" class="info-prod"></div>
-                                    </div>
-                                    <div class="field-group">
-                                        <label class="field-label">Cantidad</label>
-                                        <input id="cantidadVenta" type="number" min="1" placeholder="0">
-                                    </div>
-                                    <button class="btn btn-green mb-12" onclick="agregarCarrito()">+ Agregar al carrito</button>
                                 </div>
                                 <div class="desktop-venta-cart">
                                     <div class="carrito-header">
@@ -339,7 +339,7 @@
                                         <br>
                                         <span id="totalVenta">Bs 0.00</span>
                                     </div>
-                                    <div class="row-2 mb-12">
+                                    <div class="venta-acciones">
                                         <div class="field-group" style="margin:0">
                                             <label class="field-label">Método de pago</label>
                                             <select id="metodoPagoVenta">
@@ -353,11 +353,11 @@
                                             <input id="clienteVenta" placeholder="Nombre del cliente" autocomplete="off" oninput="buscarClienteVenta()">
                                             <div class="autocomplete" id="listaClienteVenta"></div>
                                         </div>
+                                        <button class="btn btn-orange venta-cobrar-btn" id="btnCobrar" onclick="cobrar()"><i class="fa-solid fa-cash-register"></i> COBRAR</button>
+                                        <button class="btn btn-ghost btn-sm no-print venta-historial-btn" onclick="toggleHistorialComprobantes()">🖨️ Historial de comprobantes</button>
                                     </div>
                                     <div class="loader" id="loaderVenta"></div>
-                                    <button class="btn btn-orange" id="btnCobrar" onclick="cobrar()"><i class="fa-solid fa-cash-register"></i> COBRAR</button>
                                     <button class="btn btn-ghost btn-sm no-print" id="btnComprobante" style="display:none;margin-top:8px" onclick="imprimirComprobante()"><i class="fa-solid fa-file-pdf"></i> Comprobante</button>
-<button class="btn btn-ghost btn-sm no-print mt-12" onclick="toggleHistorialComprobantes()">🖨️ Historial de comprobantes</button>
                                         <div id="contenedorHistorialComprobantes" class="oculto">
                                             <div class="row-2">
                                                 <div class="field-group" style="margin:0">
