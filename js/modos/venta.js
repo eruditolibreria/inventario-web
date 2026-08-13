@@ -47,6 +47,74 @@ let _escanerVentaMovilActivo = false;
 
 export function initVenta(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
+    initEscanerVenta();
+}
+
+// Escaner USB en desktop: captura keydown global, detecta la rafaga rapida del lector
+function initEscanerVenta() {
+    const input = document.getElementById("escanerVenta");
+    if (!input || !document.body.classList.contains("desktop")) return;
+    let buffer = "";
+    let ultimaTecla = 0;
+    let timer = null;
+    const procesar = () => {
+        clearTimeout(timer);
+        timer = null;
+        const codigo = buffer;
+        buffer = "";
+        if (!CODIGO_REGEX.test(codigo)) return;
+        agregarPorCodigoScan(codigo);
+        const activo = document.activeElement;
+        if (activo && activo !== input && activo.tagName === "INPUT" && ["productoVenta", "cantidadVenta", "clienteVenta"].includes(activo.id)) {
+            activo.value = "";
+        }
+        input.value = "";
+        input.focus();
+    };
+    document.addEventListener("keydown", function(e) {
+        const ahora = Date.now();
+        if (e.key === "Enter") {
+            if (buffer) {
+                e.preventDefault();
+                procesar();
+            }
+            return;
+        }
+        if (e.key.length === 1) {
+            if (ahora - ultimaTecla > 50) buffer = "";
+            buffer += e.key;
+            ultimaTecla = ahora;
+            clearTimeout(timer);
+            timer = setTimeout(procesar, 120);
+        }
+    });
+    input.focus();
+}
+
+// Busca producto por codigo (local + backend) y lo agrega al carrito
+async function agregarPorCodigoScan(codigo) {
+    const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+    if (!suc) {
+        mostrarMsg("Selecciona una sucursal", "err");
+        return;
+    }
+    let prod = buscarPorCodigo(codigo, suc);
+    if (!prod) {
+        try {
+            const data = await api({
+                ACCION: "BUSCAR_PRODUCTO_CODIGO",
+                CODIGO: codigo,
+                SUCURSAL: suc,
+                TOKEN: store.sessionToken
+            });
+            if (data.ok && data.producto) prod = data.producto;
+        } catch (_) {}
+    }
+    if (prod) {
+        agregarPorProducto(prod, suc);
+    } else {
+        mostrarMsg("Producto no encontrado: " + codigo, "err");
+    }
 }
 
 // Mantiene visible el campo de cliente para cualquier metodo de pago

@@ -380,7 +380,7 @@ body.desktop {
 
 .venta-form-row {
   display: grid;
-  grid-template-columns: 180px 150px 1fr 90px auto;
+  grid-template-columns: 180px 170px 1fr 90px auto;
   gap: 12px;
   align-items: end;
   margin-bottom: 12px;
