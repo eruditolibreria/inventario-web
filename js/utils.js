@@ -18,6 +18,49 @@ export function formatearBs(valor) {
     return 'Bs ' + Number(valor || 0).toFixed(2);
 }
 
+export function limitarDecimalesInput(input, maxDecimales = 2) {
+    if (!input) return;
+    input.addEventListener("input", function() {
+        if (/[eE]/.test(this.value)) {
+            this.value = "";
+            delete this.dataset.valorPreciso;
+            return;
+        }
+        if (this.value === "") {
+            delete this.dataset.valorPreciso;
+            return;
+        }
+        const partes = this.value.split(".");
+        if (partes.length > 1) {
+            this.value = partes[0] + "." + partes[1].slice(0, maxDecimales);
+        }
+        this.dataset.valorPreciso = this.value;
+    });
+    input.addEventListener("blur", function() {
+        const numero = Number(this.value);
+        if (this.value !== "" && Number.isFinite(numero)) {
+            this.value = numero.toFixed(maxDecimales);
+        }
+    });
+}
+
+export function mostrarValorInput(input, valor) {
+    if (!input || valor === null || valor === undefined || valor === "") {
+        if (input) {
+            input.value = "";
+            delete input.dataset.valorPreciso;
+        }
+        return;
+    }
+    input.dataset.valorPreciso = String(valor);
+    input.value = Number(valor).toFixed(2);
+}
+
+export function obtenerValorInput(input) {
+    if (!input || input.value === "") return "";
+    return input.dataset.valorPreciso ?? input.value;
+}
+
 // Normaliza texto para busquedas: mayusculas, quita acentos pero conserva la Ñ
 export function normBusqueda(texto) {
     return String(texto || "")

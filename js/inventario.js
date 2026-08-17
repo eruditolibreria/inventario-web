@@ -21,7 +21,7 @@
 
 import { store, setInventario } from './store.js';
 import { api } from './api.js';
-import { mostrarMsg, normBusqueda } from './utils.js';
+import { mostrarMsg, normBusqueda, formatearBs } from './utils.js';
 import { manejarRespuesta, renderSearchCard, abrirModalImagen, confirmarEliminar } from './ui.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
@@ -78,7 +78,7 @@ export function construirAC(lista, items, onSelect) {
     items.slice(0, 8).forEach(p => {
         const div = document.createElement("div");
         div.className = "ac-item";
-        div.innerHTML = `<strong>${p.producto}</strong><small>Stock: ${p.stock} | Bs ${p.precio} | ${p.sucursal}</small>`;
+        div.innerHTML = `<strong>${p.producto}</strong><small>Stock: ${p.stock} | ${formatearBs(p.precio)} | ${p.sucursal}</small>`;
         div.onclick = () => {
             onSelect(p);
             lista.classList.remove("show");

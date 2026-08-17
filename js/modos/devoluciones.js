@@ -2,7 +2,7 @@
 import { store, setDevolPagina, setDevolTransaccionSeleccionada } from '../store.js';
 import { api } from '../api.js';
 import { DEVOL_LIMITE, HOST } from '../config.js';
-import { mostrarMsg } from '../utils.js';
+import { mostrarMsg, formatearBs, mostrarValorInput, obtenerValorInput } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo } from '../escaner.js';
@@ -66,6 +66,7 @@ export async function buscarTransaccionDevol() {
     const producto = document.getElementById("devolBuscProducto").value;
     const clienteProv = document.getElementById("devolBuscClienteProv").value;
 
+    if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }
     if (!su) { mostrarMsg("Selecciona una sucursal primero", "err"); return; }
     if (!producto.trim() && !clienteProv.trim()) { document.getElementById("resultadosBuscDevol").innerHTML = ""; return; }
 
@@ -77,7 +78,10 @@ export async function buscarTransaccionDevol() {
     try {
         const response = await fetch(HOST + "/buscar_transacciones", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${store.sessionToken}`
+            },
             body: JSON.stringify({
                 tipo: tp,
                 sucursal: su,
@@ -103,7 +107,7 @@ export async function buscarTransaccionDevol() {
                 <div style="flex:1">
                     <div style="font-weight:600;color:var(--text);margin-bottom:4px">${t.producto}</div>
                     <div style="font-size:11px;color:var(--muted);line-height:1.4">
-                        ${personaDisplay} · ${t.cantidad} ud. · Bs ${t.precio || 0} · ${t.sucursal}
+                        ${personaDisplay} · ${t.cantidad} ud. · ${formatearBs(t.precio)} · ${t.sucursal}
                     </div>
                 </div>
                 <div style="font-size:10px;color:var(--muted)">${fechaDisplay}</div>
@@ -130,11 +134,11 @@ export function seleccionarTransaccionDevol(transaccion) {
     const esVenta = document.getElementById("devolTipo").value === "VENTA";
     const personaValue = esVenta ? (transaccion.cliente || "") : (transaccion.proveedor || "");
     const personaDisplay = personaValue || "—";
-    seleccionadoTexto.innerHTML = `${transaccion.producto} · ${transaccion.cantidad} ud. · Bs ${transaccion.precio} · ${personaDisplay}`;
+    seleccionadoTexto.innerHTML = `${transaccion.producto} · ${transaccion.cantidad} ud. · ${formatearBs(transaccion.precio)} · ${personaDisplay}`;
     seleccionadoDiv.style.display = "block";
     document.getElementById("devolCantidad").value = transaccion.cantidad;
     document.getElementById("devolCantidad").max = transaccion.cantidad;
-    document.getElementById("devolPrecio").value = transaccion.precio;
+    mostrarValorInput(document.getElementById("devolPrecio"), transaccion.precio);
     document.getElementById("devolClienteProveedor").value = personaValue;
     document.getElementById("resultadosBuscDevol").innerHTML = "";
     document.getElementById("devolBuscProducto").value = "";
@@ -149,7 +153,7 @@ export function seleccionarTransaccionDevol(transaccion) {
         tp = document.getElementById("devolTipo").value,
         ref = document.getElementById("devolReferenciaId").value.trim(),
         ca = Number(document.getElementById("devolCantidad").value),
-        pc = Number(document.getElementById("devolPrecio").value),
+        pc = Number(obtenerValorInput(document.getElementById("devolPrecio"))),
         mo = document.getElementById("devolMotivo").value,
         cp = document.getElementById("devolClienteProveedor").value.trim(),
         no = document.getElementById("devolNotas").value.trim();
@@ -179,7 +183,7 @@ export function seleccionarTransaccionDevol(transaccion) {
         });
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return }
         if (data.ok) {
-            mostrarMsg("↩ Devolución registrada · Total: Bs " + data.total, "ok");
+            mostrarMsg("↩ Devolución registrada · Total: " + formatearBs(data.total), "ok");
             ["devolReferenciaId", "devolCantidad", "devolPrecio", "devolClienteProveedor", "devolNotas"].forEach(id => document.getElementById(id).value = "");
             document.getElementById("devolBuscProducto").value = "";
             document.getElementById("devolBuscClienteProv").value = "";

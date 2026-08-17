@@ -23,7 +23,7 @@
 
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, hoy, normBusqueda } from '../utils.js';
+import { mostrarMsg, hoy, normBusqueda, mostrarValorInput, obtenerValorInput } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
@@ -55,7 +55,7 @@ export function initCompra(callbacks) {
                 construirAC(l, store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t) && p.sucursal === s), p => {
                     document.getElementById("productoCompra").value = p.producto;
                     document.getElementById("categoriaCompra").value = p.categoria || "";
-                    document.getElementById("precioVentaCompra").value = p.precio;
+                    mostrarValorInput(document.getElementById("precioVentaCompra"), p.precio);
                     document.getElementById("proveedorCompra").value = p.proveedor || "";
                     document.getElementById("ubicacionCompra").value = p.ubicacion || "";
                     info.textContent = "Stock actual: " + p.stock;
@@ -83,10 +83,10 @@ export function initCompra(callbacks) {
                         ACCION: "COMPRA",
                         PRODUCTO: document.getElementById("productoCompra").value,
                         CATEGORIA: document.getElementById("categoriaCompra").value,
-                        COSTO_PAQUETE: document.getElementById("costoCompra").value,
+                        COSTO_PAQUETE: obtenerValorInput(document.getElementById("costoCompra")),
                         CANTIDAD_PAQUETE: document.getElementById("cantidadCompra").value,
                         UNIDADES_PAQUETE: document.getElementById("unidadesCompra").value,
-                        PRECIO_VENTA: document.getElementById("precioVentaCompra").value,
+                        PRECIO_VENTA: obtenerValorInput(document.getElementById("precioVentaCompra")),
                         PROVEEDOR: document.getElementById("proveedorCompra").value,
                         FECHA_ENTRADA: document.getElementById("fechaCompra").value,
                         UBICACION_PRODUCTO: document.getElementById("ubicacionCompra").value,
@@ -137,7 +137,7 @@ export async function abrirEscanerCompra() {
             const p = data.producto;
             document.getElementById("productoCompra").value = p.producto || "";
             document.getElementById("categoriaCompra").value = p.categoria || "";
-            document.getElementById("precioVentaCompra").value = p.precioVenta || "";
+            mostrarValorInput(document.getElementById("precioVentaCompra"), p.precioVenta);
             document.getElementById("codigoBarrasCompra").value = p.codigoBarras || codigo;
             document.getElementById("ubicacionCompra").value = "";
             mostrarMsg("Producto encontrado: " + p.producto + " | Stock: " + (p.stock || 0), "ok");

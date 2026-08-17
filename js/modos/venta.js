@@ -24,7 +24,7 @@
 import { CARRITO_KEY, CARRITO_CHUNK_SIZE } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda } from '../utils.js';
+import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC, cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
@@ -193,7 +193,7 @@ function renderCarritoEscaner() {
         total += Number(it.total || 0);
         const fila = document.createElement("div");
         fila.className = "scanner-carrito-item";
-        fila.innerHTML = `<div class="scanner-carrito-producto">${it.producto}</div><div class="scanner-carrito-detalle"><span>${it.cantidad} x Bs ${Number(it.precio).toFixed(2)}</span><strong>Bs ${Number(it.total).toFixed(2)}</strong></div>`;
+        fila.innerHTML = `<div class="scanner-carrito-producto">${it.producto}</div><div class="scanner-carrito-detalle"><span>${it.cantidad} x ${formatearBs(it.precio)}</span><strong>${formatearBs(it.total)}</strong></div>`;
         lista.appendChild(fila);
     });
     if (!store.carrito.length) {
@@ -354,7 +354,7 @@ function initScannerInput() {
                 }
                 construirAC(l, store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t) && p.sucursal === su), p => {
                     document.getElementById("productoVenta").value = p.producto;
-                    info.innerHTML = `Stock disponible: <b>${p.stock}</b> | Precio: <b>Bs ${p.precio}</b>` + (p.stock <= 5 ? `<br><span class="stock-bajo">⚠ Stock bajo</span>` : "");
+                    info.innerHTML = `Stock disponible: <b>${p.stock}</b> | Precio: <b>${formatearBs(p.precio)}</b>` + (p.stock <= 5 ? `<br><span class="stock-bajo">⚠ Stock bajo</span>` : "");
                     info.classList.add("show")
                 }
                 )
@@ -419,7 +419,7 @@ function initScannerInput() {
     const carrito = store.carrito;
     carrito.forEach( (it, i) => {
         tot += it.total;
-        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>Bs ${it.precio}</td><td>Bs ${it.total.toFixed(2)}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
+        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>${formatearBs(it.precio)}</td><td>${formatearBs(it.total)}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
         if (it.imagen) {
             const mini = document.createElement("div");
             mini.className = "miniatura";

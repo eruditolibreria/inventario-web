@@ -66,9 +66,10 @@ var _cajasCache = [];
                         hay = true;
                         x.txt.className = "caja-estado-ok";
                         x.txt.innerHTML = `<span class="caja-live-dot"></span>Abierta`;
+                        const negativo = Number(c.saldoActual) < 0;
                         const saldoStr = c.saldoActual !== undefined ? `Bs ${Number(c.saldoActual).toFixed(2)} (actual)` : `Bs ${Number(c.saldoInicial).toFixed(2)} (inicial)`;
-                        x.det.textContent = saldoStr + ' · ' + c.usuarioApertura;
-                        x.card.style.borderColor = "var(--accent)";
+                        x.det.textContent = saldoStr + (negativo ? ' · ⚠ Saldo negativo' : '') + ' · ' + c.usuarioApertura;
+                        x.card.style.borderColor = negativo ? "var(--red)" : "var(--accent)";
                         const o = document.createElement("option");
                         o.value = c.cajaId;
                         o.textContent = s + " · " + saldoStr;
@@ -79,8 +80,26 @@ var _cajasCache = [];
                     if (ca.length === 1 && cs)
                         cs.value = ca[0].cajaId;
                     _bindCajaCardClicks(ca);
+                    _bindCierrePreview(cs);
                 } catch (e) {}
             }
+
+function _bindCierrePreview(cs) {
+    if (!cs || cs._cierrePreviewBound) return;
+    cs._cierrePreviewBound = true;
+    cs.addEventListener("change", function() {
+        const caja = _cajasCache.find(c => c.cajaId === this.value);
+        const sysEl = document.getElementById("cierreValSistema");
+        const conEl = document.getElementById("cierreValContado");
+        const difEl = document.getElementById("cierreValDif");
+        if (!caja || !sysEl) return;
+        const negativo = Number(caja.saldoActual) < 0;
+        sysEl.textContent = (negativo ? "⚠ " : "") + formatearBs(caja.saldoActual);
+        sysEl.className = "val " + (negativo ? "val-neg" : "val-neu");
+        if (conEl) { conEl.textContent = "—"; conEl.className = "val val-neu"; }
+        if (difEl) { difEl.textContent = "—"; difEl.className = "val"; }
+    });
+}
 
 function _bindCajaCardClicks(cajas) {
     var map = { ERUDITOS: "cajaCardEruditos", CENTRAL: "cajaCardCentral" };

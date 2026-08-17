@@ -491,7 +491,7 @@
                                 </select>
                             </div>
                             <div class="field-group">
-                                <label class="field-label">Saldo final contado (efectivo físico)</label>
+                                <label class="field-label">Saldo final contado (efectivo físico total, no un ajuste)</label>
                                 <input id="cierreSaldo" type="number" min="0" step="0.01" placeholder="Bs 0.00">
                             </div>
                             <div class="field-group">
@@ -1691,8 +1691,8 @@
                 <span id="cajaDetalleEstado" class="rol-pill" style="font-size:11px"></span>
             </div>
             <div id="cajaDetalleResumen" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:16px"></div>
-            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Últimos movimientos</div>
-            <div id="cajaDetalleMovimientos" style="max-height:250px;overflow-y:auto;font-size:11px"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Movimientos</div>
+            <div id="cajaDetalleMovimientos" style="max-height:40vh;overflow-y:auto;font-size:11px"></div>
         </div>
     </div>
 

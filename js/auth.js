@@ -96,6 +96,22 @@ export function initAuth(callbacks) {
     if (callbacks.restaurarCarritoDraft) _restaurarCarritoDraft = callbacks.restaurarCarritoDraft;
 }
 
+export function restaurarCarritoGuardado() {
+    if (!_restaurarCarritoDraft) return;
+    try {
+        const raw = localStorage.getItem(CARRITO_KEY);
+        if (raw) {
+            const draft = JSON.parse(raw);
+            if (draft.carrito?.length &&
+                (Date.now() - draft.ts) < 8 * 60 * 60 * 1000) {
+                _restaurarCarritoDraft(draft);
+            } else {
+                localStorage.removeItem(CARRITO_KEY);
+            }
+        }
+    } catch(e) {}
+}
+
 
 // ══ LOGIN ══
 export async function loginSubmit() {
@@ -156,20 +172,7 @@ export async function loginSubmit() {
             if (_cargarInventario) _cargarInventario();
 
             // Restaurar carrito draft
-            if (_restaurarCarritoDraft) {
-                try {
-                    const raw = localStorage.getItem(CARRITO_KEY);
-                    if (raw) {
-                        const draft = JSON.parse(raw);
-                        if (draft.carrito?.length &&
-                            (Date.now() - draft.ts) < 8 * 60 * 60 * 1000) {
-                            _restaurarCarritoDraft(draft);
-                        } else {
-                            localStorage.removeItem(CARRITO_KEY);
-                        }
-                    }
-                } catch(e) {}
-            }
+            restaurarCarritoGuardado();
 
             if (_verificarEstadoCaja) _verificarEstadoCaja();
             cargarSucursalesEnDropdowns();

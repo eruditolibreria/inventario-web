@@ -13,10 +13,12 @@ import { store, setSession, setTokens, setToken, setInventario, setCarrito,
          setDevolTransaccionSeleccionada, clearSession, clearCarrito }
   from './store.js';
 import { api } from './api.js';
-import { initAuth, loginSubmit, mostrarMensajeLogin, cerrarSesion, restaurarBloqueoSiActivo }
+import { initAuth, loginSubmit, mostrarMensajeLogin, cerrarSesion,
+         restaurarBloqueoSiActivo, restaurarCarritoGuardado }
   from './auth.js';
 import { hoy, horaActual, formatearBs, sonidoCaja, vibrar,
-         mostrarMsg, mostrarToast, cerrarToast, toastActivo }
+         mostrarMsg, mostrarToast, cerrarToast, toastActivo,
+         limitarDecimalesInput }
   from './utils.js';
 import { initUI, manejarRespuesta, renderSearchCard,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
@@ -392,6 +394,9 @@ function inicializarApp() {
     initAdminMode();
     initLaminasMode();
 
+    ["costoCompra", "precioVentaCompra", "inventarioEditPrecioVenta", "devolPrecio"]
+        .forEach(id => limitarDecimalesInput(document.getElementById(id)));
+
     // ── 5. Configurar doble toque atrás ────────────────────────
     setupBackHandler();
     initSwipe();
@@ -430,6 +435,7 @@ function inicializarApp() {
         toggleClienteVenta();
         verificarEstadoCaja();
         cargarSucursalesEnDropdowns();
+        restaurarCarritoGuardado();
 
         // Activar intervalos de refresco
         iniciarIntervalos(verificarEstadoCaja);

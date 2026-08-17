@@ -1,7 +1,7 @@
 /* === MODO ADMIN: Detalle, inventario, usuarios === */
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, normBusqueda } from '../utils.js';
+import { mostrarMsg, normBusqueda, mostrarValorInput, obtenerValorInput } from '../utils.js';
 import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
@@ -398,7 +398,7 @@ export function abrirEditarProducto(p) {
     document.getElementById("inventarioEditNombre").textContent = p.producto;
     document.getElementById("inventarioEditUbicacion").value = ubicacion;
     document.getElementById("inventarioEditProveedor").value = proveedor;
-    document.getElementById("inventarioEditPrecioVenta").value = p.precioVenta ?? "";
+    mostrarValorInput(document.getElementById("inventarioEditPrecioVenta"), p.precioVenta);
     document.getElementById("inventarioEditCodigoBarras").value = p.codigoBarras || "";
     var imgDiv = document.getElementById("inventarioEditImg");
     if (p.imagen) {
@@ -416,7 +416,7 @@ export async function guardarEdicionProducto() {
     var id = _productoEditando.id;
     var ubicacion = document.getElementById("inventarioEditUbicacion").value.trim();
     var proveedor = document.getElementById("inventarioEditProveedor").value.trim();
-    var precioVenta = parseFloat(document.getElementById("inventarioEditPrecioVenta").value);
+    var precioVenta = parseFloat(obtenerValorInput(document.getElementById("inventarioEditPrecioVenta")));
     var codigoBarras = document.getElementById("inventarioEditCodigoBarras").value.trim();
     try {
         var data = await api({
