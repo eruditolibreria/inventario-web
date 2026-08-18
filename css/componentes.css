@@ -852,6 +852,67 @@
                 to { transform: scale(1); opacity: 1; }
             }
 
+             .comprobante-preview-overlay {
+                 position: fixed;
+                 inset: 0;
+                 z-index: 10001;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 padding: 12px;
+                 background: rgba(0,0,0,0.78);
+             }
+             .comprobante-preview-card {
+                 display: flex;
+                 flex-direction: column;
+                 width: min(560px, 100%);
+                 max-height: 94vh;
+                 overflow: hidden;
+                 background: var(--surface);
+                 border: 1px solid var(--border);
+                 border-radius: 16px;
+                 box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+             }
+             .comprobante-preview-header {
+                 display: flex;
+                 align-items: center;
+                 justify-content: space-between;
+                 gap: 12px;
+                 padding: 14px 16px;
+                 color: var(--text);
+                 border-bottom: 1px solid var(--border);
+             }
+             .comprobante-preview-scroll {
+                 overflow: auto;
+                 min-height: 0;
+                 background: #dfe3e7;
+             }
+             #comprobantePreviewBody {
+                 display: flex;
+                 justify-content: center;
+                 min-width: max-content;
+                 padding: 18px;
+             }
+             #comprobantePreviewBody .ticket {
+                 flex: 0 0 auto;
+                 margin: 0;
+                 box-shadow: 0 3px 14px rgba(0,0,0,0.22);
+             }
+             .comprobante-preview-actions {
+                 display: flex;
+                 justify-content: flex-end;
+                 gap: 8px;
+                 padding: 12px 16px;
+                 border-top: 1px solid var(--border);
+             }
+             @media (max-width: 420px) {
+                 .comprobante-preview-overlay { padding: 0; }
+                 .comprobante-preview-card { width: 100%; max-height: 100vh; border-radius: 0; }
+                 #comprobantePreviewBody { padding: 12px; }
+                 .comprobante-preview-actions { flex-wrap: wrap; }
+                 .comprobante-preview-actions .btn { flex: 1 1 30%; min-width: 90px; }
+             }
+
         @media print {
           /* Hide everything except the receipt/report */
           body > *:not(#printArea) { display: none !important; }

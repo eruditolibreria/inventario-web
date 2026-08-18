@@ -19,6 +19,10 @@ let _anchoTicket = COMPROBANTE_ANCHO_DEFAULT;
 let _paginaComp = 1;
 let _terminoComp = "";
 let _reqSeq = 0;
+let _previewHtml = "";
+let _previewComprobante = null;
+let _previewPng = null;
+let _previewSeq = 0;
 
 export function getAnchoTicket() { return _anchoTicket; }
 
@@ -184,25 +188,8 @@ function _fmtBs(v) {
     return "Bs " + Number(v || 0).toFixed(2);
 }
 
-export function imprimirComprobante(comp) {
-    const c = comp || store.ultimaVenta;
-    if (!c) { mostrarMsg("No hay venta reciente", "err"); return; }
-    const pa = document.getElementById('printArea');
-    if (!pa) return;
+function _crearTicketHtml(c) {
     const ancho = _anchoTicket;
-
-    // Ajustar el tamaño de pagina segun el ancho elegido
-    let st = document.getElementById("ticketPageStyle");
-    if (!st) {
-        st = document.createElement("style");
-        st.id = "ticketPageStyle";
-        document.head.appendChild(st);
-    }
-    const pageCss = ancho === "57"
-        ? "@page { size: 57mm auto; margin: 2mm; }"
-        : "@page { size: 80mm auto; margin: 2mm; }";
-    st.textContent = pageCss;
-
     const items = (c.items || []).map(function (i) {
         return { producto: i.producto, cantidad: Number(i.cantidad || 0), precio: Number(i.precio || 0) };
     });
@@ -243,31 +230,224 @@ export function imprimirComprobante(comp) {
     h += '<div class="t-linea"></div>';
     h += '<div class="t-pie">¡Gracias por su compra!</div>';
     h += '</div>';
-
-    pa.className = "ticket-mode";
-    pa.innerHTML = h;
-    setTimeout(function () {
-        _imprimirOMostrar(pa, pageCss);
-        pa.innerHTML = "";
-        pa.className = "";
-    }, 200);
+    return h;
 }
 
-function _imprimirOMostrar(pa, pageCss) {
-    const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (esMovil) {
-        const blob = new Blob([
-            '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-            '<style>' + pageCss + '</style>',
-            '<link rel="stylesheet" href="/css/componentes.css">',
-            '</head><body>' + pa.innerHTML + '</body></html>'
-        ], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    } else {
-        window.print();
+function _esMovil() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function _obtenerCssLocal() {
+    let css = "";
+    Array.from(document.styleSheets).forEach(function (sheet) {
+        try {
+            css += Array.from(sheet.cssRules).map(rule => rule.cssText).join("\n");
+        } catch (_) {}
+    });
+    return css;
+}
+
+function _blobADataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function _incrustarImagenes(root) {
+    const imagenes = Array.from(root.querySelectorAll("img"));
+    await Promise.all(imagenes.map(async function (img) {
+        const src = img.getAttribute("src");
+        if (!src) return;
+        try {
+            const response = await fetch(new URL(src, location.href).href);
+            if (!response.ok) throw new Error("No se pudo cargar la imagen");
+            img.setAttribute("src", await _blobADataUrl(await response.blob()));
+        } catch (_) {
+            img.remove();
+        }
+    }));
+}
+
+async function _generarPng(ticket) {
+    if (!ticket) throw new Error("Ticket no disponible");
+    const rect = ticket.getBoundingClientRect();
+    const width = Math.ceil(rect.width);
+    const height = Math.ceil(rect.height);
+    if (!width || !height) throw new Error("Ticket sin dimensiones");
+
+    const clone = ticket.cloneNode(true);
+    await _incrustarImagenes(clone);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
+        '<foreignObject width="100%" height="100%">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml"><style>' + _obtenerCssLocal() + '</style>' +
+        clone.outerHTML + '</div></foreignObject></svg>';
+    const image = await new Promise(function (resolve, reject) {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    });
+    const scale = Math.min(3, Math.max(2, window.devicePixelRatio || 1));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(width * scale);
+    canvas.height = Math.ceil(height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas no disponible");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(image, 0, 0, width, height);
+    return await new Promise(function (resolve, reject) {
+        canvas.toBlob(function (blob) {
+            if (blob) resolve(blob);
+            else reject(new Error("No se pudo generar el PNG"));
+        }, "image/png");
+    });
+}
+
+function _mostrarVistaPrevia(html, comp) {
+    const overlay = document.getElementById("comprobantePreviewOverlay");
+    const body = document.getElementById("comprobantePreviewBody");
+    const shareBtn = document.getElementById("btnCompartirComprobante");
+    if (!overlay || !body) return false;
+    _previewSeq += 1;
+    const seq = _previewSeq;
+    _previewHtml = html;
+    _previewComprobante = comp;
+    _previewPng = null;
+    body.innerHTML = html;
+    overlay.style.display = "flex";
+    if (shareBtn) {
+        shareBtn.disabled = true;
+        shareBtn.textContent = "Preparando...";
     }
+    requestAnimationFrame(function () {
+        _generarPng(body.querySelector(".ticket")).then(function (blob) {
+            if (seq !== _previewSeq) return;
+            _previewPng = blob;
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = "Compartir";
+            }
+        }).catch(function () {
+            if (seq !== _previewSeq) return;
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = "Compartir texto";
+            }
+        });
+    });
+    return true;
+}
+
+function _textoComprobante(c) {
+    const items = (c.items || []).map(function (item) {
+        return `${item.cantidad} x ${item.producto} = ${_fmtBs(Number(item.cantidad || 0) * Number(item.precio || 0))}`;
+    });
+    return [
+        "Comprobante de venta",
+        c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "",
+        `${c.fecha || ""} ${c.hora || ""}`.trim(),
+        "Sucursal: " + (c.sucursal || ""),
+        "Cliente: " + (c.cliente || "MOSTRADOR"),
+        items.join("\n"),
+        "TOTAL: " + _fmtBs(c.totalRedondeado ?? c.total)
+    ].filter(Boolean).join("\n");
+}
+
+export function cerrarVistaPreviaComprobante(event) {
+    const overlay = document.getElementById("comprobantePreviewOverlay");
+    const body = document.getElementById("comprobantePreviewBody");
+    if (!overlay) return;
+    if (event && event.target !== overlay) return;
+    _previewSeq += 1;
+    overlay.style.display = "none";
+    if (body) body.innerHTML = "";
+    _previewHtml = "";
+    _previewComprobante = null;
+    _previewPng = null;
+}
+
+export function imprimirVistaPreviaComprobante() {
+    const pa = document.getElementById("printArea");
+    if (!pa || !_previewHtml) return;
+    pa.className = "ticket-mode";
+    pa.innerHTML = _previewHtml;
+    const limpiar = function () {
+        pa.innerHTML = "";
+        pa.className = "";
+    };
+    window.addEventListener("afterprint", limpiar, { once: true });
+    setTimeout(() => window.print(), 50);
+}
+
+export async function compartirVistaPreviaComprobante() {
+    const c = _previewComprobante;
+    if (!c) return;
+    const texto = _textoComprobante(c);
+    const titulo = "Comprobante " + (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "de venta");
+    try {
+        if (_previewPng && typeof File !== "undefined" && navigator.share) {
+            const nombre = "comprobante-" + (c.numero || "venta") + ".png";
+            const archivo = new File([_previewPng], nombre, { type: "image/png" });
+            const puedeArchivo = !navigator.canShare || navigator.canShare({ files: [archivo] });
+            if (puedeArchivo) {
+                await navigator.share({ title: titulo, text: "Comprobante de venta", files: [archivo] });
+                return;
+            }
+        }
+        if (navigator.share) {
+            await navigator.share({ title: titulo, text: texto });
+            return;
+        }
+    } catch (error) {
+        if (error && error.name === "AbortError") return;
+    }
+    const url = "https://wa.me/?text=" + encodeURIComponent(texto);
+    const popup = window.open(url, "_blank", "noopener,noreferrer");
+    if (!popup) {
+        try {
+            await navigator.clipboard.writeText(texto);
+            mostrarMsg("Comprobante copiado al portapapeles", "ok");
+        } catch (_) {
+            mostrarMsg("No se pudo abrir el compartir", "err");
+        }
+    }
+}
+
+export function imprimirComprobante(comp) {
+    const c = comp || store.ultimaVenta;
+    if (!c) { mostrarMsg("No hay venta reciente", "err"); return; }
+    const pa = document.getElementById('printArea');
+    if (!pa) return;
+    const ancho = _anchoTicket;
+
+    // Ajustar el tamaño de pagina segun el ancho elegido
+    let st = document.getElementById("ticketPageStyle");
+    if (!st) {
+        st = document.createElement("style");
+        st.id = "ticketPageStyle";
+        document.head.appendChild(st);
+    }
+    const pageCss = ancho === "57"
+        ? "@page { size: 57mm auto; margin: 2mm; }"
+        : "@page { size: 80mm auto; margin: 2mm; }";
+    st.textContent = pageCss;
+    const html = _crearTicketHtml(c);
+    if (_esMovil() && _mostrarVistaPrevia(html, c)) return;
+    pa.className = "ticket-mode";
+    pa.innerHTML = html;
+    setTimeout(function () {
+        const limpiar = function () {
+            pa.innerHTML = "";
+            pa.className = "";
+        };
+        window.addEventListener("afterprint", limpiar, { once: true });
+        window.print();
+    }, 200);
 }
 
 // ── INIT ─────────────────────────────────────────────────────

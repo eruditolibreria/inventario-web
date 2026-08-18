@@ -84,7 +84,9 @@ import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
   from './modos/reportes.js';
 import { initComprobantes, imprimirComprobante, listarComprobantes,
          buscarComprobante, imprimirComprobanteGuardado,
-         cambiarAnchoComprobante, cambiarPaginaComp, toggleHistorialComprobantes }
+         cambiarAnchoComprobante, cambiarPaginaComp, toggleHistorialComprobantes,
+         cerrarVistaPreviaComprobante, imprimirVistaPreviaComprobante,
+         compartirVistaPreviaComprobante }
   from './modos/comprobantes.js';
 import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          cargarInventarioAdmin, cargarUsuarios,
@@ -309,6 +311,9 @@ function inicializarApp() {
     window.cambiarAnchoComprobante = cambiarAnchoComprobante;
     window.toggleHistorialComprobantes = toggleHistorialComprobantes;
     window.cambiarPaginaComp = cambiarPaginaComp;
+    window.cerrarVistaPreviaComprobante = cerrarVistaPreviaComprobante;
+    window.imprimirVistaPreviaComprobante = imprimirVistaPreviaComprobante;
+    window.compartirVistaPreviaComprobante = compartirVistaPreviaComprobante;
     window.buscarProductoDetalle = buscarProductoDetalle;
     window.ejecutarBusquedaDetalle = ejecutarBusquedaDetalle;
     window.crearUsuario = crearUsuario;

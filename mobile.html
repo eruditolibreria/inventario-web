@@ -1696,6 +1696,22 @@
         </div>
     </div>
 
+    <div id="comprobantePreviewOverlay" class="comprobante-preview-overlay" style="display:none" onclick="cerrarVistaPreviaComprobante(event)">
+        <div class="comprobante-preview-card" onclick="event.stopPropagation()">
+            <div class="comprobante-preview-header">
+                <strong>Vista previa del comprobante</strong>
+                <button class="btn-icon" type="button" onclick="cerrarVistaPreviaComprobante()" aria-label="Cerrar">✕</button>
+            </div>
+            <div id="comprobantePreviewScroll" class="comprobante-preview-scroll">
+                <div id="comprobantePreviewBody"></div>
+            </div>
+            <div class="comprobante-preview-actions">
+                <button id="btnCompartirComprobante" class="btn btn-primary btn-sm" type="button" onclick="compartirVistaPreviaComprobante()" disabled>Compartir</button>
+                <button class="btn btn-orange btn-sm" type="button" onclick="imprimirVistaPreviaComprobante()">Imprimir</button>
+                <button class="btn btn-ghost btn-sm" type="button" onclick="cerrarVistaPreviaComprobante()">Cerrar</button>
+            </div>
+        </div>
+    </div>
     <div id="printArea"></div>
     <div id="toastContainer"></div>
     <script type="module" src="js/main.js"></script>
