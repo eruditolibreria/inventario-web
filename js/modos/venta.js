@@ -448,7 +448,125 @@ function initScannerInput() {
     document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
     document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`;
     renderCarritoEscaner();
+    _actualizarVisibilidadEfectivo();
             }
+
+function _actualizarVisibilidadEfectivo() {
+    const contEf = document.getElementById("campoEfectivoVenta");
+    const contMixto = document.getElementById("campoMixtoVenta");
+    const metodo = document.getElementById("metodoPagoVenta");
+    const hayItems = !!store.carrito.length;
+    const esEfectivo = !!metodo && metodo.value === "EFECTIVO" && hayItems;
+    const esMixto = !!metodo && metodo.value === "MIXTO" && hayItems;
+    if (contEf) {
+        contEf.classList.toggle("oculto", !esEfectivo);
+        if (!esEfectivo) {
+            const input = document.getElementById("efectivoRecibidoVenta");
+            const out = document.getElementById("cambioVenta");
+            if (input) input.value = "";
+            if (out) {
+                out.textContent = "—";
+                out.classList.remove("cambio-positivo", "cambio-negativo");
+            }
+        } else {
+            actualizarCambioVenta();
+        }
+    }
+    if (contMixto) {
+        contMixto.classList.toggle("oculto", !esMixto);
+        if (!esMixto) {
+            const inEf = document.getElementById("montoEfectivoMixtoVenta");
+            const inTr = document.getElementById("montoTransferenciaMixtoVenta");
+            const aviso = document.getElementById("avisoMixtoVenta");
+            if (inEf) inEf.value = "";
+            if (inTr) inTr.value = "";
+            if (aviso) {
+                aviso.textContent = "";
+                aviso.classList.remove("cambio-positivo", "cambio-negativo");
+            }
+        } else {
+            actualizarMixtoVenta();
+        }
+    }
+}
+
+export function actualizarMixtoVenta(activo) {
+    const inEf = document.getElementById("montoEfectivoMixtoVenta");
+    const inTr = document.getElementById("montoTransferenciaMixtoVenta");
+    const aviso = document.getElementById("avisoMixtoVenta");
+    const contMixto = document.getElementById("campoMixtoVenta");
+    if (!inEf || !inTr) return;
+    if (contMixto && contMixto.classList.contains("oculto")) return;
+    const totalStr = document.getElementById("totalVenta");
+    const total = Number(totalStr ? totalStr.textContent.replace("Bs", "").replace(/\s+/g, "") : 0);
+    if (activo) {
+        if (activo === inTr) {
+            const tr = Number(inTr.value);
+            if (Number.isFinite(tr) && tr >= 0) {
+                const ef = Number((total - tr).toFixed(2));
+                inEf.value = ef >= 0 ? ef.toFixed(2) : "";
+            }
+        } else {
+            const ef = Number(inEf.value);
+            if (Number.isFinite(ef) && ef >= 0) {
+                const tr = Number((total - ef).toFixed(2));
+                inTr.value = tr >= 0 ? tr.toFixed(2) : "";
+            }
+        }
+    }
+    if (!aviso) return;
+    const ef = Number(inEf.value), tr = Number(inTr.value);
+    if (Number.isFinite(ef) && Number.isFinite(tr) && inEf.value !== "" && inTr.value !== "") {
+        const suma = Number((ef + tr).toFixed(2));
+        const dif = Number((suma - total).toFixed(2));
+        if (Math.abs(dif) <= 0.01) {
+            aviso.textContent = "✅ Cuadra el total";
+            aviso.classList.add("cambio-positivo");
+            aviso.classList.remove("cambio-negativo");
+        } else if (dif > 0) {
+            aviso.textContent = "⚠ Excede el total en Bs " + dif.toFixed(2);
+            aviso.classList.add("cambio-negativo");
+            aviso.classList.remove("cambio-positivo");
+        } else {
+            aviso.textContent = "⚠ Falta Bs " + Math.abs(dif).toFixed(2);
+            aviso.classList.add("cambio-negativo");
+            aviso.classList.remove("cambio-positivo");
+        }
+    } else {
+        aviso.textContent = "";
+        aviso.classList.remove("cambio-positivo", "cambio-negativo");
+    }
+}
+
+export function actualizarCambioVenta() {
+    const out = document.getElementById("cambioVenta");
+    if (!out) return;
+    const cont = document.getElementById("campoEfectivoVenta");
+    if (cont && cont.classList.contains("oculto")) {
+        out.textContent = "—";
+        out.classList.remove("cambio-positivo", "cambio-negativo");
+        return;
+    }
+    const totalStr = document.getElementById("totalVenta");
+    const input = document.getElementById("efectivoRecibidoVenta");
+    const total = Number(totalStr ? totalStr.textContent.replace("Bs", "").replace(/\s+/g, "") : 0);
+    const recibido = input ? Number(input.value) : NaN;
+    if (!Number.isFinite(recibido) || recibido <= 0 || !Number.isFinite(total)) {
+        out.textContent = "—";
+        out.classList.remove("cambio-positivo", "cambio-negativo");
+        return;
+    }
+    const cambio = Number((recibido - total).toFixed(2));
+    if (cambio >= 0) {
+        out.textContent = "Cambio: Bs " + cambio.toFixed(2);
+        out.classList.add("cambio-positivo");
+        out.classList.remove("cambio-negativo");
+    } else {
+        out.textContent = "Falta: Bs " + Math.abs(cambio).toFixed(2);
+        out.classList.add("cambio-negativo");
+        out.classList.remove("cambio-positivo");
+    }
+}
 
 // Elimina un item del carrito con animacion swipe y toast de deshacer
                   export function eliminarItem(i) {
@@ -525,6 +643,8 @@ function initScannerInput() {
     const sucursal = store.sessionSucursal || document.getElementById("sucursalVenta").value
       , metodoPago = document.getElementById("metodoPagoVenta").value
       , cliente = document.getElementById("clienteVenta").value || "MOSTRADOR";
+    const mEfMixto = Number((document.getElementById("montoEfectivoMixtoVenta") || {}).value || 0);
+    const mTrMixto = Number((document.getElementById("montoTransferenciaMixtoVenta") || {}).value || 0);
     if (!sucursal) {
         mostrarMsg("Selecciona una sucursal", "err");
         return
@@ -532,6 +652,17 @@ function initScannerInput() {
     if (metodoPago === "CREDITO" && !document.getElementById("clienteVenta").value.trim()) {
         mostrarMsg("Ingresa el nombre del cliente para ventas a credito", "err");
         return
+    }
+    if (metodoPago === "MIXTO") {
+        const totalMixto = store.carrito.reduce(function(s, i) { return s + (i.cantidad * i.precio); }, 0);
+        if (!Number.isFinite(mEfMixto) || mEfMixto < 0 || !Number.isFinite(mTrMixto) || mTrMixto < 0) {
+            mostrarMsg("Ingresa los montos del pago mixto", "err");
+            return
+        }
+        if (Math.abs(mEfMixto + mTrMixto - totalMixto) > 0.01) {
+            mostrarMsg("Los montos deben sumar el total", "err");
+            return
+        }
     }
     const loader = document.getElementById("loaderVenta")
       , btn = document.getElementById("btnCobrar");
@@ -576,14 +707,19 @@ function initScannerInput() {
                             CARRITO_ID: carritoId
                         };
                     }
-                    const data = await api({
+                    const payload = {
                         ACCION: "VENTA_POS",
                         ...carritoParam,
                         SUCURSAL: sucursal,
                         METODO_PAGO: metodoPago,
                         CLIENTE: cliente,
                         TOKEN: store.sessionToken
-                    });
+                    };
+                    if (metodoPago === "MIXTO") {
+                        payload.MONTO_EFECTIVO = mEfMixto;
+                        payload.MONTO_TRANSFERENCIA = mTrMixto;
+                    }
+                    const data = await api(payload);
                     if (!manejarRespuesta(data)) {
                         loader.style.display = "none";
                         btn.disabled = false;
@@ -627,6 +763,23 @@ function initScannerInput() {
                             limpiarCarritoDraft();  // llamada directa
                             renderCarrito();
                         document.getElementById("clienteVenta").value = "";
+                        const ef = document.getElementById("efectivoRecibidoVenta");
+                        if (ef) ef.value = "";
+                        const cm = document.getElementById("cambioVenta");
+                        if (cm) {
+                            cm.textContent = "—";
+                            cm.classList.remove("cambio-positivo", "cambio-negativo");
+                        }
+                        const inEfMixto = document.getElementById("montoEfectivoMixtoVenta");
+                        const inTrMixto = document.getElementById("montoTransferenciaMixtoVenta");
+                        const avisoMixto = document.getElementById("avisoMixtoVenta");
+                        if (inEfMixto) inEfMixto.value = "";
+                        if (inTrMixto) inTrMixto.value = "";
+                        if (avisoMixto) {
+                            avisoMixto.textContent = "";
+                            avisoMixto.classList.remove("cambio-positivo", "cambio-negativo");
+                        }
+                        _actualizarVisibilidadEfectivo();
                         cargarInventario();
                         listarComprobantes();
                         if (_verificarEstadoCaja) _verificarEstadoCaja();
@@ -641,5 +794,11 @@ function initScannerInput() {
                 loader.style.display = "none";
                 btn.disabled = false;
             }
+
+if (typeof window !== "undefined") {
+    window._actualizarVisibilidadEfectivo = _actualizarVisibilidadEfectivo;
+    window.actualizarCambioVenta = actualizarCambioVenta;
+    window.actualizarMixtoVenta = actualizarMixtoVenta;
+}
 
 // ── Init: main.js llamara initVenta() en fase 5 ──────────────

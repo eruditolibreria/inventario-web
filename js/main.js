@@ -399,8 +399,16 @@ function inicializarApp() {
     initAdminMode();
     initLaminasMode();
 
-    ["costoCompra", "precioVentaCompra", "inventarioEditPrecioVenta", "devolPrecio"]
+    ["costoCompra", "precioVentaCompra", "inventarioEditPrecioVenta", "devolPrecio", "efectivoRecibidoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta"]
         .forEach(id => limitarDecimalesInput(document.getElementById(id)));
+
+    const metodoPago = document.getElementById("metodoPagoVenta");
+    if (metodoPago && !metodoPago._efectivoBound) {
+        metodoPago._efectivoBound = true;
+        metodoPago.addEventListener("change", () => {
+            if (window._actualizarVisibilidadEfectivo) window._actualizarVisibilidadEfectivo();
+        });
+    }
 
     // ── 5. Configurar doble toque atrás ────────────────────────
     setupBackHandler();

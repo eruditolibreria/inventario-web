@@ -345,6 +345,7 @@
                                             <select id="metodoPagoVenta">
                                                 <option value="EFECTIVO">💵 Efectivo</option>
                                                 <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                                                <option value="MIXTO">💳 Mixto (Efectivo + Transferencia)</option>
                                                 <option value="CREDITO">📝 Crédito</option>
                                             </select>
                                         </div>
@@ -353,6 +354,29 @@
                                             <input id="clienteVenta" placeholder="Nombre del cliente" autocomplete="off" oninput="buscarClienteVenta()">
                                             <div class="autocomplete" id="listaClienteVenta"></div>
                                         </div>
+                                    </div>
+                                    <div id="campoEfectivoVenta" class="row-2 mb-12 oculto">
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Efectivo recibido</label>
+                                            <input id="efectivoRecibidoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00" oninput="actualizarCambioVenta()">
+                                        </div>
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Cambio</label>
+                                            <div id="cambioVenta" class="cambio-venta">—</div>
+                                        </div>
+                                    </div>
+                                    <div id="campoMixtoVenta" class="row-2 mb-12 oculto">
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Monto efectivo</label>
+                                            <input id="montoEfectivoMixtoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00" oninput="actualizarMixtoVenta(this)">
+                                        </div>
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Monto transferencia</label>
+                                            <input id="montoTransferenciaMixtoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00" oninput="actualizarMixtoVenta(this)">
+                                        </div>
+                                        <div id="avisoMixtoVenta" class="cambio-venta" style="grid-column:1 / -1;font-size:13px"></div>
+                                    </div>
+                                    <div class="venta-acciones">
                                         <button class="btn btn-orange venta-cobrar-btn" id="btnCobrar" onclick="cobrar()"><i class="fa-solid fa-cash-register"></i> COBRAR</button>
                                         <button class="btn btn-ghost btn-sm no-print venta-historial-btn" onclick="toggleHistorialComprobantes()">🖨️ Historial de comprobantes</button>
                                     </div>
