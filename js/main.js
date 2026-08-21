@@ -22,6 +22,7 @@ import { hoy, horaActual, formatearBs, sonidoCaja, vibrar,
   from './utils.js';
 import { initUI, manejarRespuesta, renderSearchCard,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
+         subirImagenProducto,
          confirmarEliminar, abrirModalRol, cerrarModalRol,
          abrirModalPass, cerrarModalPass, confirmarResetPass,
          abrirDetalleProducto, cerrarDetalleProducto }
@@ -339,6 +340,7 @@ function inicializarApp() {
     window.abrirModalImagen = abrirModalImagen;
     window.cerrarModalImagen = cerrarModalImagen;
     window.guardarImagenProducto = guardarImagenProducto;
+    window.subirImagenProducto = subirImagenProducto;
     window.abrirModalRol = abrirModalRol;
     window.cerrarModalRol = cerrarModalRol;
     window.abrirModalPass = abrirModalPass;

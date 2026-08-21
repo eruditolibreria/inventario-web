@@ -155,6 +155,66 @@ export async function guardarImagenProducto() {
     loader.style.display = "none";
 }
 
+// Sube una foto tomada con la camara o elegida de la galeria
+export async function subirImagenProducto(input) {
+    if (!store.sessionToken) {
+        mostrarMsg("Sesión expirada", "err");
+        return;
+    }
+    const file = input && input.files && input.files[0];
+    if (!file) return;
+    const loader = document.getElementById("loaderModalImagen");
+    loader.style.display = "block";
+    try {
+        const base64 = await comprimirImagen(file);
+        const data = await api({
+            ACCION: "SUBIR_IMAGEN_PRODUCTO",
+            PRODUCTO: store.modalImagenData.producto,
+            SUCURSAL: store.modalImagenData.sucursal,
+            IMAGEN_BASE64: base64,
+            TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) {
+            loader.style.display = "none";
+            return;
+        }
+        if (data.ok) {
+            mostrarMsg("✅ Imagen subida", "ok");
+            cerrarModalImagen();
+            if (_cargarInventarioAdmin) _cargarInventarioAdmin();
+        } else {
+            mostrarMsg("Error: " + data.error, "err");
+        }
+    } catch (e) {
+        mostrarMsg("Error al procesar la imagen", "err");
+    }
+    loader.style.display = "none";
+    input.value = "";
+}
+
+// Redimensiona y comprime la imagen a JPEG para que quepa en el limite de la API
+function comprimirImagen(file, maxLado, calidad) {
+    maxLado = maxLado || 900;
+    calidad = calidad || 0.7;
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(img.width * escala));
+            canvas.height = Math.max(1, Math.round(img.height * escala));
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", calidad));
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("IMAGEN_INVALIDA"));
+        };
+        img.src = url;
+    });
+}
 
 // ══ ELIMINAR PRODUCTO (ADMIN) ══
 export async function confirmarEliminar(id, producto) {

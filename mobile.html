@@ -1571,7 +1571,13 @@
                     <label class="field-label">URL de imagen</label>
                     <input id="modalImagenUrl" type="text" placeholder="https://ejemplo.com/imagen.jpg">
                 </div>
-                <div style="text-align:center;margin:12px 0;color:var(--muted);font-size:11px">Ingresa la URL de la imagen en Imgur</div>
+                <div style="text-align:center;margin:12px 0;color:var(--muted);font-size:11px">O sube una foto directamente desde tu celular</div>
+                <div class="row-2" style="margin-bottom:12px">
+                    <button class="btn btn-primary" onclick="document.getElementById('inputImagenCamara').click()">📷 Tomar foto</button>
+                    <button class="btn btn-ghost" onclick="document.getElementById('inputImagenGaleria').click()">🖼️ Galería</button>
+                </div>
+                <input type="file" id="inputImagenCamara" accept="image/*" capture="environment" style="display:none" onchange="subirImagenProducto(this)">
+                <input type="file" id="inputImagenGaleria" accept="image/*" style="display:none" onchange="subirImagenProducto(this)">
                 <div class="loader" id="loaderModalImagen"></div>
                 <div class="row-2">
                     <button class="btn btn-primary" onclick="guardarImagenProducto()">✅ Guardar</button>
