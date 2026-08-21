@@ -111,6 +111,7 @@ export function abrirModalImagen(producto, sucursal, imagenUrl) {
     document.getElementById("modalImagenSucursal").value = sucursal;
     document.getElementById("modalImagenUrl").value = imagenUrl || "";
     setModalImagenData(producto, sucursal);
+    ocultarMsgModalImagen();
     document.getElementById("modalImagen").classList.add("show");
 }
 
@@ -156,6 +157,7 @@ export async function guardarImagenProducto() {
 }
 
 // Sube una foto tomada con la camara o elegida de la galeria
+// (solo la sube; la persiste el boton GUARDAR)
 export async function subirImagenProducto(input) {
     if (!store.sessionToken) {
         mostrarMsg("Sesión expirada", "err");
@@ -164,7 +166,9 @@ export async function subirImagenProducto(input) {
     const file = input && input.files && input.files[0];
     if (!file) return;
     const loader = document.getElementById("loaderModalImagen");
+    const msg = document.getElementById("modalImagenMsg");
     loader.style.display = "block";
+    ocultarMsgModalImagen();
     try {
         const base64 = await comprimirImagen(file);
         const data = await api({
@@ -178,18 +182,29 @@ export async function subirImagenProducto(input) {
             loader.style.display = "none";
             return;
         }
-        if (data.ok) {
-            mostrarMsg("✅ Imagen subida", "ok");
-            cerrarModalImagen();
-            if (_cargarInventarioAdmin) _cargarInventarioAdmin();
+        if (data.ok && data.imagen) {
+            document.getElementById("modalImagenUrl").value = data.imagen;
+            mostrarMsgModalImagen("✅ Imagen subida. Presiona GUARDAR para guardar.", "ok");
         } else {
-            mostrarMsg("Error: " + data.error, "err");
+            mostrarMsgModalImagen("Error: " + (data.error || "desconocido"), "err");
         }
     } catch (e) {
-        mostrarMsg("Error al procesar la imagen", "err");
+        mostrarMsgModalImagen("Error al procesar la imagen", "err");
     }
     loader.style.display = "none";
     input.value = "";
+}
+
+function mostrarMsgModalImagen(texto, tipo) {
+    const m = document.getElementById("modalImagenMsg");
+    m.textContent = texto;
+    m.className = "modal-msg " + (tipo === "ok" ? "msg-ok" : "msg-err");
+    m.style.display = "block";
+}
+
+function ocultarMsgModalImagen() {
+    const m = document.getElementById("modalImagenMsg");
+    if (m) m.style.display = "none";
 }
 
 // Redimensiona y comprime la imagen a JPEG para que quepa en el limite de la API
