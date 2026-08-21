@@ -414,6 +414,13 @@
                 text-align: center;
                 display: none;
                 animation: fadeIn 0.2s ease;
+                position: fixed;
+                top: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 12000;
+                max-width: 90vw;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.45);
             }
 
             @media (min-width: 1024px) {
