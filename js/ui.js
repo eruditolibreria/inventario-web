@@ -60,7 +60,8 @@ export function renderSearchCard(p) {
     div.addEventListener("click", function() { abrirDetalleProducto(p); });
     const sc = p.stock <= 0 ? "warn" : p.stock <= 5 ? "orange" : "ok",
           sl = p.stock <= 0 ? "🚫 Sin stock" : p.stock <= 5 ? "⚠️ Stock bajo" : "✅ En stock";
-    div.innerHTML = `<div class="sr-name">🔍 ${p.producto}</div>
+    div.innerHTML = `<div class="sr-img">${p.imagen ? `<img src="${p.imagen}" alt="${p.producto}" loading="lazy" onerror="this.style.display='none'">` : `<span>📦</span>`}</div>
+<div class="sr-name">🔍 ${p.producto}</div>
 <div class="sr-grid">
 <div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">${formatearBs(p.precioVenta)}</div></div>
 <div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">${formatearBs(p.precioUnidad)}</div></div>

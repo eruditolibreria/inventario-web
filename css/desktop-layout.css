@@ -558,18 +558,35 @@ body.desktop {
    ═══════════════════════════════════════════════ */
 .desktop .inventario-grid {
   overflow-x: hidden;
+  grid-template-columns: 1fr 1fr; /* 2 columnas en desktop */
+  gap: 16px;
 }
 
 .desktop .inventario-card {
   min-width: 0;
   overflow: hidden;
+  grid-template-columns: 120px 1fr 130px; /* imagen mas grande */
+  gap: 16px;
+  padding: 16px;
+}
+
+.desktop .inventario-img {
+  width: 120px;
+  height: 120px;
+  font-size: 36px;
+}
+
+.desktop .inventario-info {
+  font-size: 13px;
 }
 
 .desktop .inventario-info .nombre {
+  font-size: 15px;
   word-break: break-word;
 }
 
 .desktop .inventario-info .detalle {
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
