@@ -1,12 +1,12 @@
 /* === MODO ADMIN: Detalle, inventario, usuarios === */
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, normBusqueda, mostrarValorInput, obtenerValorInput } from '../utils.js';
+import { mostrarMsg, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
 import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
          confirmarResetPass } from '../ui.js';
-import { cargarInventario } from '../inventario.js';
+import { listarProductos } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 let busquedaTimer = null;
@@ -23,6 +23,30 @@ const ROL_LABELS = {
 };
 
 // ── buscarProductoDetalle ──
+// Autocomplete rapido: consulta paginada server-side con debounce de 300ms
+const _busquedaAcBuscar = debounce(async function(t, sucFiltro, l) {
+    try {
+        const { datos } = await listarProductos({ query: t, sucursal: sucFiltro || null, limite: 8 });
+        l.innerHTML = "";
+        if (datos.length > 0) {
+            datos.forEach(p => {
+                const div = document.createElement("div");
+                div.className = "ac-item";
+                div.innerHTML = `<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
+                div.addEventListener("click", () => {
+                    document.getElementById("busquedaInput").value = p.producto;
+                    l.classList.remove("show");
+                    ejecutarBusquedaDetalle(p.clave || p.producto)
+                });
+                l.appendChild(div)
+            });
+            l.classList.add("show")
+        } else {
+            l.classList.remove("show")
+        }
+    } catch (_) {}
+}, 300);
+
 export function buscarProductoDetalle() {
     const t = document.getElementById("busquedaInput").value.trim()
       , l = document.getElementById("listaBusqueda")
@@ -33,28 +57,7 @@ export function buscarProductoDetalle() {
         l.classList.remove("show");
         return
     }
-    let sg = store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(normBusqueda(t)));
-    if (sucFiltro) {
-        var sfUp = sucFiltro.toUpperCase();
-        sg = sg.filter(function(p) { return (p.sucursal || "").toUpperCase() === sfUp; });
-    }
-    l.innerHTML = "";
-    if (sg.length > 0) {
-        sg.slice(0, 8).forEach(p => {
-            const div = document.createElement("div");
-            div.className = "ac-item";
-            div.innerHTML = `<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
-            div.addEventListener("click", () => {
-                document.getElementById("busquedaInput").value = p.producto;
-                l.classList.remove("show");
-                ejecutarBusquedaDetalle(p.clave || p.producto)
-            });
-            l.appendChild(div)
-        });
-        l.classList.add("show")
-    } else {
-        l.classList.remove("show")
-    }
+    _busquedaAcBuscar(t, sucFiltro, l);
     busquedaTimer = setTimeout(() => ejecutarBusquedaDetalle(t), 600)
 }
 
@@ -105,7 +108,40 @@ export async function ejecutarBusquedaDetalle(t) {
 }
 
 // ── cargarInventarioAdmin ──
-export async function cargarInventarioAdmin() {
+// Paginado server-side: solo 20 cards por pagina (Fase 1/3)
+const INV_PAGINA_TAM = 20;
+let _invPagina = 1;
+let _invTotal = 0;
+let _invSeq = 0;
+let _invTimer = null;
+
+function _renderPaginacionInv() {
+    const pdiv = document.getElementById("paginInv");
+    if (!pdiv) return;
+    const totalPaginas = Math.max(1, Math.ceil(_invTotal / INV_PAGINA_TAM));
+    if (totalPaginas > 1) {
+        pdiv.style.display = "flex";
+        document.getElementById("paginInv-info").textContent = "Pág " + _invPagina + " de " + totalPaginas + " (" + _invTotal + " productos)";
+        pdiv.querySelector("button:first-child").disabled = (_invPagina <= 1);
+        pdiv.querySelector("button:last-child").disabled = (_invPagina >= totalPaginas);
+    } else {
+        pdiv.style.display = "none";
+    }
+}
+
+export function cambiarPaginaInv(d) {
+    const totalPaginas = Math.max(1, Math.ceil(_invTotal / INV_PAGINA_TAM));
+    const nueva = Math.min(totalPaginas, Math.max(1, _invPagina + d));
+    if (nueva !== _invPagina) cargarInventarioAdmin(nueva);
+}
+
+export function filtrarInventario() {
+    clearTimeout(_invTimer);
+    _invTimer = setTimeout(() => cargarInventarioAdmin(1), 300);
+}
+
+export async function cargarInventarioAdmin(pagina) {
+    if (pagina === undefined) pagina = _invPagina;
     if (!store.sessionToken || store.sessionRol !== "ADMIN") {
         mostrarMsg("Sin permisos", "err");
         return
@@ -113,21 +149,24 @@ export async function cargarInventarioAdmin() {
     const loader = document.getElementById("loaderInvAdmin")
       , grid = document.getElementById("inventarioGrid")
       , filtroSuc = document.getElementById("filtroInvSucursal").value
-      , filtroProd = document.getElementById("filtroInvProducto").value.toLowerCase();
+      , filtroProd = document.getElementById("filtroInvProducto").value;
     loader.style.display = "block";
     grid.innerHTML = "";
+    const seq = ++_invSeq;
     try {
-        const data = await api({
-            ACCION: "LISTAR_INVENTARIO_ADMIN",
-            TOKEN: store.sessionToken
+        const { datos, total } = await listarProductos({
+            query: filtroProd,
+            sucursal: filtroSuc || null,
+            pagina: pagina - 1,
+            limite: INV_PAGINA_TAM
         });
-        if (!manejarRespuesta(data)) {
-            loader.style.display = "none";
-            return
+        if (seq !== _invSeq) return;
+        if (datos.length === 0 && pagina > 1 && total > 0) {
+            // La pagina quedo vacia (p.ej. tras eliminar el ultimo producto): retroceder
+            return cargarInventarioAdmin(pagina - 1);
         }
-        let datos = data.datos || [];
-        if (filtroSuc) datos = datos.filter(p => p.sucursal === filtroSuc);
-        if (filtroProd) datos = datos.filter(p => normBusqueda(p.producto).includes(normBusqueda(filtroProd)));
+        _invPagina = pagina;
+        _invTotal = total;
         if (datos.length === 0) {
             grid.innerHTML = `<div class="empty-state">Sin productos encontrados</div>`
         } else {
@@ -173,11 +212,20 @@ export async function cargarInventarioAdmin() {
                 });
             });
         }
+        _renderPaginacionInv();
     } catch (e) {
         grid.innerHTML = `<div style="color:var(--red);padding:10px">Error de conexion</div>`
     }
     loader.style.display = "none"
 }
+
+// Realtime: si cambia el inventario y el panel admin esta visible, refresca la pagina actual
+let _invRTOtimer = null;
+window.addEventListener("inventario:cambio", function() {
+    if (store.modoActual !== "INVENTARIO") return;
+    clearTimeout(_invRTOtimer);
+    _invRTOtimer = setTimeout(() => cargarInventarioAdmin(), 500);
+});
 
 // ── cargarUsuarios ──
 export async function cargarUsuarios() {
@@ -388,13 +436,6 @@ var _productoEditando = null;
 export function abrirEditarProducto(p) {
     _productoEditando = p;
     var ubicacion = p.ubicacion || "", proveedor = p.proveedor || "";
-    if (!ubicacion || !proveedor) {
-        var encontrado = store.inventarioGlobal.find(function(x) { return x.id === p.id; });
-        if (encontrado) {
-            if (!ubicacion) ubicacion = encontrado.ubicacion || "";
-            if (!proveedor) proveedor = encontrado.proveedor || "";
-        }
-    }
     document.getElementById("inventarioEditNombre").textContent = p.producto;
     document.getElementById("inventarioEditUbicacion").value = ubicacion;
     document.getElementById("inventarioEditProveedor").value = proveedor;

@@ -79,10 +79,6 @@ export function abrirDetalleProducto(p) {
     const imgDiv = document.getElementById("productoDetalleImg");
     const infoDiv = document.getElementById("productoDetalleInfo");
     var imagen = p.imagen;
-    if (!imagen && store.inventarioGlobal) {
-        var match = store.inventarioGlobal.find(function(x) { return x.producto === p.producto && x.imagen; });
-        if (match) imagen = match.imagen;
-    }
     if (imagen) {
         imgDiv.innerHTML = `<img src="${imagen}" alt="${p.producto}" loading="lazy" style="cursor:zoom-in" onclick="event.stopPropagation();window.abrirZoomImagen('${imagen.replace(/'/g, "\\'")}')">`;
     } else {

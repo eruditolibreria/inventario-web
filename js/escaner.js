@@ -1,6 +1,6 @@
 /* === ESCANER: Codigo de barras (camara + USB scanner) === */
 
-import { store } from './store.js';
+import { buscarProductoPorCodigo } from './db.js';
 
 let _stream = null;
 let _activo = false;
@@ -89,13 +89,14 @@ export function detenerEscanerCamara() {
     }
 }
 
-/** Busca producto por codigo_barras + sucursal en inventarioGlobal */
-export function buscarPorCodigo(codigo, sucursal) {
-    if (!store.inventarioGlobal || !store.inventarioGlobal.length) return null;
-    const c = codigo.toUpperCase();
-    return store.inventarioGlobal.find(p =>
-        (p.codigoBarras || "").toUpperCase() === c && p.sucursal === sucursal
-    ) || null;
+/** Busca producto por codigo_barras + sucursal (server-side, RLS aplica) */
+export async function buscarPorCodigo(codigo, sucursal) {
+    if (!codigo) return null;
+    try {
+        return await buscarProductoPorCodigo(codigo, sucursal);
+    } catch (_) {
+        return null;
+    }
 }
 
 const SCAN_TIMER = {};
@@ -106,8 +107,8 @@ const SCAN_DELAY = 600;
 export function onInputScanner(valor, sucursal, cb) {
     if (!CODIGO_REGEX.test(valor)) return false;
     clearTimeout(SCAN_TIMER._t);
-    SCAN_TIMER._t = setTimeout(() => {
-        const prod = buscarPorCodigo(valor, sucursal);
+    SCAN_TIMER._t = setTimeout(async () => {
+        const prod = await buscarPorCodigo(valor, sucursal);
         cb(prod);
     }, SCAN_DELAY);
     return true;

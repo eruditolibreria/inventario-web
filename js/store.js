@@ -12,7 +12,6 @@ const _state = {
     sessionSucursal: null,
     sessionRefreshToken: null,
     sessionExpiresAt: 0,
-    inventarioGlobal: [],
     carrito: [],
     devolPaginaActual: 1,
     transfPaginaActual: 1,
@@ -35,7 +34,6 @@ export const store = {
     get sessionSucursal() { return _state.sessionSucursal; },
     get sessionRefreshToken() { return _state.sessionRefreshToken; },
     get sessionExpiresAt() { return _state.sessionExpiresAt; },
-    get inventarioGlobal() { return _state.inventarioGlobal; },
     get carrito() { return _state.carrito; },
     get devolPaginaActual() { return _state.devolPaginaActual; },
     get transfPaginaActual() { return _state.transfPaginaActual; },
@@ -80,15 +78,10 @@ function _persistSession() {
     } catch (_) {}
 }
 
-/** Reemplaza el inventario global completo */
-
 /** Actualiza solo el token de sesion (usado por refresh) */
 export function setToken(token) {
     _state.sessionToken = token;
     _persistSession();
-}
-export function setInventario(data) {
-    _state.inventarioGlobal = data;
 }
 
 /** Reemplaza el carrito de compras */

@@ -24,9 +24,10 @@
 import { CARRITO_KEY, CARRITO_CHUNK_SIZE } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs } from '../utils.js';
+import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs, debounce } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
-import { construirAC, cargarInventario } from '../inventario.js';
+import { construirAC } from '../inventario.js';
+import { listarProductos, buscarProductoPorNombre } from '../db.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
 import { registrarComprobante, listarComprobantes } from './comprobantes.js';
 
@@ -98,7 +99,7 @@ async function agregarPorCodigoScan(codigo) {
         mostrarMsg("Selecciona una sucursal", "err");
         return;
     }
-    let prod = buscarPorCodigo(codigo, suc);
+    let prod = await buscarPorCodigo(codigo, suc);
     if (!prod) {
         try {
             const data = await api({
@@ -175,7 +176,8 @@ function agregarPorProducto(prod, sucursal) {
             precio: precio,
             cantidad: 1,
             total: precio,
-            imagen: prod.imagen || ""
+            imagen: prod.imagen || "",
+            sucursal: sucursal
         });
     }
     setCarrito(carrito);
@@ -237,7 +239,7 @@ async function procesarCodigoEscanerVenta(codigo) {
         return;
     }
     if (estado) estado.textContent = "Buscando producto...";
-    let prod = buscarPorCodigo(codigo, suc);
+    let prod = await buscarPorCodigo(codigo, suc);
     if (!prod) {
         const data = await api({
             ACCION: "BUSCAR_PRODUCTO_CODIGO",
@@ -291,7 +293,7 @@ export async function abrirEscanerVenta() {
     try {
         const codigo = await iniciarEscanerCamara(video);
         const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
-        let prod = buscarPorCodigo(codigo, suc);
+        let prod = await buscarPorCodigo(codigo, suc);
         if (!prod) {
             const data = await api({
                 ACCION: "BUSCAR_PRODUCTO_CODIGO",
@@ -347,51 +349,71 @@ function initScannerInput() {
 }
 
 // Busca productos en inventario para autocompletar en la venta
-            export function buscarProductoVenta() {
-                const su = document.getElementById("sucursalVenta").value;
-                if (!su) {
-                    document.getElementById("listaVenta").classList.remove("show");
-                    return
-                }
-                const t = normBusqueda(document.getElementById("productoVenta").value)
-                  , l = document.getElementById("listaVenta")
-                  , info = document.getElementById("infoProductoVenta");
-                info.classList.remove("show");
-                if (t.length < 1) {
-                    l.classList.remove("show");
-                    return
-                }
-                construirAC(l, store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t) && p.sucursal === su), p => {
-                    document.getElementById("productoVenta").value = p.producto;
-                    info.innerHTML = `Stock disponible: <b>${p.stock}</b> | Precio: <b>${formatearBs(p.precio)}</b>` + (p.stock <= 5 ? `<br><span class="stock-bajo">⚠ Stock bajo</span>` : "");
-                    info.classList.add("show")
-                }
-                )
-            }
+// (paginado server-side con debounce de 300ms; RLS aplica)
+let _productoSeleccionadoVenta = null;
+let _ventaAcSeq = 0;
+
+const _ventaAcBuscar = debounce(async function(t, su) {
+    const l = document.getElementById("listaVenta");
+    const seq = ++_ventaAcSeq;
+    try {
+        const { datos } = await listarProductos({ query: t, sucursal: su, limite: 8 });
+        if (seq !== _ventaAcSeq) return;
+        construirAC(l, datos, p => {
+            _productoSeleccionadoVenta = p;
+            document.getElementById("productoVenta").value = p.producto;
+            const info = document.getElementById("infoProductoVenta");
+            info.innerHTML = `Stock disponible: <b>${p.stock}</b> | Precio: <b>${formatearBs(p.precio)}</b>` + (p.stock <= 5 ? `<br><span class="stock-bajo">⚠ Stock bajo</span>` : "");
+            info.classList.add("show")
+        });
+    } catch (_) {}
+}, 300);
+
+export function buscarProductoVenta() {
+    const su = document.getElementById("sucursalVenta").value;
+    const t = normBusqueda(document.getElementById("productoVenta").value)
+      , l = document.getElementById("listaVenta")
+      , info = document.getElementById("infoProductoVenta");
+    info.classList.remove("show");
+    if (!su) {
+        l.classList.remove("show");
+        return
+    }
+    if (t.length < 1) {
+        l.classList.remove("show");
+        return
+    }
+    _ventaAcBuscar(t, su)
+}
 
 // Agrega un producto al carrito de venta con validaciones de stock
-            export function agregarCarrito() {
-                const pr = document.getElementById("productoVenta").value.trim()
-                  , ca = Number(document.getElementById("cantidadVenta").value)
-                  , su = document.getElementById("sucursalVenta").value;
-                if (!pr || !ca || ca <= 0) {
-                    mostrarMsg("Completa producto y cantidad", "err");
-                    return
-                }
-                if (!su) {
-                    mostrarMsg("Selecciona una sucursal", "err");
-                    return
-                }
-                const p = store.inventarioGlobal.find(x => x.producto === pr && x.sucursal === su);
-                if (!p) {
-                    mostrarMsg("Producto no encontrado en inventario", "err");
-                    return
-                }
-                if (p.stock < ca) {
-                    mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
-                    return
-                }
-                const carrito = [...store.carrito];
+export async function agregarCarrito() {
+    const pr = document.getElementById("productoVenta").value.trim()
+      , ca = Number(document.getElementById("cantidadVenta").value)
+      , su = document.getElementById("sucursalVenta").value;
+    if (!pr || !ca || ca <= 0) {
+        mostrarMsg("Completa producto y cantidad", "err");
+        return
+    }
+    if (!su) {
+        mostrarMsg("Selecciona una sucursal", "err");
+        return
+    }
+    let p = null;
+    if (_productoSeleccionadoVenta && _productoSeleccionadoVenta.producto === pr) {
+        p = _productoSeleccionadoVenta;
+    } else {
+        try { p = await buscarProductoPorNombre(pr, su); } catch (_) {}
+    }
+    if (!p) {
+        mostrarMsg("Producto no encontrado en inventario", "err");
+        return
+    }
+    if (p.stock < ca) {
+        mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
+        return
+    }
+    const carrito = [...store.carrito];
     const ex = carrito.find(i => i.producto === pr);
     if (ex) {
         ex.cantidad += ca;
@@ -402,7 +424,8 @@ function initScannerInput() {
             precio: p.precio,
             cantidad: ca,
             total: p.precio * ca,
-            imagen: p.imagen || ""
+            imagen: p.imagen || "",
+            sucursal: su
         });
     }
     setCarrito(carrito);
@@ -411,7 +434,7 @@ function initScannerInput() {
     document.getElementById("productoVenta").value = "";
     document.getElementById("cantidadVenta").value = "";
     document.getElementById("infoProductoVenta").classList.remove("show")
-            }
+}
 
 // Elimina el borrador del carrito del localStorage
             export function limpiarCarritoDraft() {
@@ -624,13 +647,14 @@ export function actualizarCambioVenta() {
                 }
 
 // Aumenta la cantidad de un item del carrito en 1 (con validacion de stock)
-            function incrementarCantidad(i) {
+            async function incrementarCantidad(i) {
                 const carrito = [...store.carrito]
                   , item = carrito[i];
                 if (!item) return;
                 const su = store.sessionSucursal || document.getElementById("sucursalVenta").value
-                  , p = store.inventarioGlobal.find(x => x.producto === item.producto && x.sucursal === su)
                   , nueva = item.cantidad + 1;
+                let p = null;
+                try { p = await buscarProductoPorNombre(item.producto, su); } catch (_) {}
                 if (p && p.stock < nueva) {
                     mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
                     return;
@@ -797,7 +821,6 @@ export function actualizarCambioVenta() {
                             avisoMixto.classList.remove("cambio-positivo", "cambio-negativo");
                         }
                         _actualizarVisibilidadEfectivo();
-                        cargarInventario();
                         listarComprobantes();
                         if (_verificarEstadoCaja) _verificarEstadoCaja();
                     } else if (data.error === "STOCK_INSUFICIENTE") {
@@ -817,5 +840,27 @@ if (typeof window !== "undefined") {
     window.actualizarCambioVenta = actualizarCambioVenta;
     window.actualizarMixtoVenta = actualizarMixtoVenta;
 }
+
+// Realtime: si cambia el precio de un producto que esta en el carrito, actualiza la fila
+window.addEventListener("inventario:cambio", function(ev) {
+    try {
+        const det = ev.detail || {};
+        if (det.eventType !== "UPDATE" || !det.new) return;
+        const nuevo = det.new;
+        const carrito = store.carrito;
+        let cambio = false;
+        carrito.forEach(function(it) {
+            if (it.producto === nuevo.producto && (it.sucursal || "") === (nuevo.sucursal || "") && Number.isFinite(it.precio) && Number.isFinite(Number(nuevo.precio_venta))) {
+                const np = Number(nuevo.precio_venta);
+                if (it.precio !== np) {
+                    it.precio = np;
+                    it.total = np * it.cantidad;
+                    cambio = true;
+                }
+            }
+        });
+        if (cambio) renderCarrito();
+    } catch (_) {}
+});
 
 // ── Init: main.js llamara initVenta() en fase 5 ──────────────

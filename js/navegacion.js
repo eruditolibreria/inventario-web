@@ -539,9 +539,9 @@ document.addEventListener("keydown", function(e) {
     }
 
     if (e.key === "F5" && !e.ctrlKey) {
-        if (window.cargarInventario) {
+        if (window.cargarInventarioAdmin) {
             e.preventDefault();
-            window.cargarInventario().then(function() {
+            window.cargarInventarioAdmin().then(function() {
                 if (window.mostrarMsg) window.mostrarMsg("Inventario actualizado", "ok");
             });
         }

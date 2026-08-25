@@ -24,7 +24,7 @@
  */
 
 import { CARRITO_KEY } from './config.js';
-import { store, setSession, setTokens, clearSession, setInventario, clearCarrito } from './store.js';
+import { store, setSession, setTokens, clearSession, clearCarrito } from './store.js';
 import { api } from './api.js';
 import { hoy, mostrarToast } from './utils.js';
 import { cargarSucursalesEnDropdowns } from './modos/admin.js';
@@ -71,7 +71,7 @@ export function restaurarBloqueoSiActivo() {
 
 // ── CALLBACKS (inyectados por initAuth) ────────────────────────
 let _aplicarRol = null;
-let _cargarInventario = null;
+let _initRealtime = null;
 let _verificarEstadoCaja = null;
 let _toggleClienteVenta = null;
 let _cargarClientes = null;
@@ -86,7 +86,7 @@ let _restaurarCarritoDraft = null;
  */
 export function initAuth(callbacks) {
     if (callbacks.aplicarRol) _aplicarRol = callbacks.aplicarRol;
-    if (callbacks.cargarInventario) _cargarInventario = callbacks.cargarInventario;
+    if (callbacks.initRealtime) _initRealtime = callbacks.initRealtime;
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
     if (callbacks.toggleClienteVenta) _toggleClienteVenta = callbacks.toggleClienteVenta;
     if (callbacks.cargarClientes) _cargarClientes = callbacks.cargarClientes;
@@ -169,7 +169,7 @@ export async function loginSubmit() {
             if (_toggleClienteCompra) _toggleClienteCompra();
             if (_toggleAcreedorGasto) _toggleAcreedorGasto();
             if (_aplicarRol) _aplicarRol(store.sessionRol);
-            if (_cargarInventario) _cargarInventario();
+            if (_initRealtime) _initRealtime();
 
             // Restaurar carrito draft
             restaurarCarritoGuardado();
@@ -207,7 +207,6 @@ export function cerrarSesion() {
     // Limpiar estado
     clearSession();
     try { localStorage.removeItem("eruditos_modo"); } catch (_) {}
-    setInventario([]);
     clearCarrito();
     // Limpiar UI
     document.getElementById("loginUser").value = "";

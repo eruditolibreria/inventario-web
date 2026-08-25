@@ -18,6 +18,15 @@ export function formatearBs(valor) {
     return 'Bs ' + Number(valor || 0).toFixed(2);
 }
 
+// Debounce: retrasa la ejecucion hasta que dejen de llegar llamadas
+export function debounce(fn, ms) {
+    let t = null;
+    return function(...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
 export function limitarDecimalesInput(input, maxDecimales = 2) {
     if (!input) return;
     input.addEventListener("input", function() {

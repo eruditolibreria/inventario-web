@@ -7,7 +7,7 @@
 import { BASE_URL_ERUDITOS, DEVOL_LIMITE, TRANSF_LIMITE, CARRITO_CHUNK_SIZE,
          CARRITO_KEY, TODOS_MODOS, ORDEN_MODOS, PERMISOS, PERMISOS_DEFAULT }
   from './config.js';
-import { store, setSession, setTokens, setToken, setInventario, setCarrito,
+import { store, setSession, setTokens, setToken, setCarrito,
          setModoActual, setDevolPagina, setTransfPagina, setMovPagina,
          setUltimaVenta, setRptCache, setModalImagenData,
          setDevolTransaccionSeleccionada, clearSession, clearCarrito }
@@ -32,7 +32,7 @@ import { initNavegacion, setModo, aplicarRol, actualizarIndicador,
          setSubModoReportes, setSubModoTransf, setSubModoLaminas,
          setSubModoServicios, initSwipe, initPushContainer }
   from './navegacion.js';
-import { initInventario, cargarInventario, iniciarIntervalos,
+import { initInventario, iniciarIntervalos,
          detenerIntervalos, construirAC, ejecutarBusquedaDetalle as busquedaDetalleInv }
   from './inventario.js';
 
@@ -96,9 +96,10 @@ import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen,
          crearSucursal, cargarSucursalesEnDropdowns,
          abrirCambiarSucursal, cerrarCambiarSucursal, confirmarCambiarSucursal,
-         abrirEscanerInventarioEdit }
+         abrirEscanerInventarioEdit, cambiarPaginaInv, filtrarInventario }
   from './modos/admin.js';
 import { detenerEscanerCamara } from './escaner.js';
+import { initRealtime } from './realtime.js';
 
 // ═══════════════════════════════════════════════════════════════
 // RESTAURAR SESIÓN DESDE localStorage
@@ -232,9 +233,10 @@ function inicializarApp() {
     window.cerrarSesion = cerrarSesion;
     window.loginSubmit = loginSubmit;
     window.verificarEstadoCaja = verificarEstadoCaja;
-    window.cargarInventario = cargarInventario;
     window.cargarUsuarios = cargarUsuarios;
     window.cargarInventarioAdmin = cargarInventarioAdmin;
+    window.cambiarPaginaInv = cambiarPaginaInv;
+    window.filtrarInventario = filtrarInventario;
     window.cargarResumenServicios = cargarResumenServicios;
     window.buscarProductoVenta = buscarProductoVenta;
     window.agregarCarrito = agregarCarrito;
@@ -356,7 +358,6 @@ function inicializarApp() {
     // Inyectar dependencias en auth (callback Hell resuelto)
     initAuth({
         aplicarRol,
-        cargarInventario,
         verificarEstadoCaja,
         toggleClienteVenta,
         cargarClientes,
@@ -364,6 +365,7 @@ function inicializarApp() {
         toggleClienteCompra,
         toggleAcreedorGasto,
         restaurarCarritoDraft,
+        initRealtime,
     });
 
     // Inyectar dependencias en navegacion
@@ -444,7 +446,6 @@ function inicializarApp() {
 
         // Aplicar rol y cargar datos iniciales
         aplicarRol(rol);
-        cargarInventario();
         cargarClientes();
         initComprobantes();
         toggleClienteVenta();
@@ -452,8 +453,9 @@ function inicializarApp() {
         cargarSucursalesEnDropdowns();
         restaurarCarritoGuardado();
 
-        // Activar intervalos de refresco
+        // Intervalo de caja + suscripcion realtime al inventario
         iniciarIntervalos(verificarEstadoCaja);
+        initRealtime();
     }
 
     // ── 8. Iniciar la navegación ──────────────────────────────

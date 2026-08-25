@@ -23,9 +23,10 @@
 
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, hoy, normBusqueda, mostrarValorInput, obtenerValorInput } from '../utils.js';
+import { mostrarMsg, hoy, normBusqueda, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
-import { construirAC, cargarInventario } from '../inventario.js';
+import { construirAC } from '../inventario.js';
+import { listarProductos } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
@@ -42,27 +43,34 @@ export function initCompra(callbacks) {
             }
 
 // Busca productos en inventario para autocompletar en la compra
-            export function buscarProductoCompra() {
-                const t = normBusqueda(document.getElementById("productoCompra").value)
-                  , s = document.getElementById("sucursalCompra").value
-                  , l = document.getElementById("listaCompra")
-                  , info = document.getElementById("infoCompra");
-                info.classList.remove("show");
-                if (t.length < 1) {
-                    l.classList.remove("show");
-                    return
-                }
-                construirAC(l, store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t) && p.sucursal === s), p => {
-                    document.getElementById("productoCompra").value = p.producto;
-                    document.getElementById("categoriaCompra").value = p.categoria || "";
-                    mostrarValorInput(document.getElementById("precioVentaCompra"), p.precio);
-                    document.getElementById("proveedorCompra").value = p.proveedor || "";
-                    document.getElementById("ubicacionCompra").value = p.ubicacion || "";
-                    info.textContent = "Stock actual: " + p.stock;
-                    info.classList.add("show")
-                }
-                )
-            }
+// (paginado server-side con debounce de 300ms; RLS aplica)
+const _compraAcBuscar = debounce(async function(t, s, l, info) {
+    try {
+        const { datos } = await listarProductos({ query: t, sucursal: s, limite: 8 });
+        construirAC(l, datos, p => {
+            document.getElementById("productoCompra").value = p.producto;
+            document.getElementById("categoriaCompra").value = p.categoria || "";
+            mostrarValorInput(document.getElementById("precioVentaCompra"), p.precio);
+            document.getElementById("proveedorCompra").value = p.proveedor || "";
+            document.getElementById("ubicacionCompra").value = p.ubicacion || "";
+            info.textContent = "Stock actual: " + p.stock;
+            info.classList.add("show")
+        });
+    } catch (_) {}
+}, 300);
+
+export function buscarProductoCompra() {
+    const t = normBusqueda(document.getElementById("productoCompra").value)
+      , s = document.getElementById("sucursalCompra").value
+      , l = document.getElementById("listaCompra")
+      , info = document.getElementById("infoCompra");
+    info.classList.remove("show");
+    if (t.length < 1) {
+        l.classList.remove("show");
+        return
+    }
+    _compraAcBuscar(t, s, l, info)
+}
 
 // Registra una compra de mercaderia con validaciones
             export async function registrarCompra() {
@@ -107,7 +115,6 @@ export function initCompra(callbacks) {
                         document.getElementById("metodoPagoCompra").value = "EFECTIVO";
                         toggleClienteCompra();
                         document.getElementById("fechaCompra").value = hoy();
-                        cargarInventario();
                         if (_verificarEstadoCaja) _verificarEstadoCaja();
                     } else {
                         mostrarMsg("Error: " + (data.error || JSON.stringify(data)), "err")

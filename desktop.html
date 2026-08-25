@@ -1574,7 +1574,7 @@
                             <div class="row-2 mb-12">
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Sucursal</label>
-                                    <select id="filtroInvSucursal">
+                                    <select id="filtroInvSucursal" onchange="filtrarInventario()">
                                         <option value="">Todas</option>
                                         <option value="ERUDITOS">ERUDITOS</option>
                                         <option value="CENTRAL">CENTRAL</option>
@@ -1582,12 +1582,17 @@
                                 </div>
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Filtro</label>
-                                    <input id="filtroInvProducto" placeholder="Buscar producto...">
+                                    <input id="filtroInvProducto" placeholder="Buscar producto..." oninput="filtrarInventario()">
                                 </div>
                             </div>
                             <button class="btn btn-ghost mb-12" onclick="cargarInventarioAdmin()">🔄 Cargar inventario</button>
                             <div class="loader" id="loaderInvAdmin"></div>
                             <div id="inventarioGrid" class="inventario-grid"></div>
+                            <div id="paginInv" style="display:none;align-items:center;justify-content:center;gap:10px;margin:14px 0">
+                                <button class="btn btn-ghost" onclick="cambiarPaginaInv(-1)">← Anterior</button>
+                                <span id="paginInv-info" style="font-size:12px;color:var(--muted)"></span>
+                                <button class="btn btn-ghost" onclick="cambiarPaginaInv(1)">Siguiente →</button>
+                            </div>
                         </div>
 
                         <!-- USUARIOS -->
@@ -1809,6 +1814,7 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS
      ═══════════════════════════════════════════════════════════ -->
+<script src="js/vendor/supabase-umd.js"></script>
 <script type="module" src="js/main.js"></script>
 
 <!-- Sidebar sync + reordenar mensajeApp despues seccionesStack -->

@@ -4,7 +4,6 @@ import { api } from '../api.js';
 import { DEVOL_LIMITE, HOST } from '../config.js';
 import { mostrarMsg, formatearBs, mostrarValorInput, obtenerValorInput } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
-import { cargarInventario } from '../inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo } from '../escaner.js';
 
 let _verificarEstadoCaja = null;
@@ -40,7 +39,7 @@ export async function abrirEscanerDevol() {
     try {
         const codigo = await iniciarEscanerCamara(video);
         const suc = store.sessionSucursal || document.getElementById("devolSucursal").value;
-        const prod = buscarPorCodigo(codigo, suc);
+        const prod = await buscarPorCodigo(codigo, suc);
         if (prod) {
             document.getElementById("devolBuscProducto").value = prod.producto;
             buscarTransaccionDevol();

@@ -19,7 +19,7 @@
  *   initInventario({ cargarUsuarios });
  */
 
-import { store, setInventario } from './store.js';
+import { store } from './store.js';
 import { api } from './api.js';
 import { mostrarMsg, normBusqueda, formatearBs } from './utils.js';
 import { manejarRespuesta, renderSearchCard, abrirModalImagen, confirmarEliminar } from './ui.js';
@@ -32,29 +32,11 @@ export function initInventario(callbacks) {
 }
 
 
-// ══ CARGA DE INVENTARIO GLOBAL ══
-export async function cargarInventario() {
-    if (!store.sessionToken) return;
-    try {
-        const d = await api({
-            ACCION: "LISTAR_INVENTARIO",
-            LIMITE: 999,
-            TOKEN: store.sessionToken
-        });
-        setInventario((d.datos || []).map(x => ({ ...x, codigoBarras: x.codigoBarras || "" })));
-    } catch (e) {}
-}
-
 // Intervalos de actualizacion (se activan desde main.js en fase 5)
-let _intervaloInventario = null;
+// Solo caja: el inventario ahora se consulta paginado + realtime (Fase 1-2)
 let _intervaloCaja = null;
 
 export function iniciarIntervalos(verificarEstadoCajaFn) {
-    if (!_intervaloInventario) {
-        _intervaloInventario = setInterval(() => {
-            if (store.sessionToken) cargarInventario();
-        }, 30000);
-    }
     if (!_intervaloCaja && verificarEstadoCajaFn) {
         _intervaloCaja = setInterval(() => {
             if (store.sessionToken) verificarEstadoCajaFn();
@@ -63,7 +45,6 @@ export function iniciarIntervalos(verificarEstadoCajaFn) {
 }
 
 export function detenerIntervalos() {
-    if (_intervaloInventario) { clearInterval(_intervaloInventario); _intervaloInventario = null; }
     if (_intervaloCaja) { clearInterval(_intervaloCaja); _intervaloCaja = null; }
 }
 

@@ -2,9 +2,9 @@
 import { store, setTransfPagina } from '../store.js';
 import { api } from '../api.js';
 import { TRANSF_LIMITE } from '../config.js';
-import { mostrarMsg, normBusqueda } from '../utils.js';
+import { mostrarMsg, normBusqueda, debounce } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
-import { construirAC, cargarInventario } from '../inventario.js';
+import { listarProductos, buscarProductoPorNombre } from '../db.js';
 
 let _verificarEstadoCaja = null;
 export function initTransferencias(cb) { if (cb?.verificarEstadoCaja) _verificarEstadoCaja = cb.verificarEstadoCaja; }
@@ -17,32 +17,39 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-// Autocompleta producto origen para transferencia
+// Autocompleta producto origen para transferencia (paginado server-side, debounce 300ms)
+const _transfAcBuscar = debounce(async function(t, l) {
+    try {
+        const { datos } = await listarProductos({ query: t, limite: 8 });
+        const unicos = [];
+        const vistos = new Set();
+        datos.forEach(p => {
+            if (!vistos.has(p.producto)) { vistos.add(p.producto); unicos.push(p) }
+        });
+        l.innerHTML = "";
+        if (unicos.length === 0) { l.classList.remove("show"); return }
+        unicos.slice(0, 8).forEach(p => {
+            const div = document.createElement("div");
+            div.className = "ac-item";
+            div.innerHTML = `<strong>${p.producto}</strong><small>Stock en ${p.sucursal}: ${p.stock}</small>`;
+            div.onclick = () => { document.getElementById("transfProducto").value = p.producto; l.classList.remove("show"); actualizarInfoTransf() };
+            l.appendChild(div)
+        });
+        l.classList.add("show");
+    } catch (_) {}
+}, 300);
+
 export function buscarProductoTransf() {
     const t = normBusqueda(document.getElementById("transfProducto").value),
         l = document.getElementById("listaTransf"),
         info = document.getElementById("infoTransf");
     info.classList.remove("show");
     if (t.length < 1) { l.classList.remove("show"); return }
-    const unicos = [];
-    const vistos = new Set();
-    store.inventarioGlobal.filter(p => normBusqueda(p.producto).includes(t)).forEach(p => {
-        if (!vistos.has(p.producto)) { vistos.add(p.producto); unicos.push(p) }
-    });
-    l.innerHTML = "";
-    if (unicos.length === 0) { l.classList.remove("show"); return }
-    unicos.slice(0, 8).forEach(p => {
-        const div = document.createElement("div");
-        div.className = "ac-item";
-        div.innerHTML = `<strong>${p.producto}</strong><small>Stock en ${p.sucursal}: ${p.stock}</small>`;
-        div.onclick = () => { document.getElementById("transfProducto").value = p.producto; l.classList.remove("show"); actualizarInfoTransf() };
-        l.appendChild(div)
-    });
-    l.classList.add("show");
+    _transfAcBuscar(t, l)
 }
 
 // Muestra info del producto seleccionado para transferir
-export function actualizarInfoTransf() {
+export async function actualizarInfoTransf() {
     const prod = document.getElementById("transfProducto").value.trim(),
         origen = document.getElementById("transfOrigen").value,
         destino = document.getElementById("transfDestino").value,
@@ -54,7 +61,8 @@ export function actualizarInfoTransf() {
         arrowDiv.style.display = "flex"
     } else { arrowDiv.style.display = "none" }
     if (prod && origen) {
-        const inv = store.inventarioGlobal.find(p => p.producto === prod && p.sucursal === origen);
+        let inv = null;
+        try { inv = await buscarProductoPorNombre(prod, origen); } catch (_) {}
         if (inv) {
             info.innerHTML = `Stock en <b>${origen}</b>: <b>${inv.stock}</b> ud.` + (inv.stock <= 5 ? ` <span class="stock-bajo">⚠ Stock bajo</span>` : "");
             info.classList.add("show")
@@ -91,7 +99,6 @@ export async function registrarTransferencia() {
             document.getElementById("transfDestino").value = "";
             document.getElementById("infoTransf").classList.remove("show");
             document.getElementById("transfArrowDisplay").style.display = "none";
-            cargarInventario();
             if (_verificarEstadoCaja) _verificarEstadoCaja();
         } else if (data.error === "STOCK_INSUFICIENTE") {
             mostrarMsg("⚠ Stock insuficiente en origen (disponible: " + data.disponible + ")", "err")

@@ -6,6 +6,14 @@ export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
   : "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1";
 
+// Cliente directo Supabase (PostgREST + Realtime)
+export const SUPABASE_URL = LOCAL
+  ? "http://127.0.0.1:54321"
+  : "https://nhysxuqxlkmvrpxdoate.supabase.co";
+export const SUPABASE_ANON_KEY = LOCAL
+  ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeXN4dXF4bGttdnJweGRvYXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDE0MTAsImV4cCI6MjA4OTc3NzQxMH0.J1zXR6_mYMbamqhYpmvdzbFENaNLbUeTIGZNn0sXW28";
+
 export const BASE_URL_ERUDITOS      = `${HOST}/eruditos`;
 export const BASE_URL_USUARIOS      = `${HOST}/usuarios`;
 export const BASE_URL_LAMINAS       = `${HOST}/laminas`;
