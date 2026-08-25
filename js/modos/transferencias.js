@@ -2,7 +2,7 @@
 import { store, setTransfPagina } from '../store.js';
 import { api } from '../api.js';
 import { TRANSF_LIMITE } from '../config.js';
-import { mostrarMsg, normBusqueda, debounce } from '../utils.js';
+import { mostrarMsg, normBusqueda, debounce, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { listarProductos, buscarProductoPorNombre } from '../db.js';
 
@@ -126,7 +126,7 @@ export async function listarTransferencias(pg) {
         else {
             let h = `<table><thead><tr><th class="col-prod">Producto</th><th>Ruta</th><th>Cant</th><th>Fecha</th></tr></thead><tbody>`;
             data.datos.forEach(t => {
-                const fc = String(t.fecha).slice(0, 10);
+                const fc = fechaBolivia(t.fecha);
                 h += `<tr><td class="col-prod">${t.producto}${t.motivo ? `<br><small style="color:var(--muted)">${t.motivo}</small>` : ""}</td><td style="font-size:11px;font-family:var(--mono)">${t.sucursalOrigen}<br><span style="color:var(--teal-text)">↓</span><br>${t.sucursalDestino}</td><td style="font-family:var(--mono)">${t.cantidad}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${t.usuario}</td></tr>`
             });
             tabla.innerHTML = h + `</tbody></table>`;

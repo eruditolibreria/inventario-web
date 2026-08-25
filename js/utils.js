@@ -1,16 +1,26 @@
 /* === UTILIDADES: Funciones puras, efectos fisicos y notificaciones UI === */
 
-// Retorna fecha actual en formato YYYY-MM-DD
+// Zona horaria del negocio: Bolivia (UTC-4, sin horario de verano)
+const ZONA_BOLIVIA = "America/La_Paz";
+
+// Retorna fecha actual en formato YYYY-MM-DD (zona Bolivia)
             export function hoy() {
-                return new Date().toISOString().slice(0, 10)
+                return new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_BOLIVIA, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())
             }
 
-// Retorna hora actual en formato HH:MM (formato Bolivia)
+// Retorna hora actual en formato HH:MM (zona Bolivia)
             export function horaActual() {
                 return new Date().toLocaleTimeString("es-BO", {
                     hour: "2-digit",
-                    minute: "2-digit"
+                    minute: "2-digit",
+                    timeZone: ZONA_BOLIVIA
                 })
+            }
+
+// Convierte un timestamp ISO (UTC) a fecha YYYY-MM-DD en zona Bolivia
+            export function fechaBolivia(iso) {
+                if (!iso) return "";
+                return new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_BOLIVIA, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso))
             }
 
 // Formatea un numero como moneda Bs (Bolivianos) con 2 decimales

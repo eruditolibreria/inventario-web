@@ -2,7 +2,7 @@
 import { store, setDevolPagina, setDevolTransaccionSeleccionada } from '../store.js';
 import { api } from '../api.js';
 import { DEVOL_LIMITE, HOST } from '../config.js';
-import { mostrarMsg, formatearBs, mostrarValorInput, obtenerValorInput } from '../utils.js';
+import { mostrarMsg, formatearBs, mostrarValorInput, obtenerValorInput, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo } from '../escaner.js';
 
@@ -227,7 +227,7 @@ export function seleccionarTransaccionDevol(transaccion) {
             let h = `<table><thead><tr><th class="col-prod">Producto</th><th>Fecha / Suc</th><th>Tipo</th><th>Cant · Total</th><th>Motivo</th></tr></thead><tbody>`;
             data.datos.forEach(d => {
                 const ev = d.tipoDevolucion === "VENTA",
-                    fc = String(d.fecha).slice(0, 10),
+                    fc = fechaBolivia(d.fecha),
                     mc = d.motivo.replace(/_/g, " ");
                 h += `<tr><td class="col-prod">${d.producto}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${d.sucursal}</td><td class="${ev ? "tipo-venta" : "tipo-compra"}">${ev ? "↩ VENTA" : "↪ COMPRA"}</td><td style="font-family:var(--mono);font-size:11px">${d.cantidad} ud.<br>Bs ${Number(d.total).toFixed(2)}</td><td style="font-size:10px;color:var(--muted)">${mc}</td></tr>`;
             });

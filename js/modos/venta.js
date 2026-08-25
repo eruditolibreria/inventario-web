@@ -24,7 +24,7 @@
 import { CARRITO_KEY, CARRITO_CHUNK_SIZE } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs, debounce } from '../utils.js';
+import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs, debounce, hoy, horaActual } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC } from '../inventario.js';
 import { listarProductos, buscarProductoPorNombre } from '../db.js';
@@ -780,8 +780,8 @@ export function actualizarCambioVenta() {
                             sucursal: sucursal,
                             cliente: cliente,
                             usuario: store.sessionUser,
-                            fecha: new Date().toISOString().slice(0,10),
-                            hora: new Date().toLocaleTimeString()
+                            fecha: hoy(),
+                            hora: horaActual()
                         };
                         setUltimaVenta(ventaResumen);
                         const reg = await registrarComprobante(ventaResumen);

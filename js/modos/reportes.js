@@ -1,7 +1,7 @@
 /* === MODO REPORTES: Tablas, gráficos e impresión === */
 import { store, setMovPagina, setRptCache } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg } from '../utils.js';
+import { mostrarMsg, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 
 // ── HELPERS ──────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export async function cargarHistorialMovimientos(pg) {
         else {
             var h = '<table><thead><tr><th>Fecha</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Tipo</th><th>Origen</th><th>Cant</th><th>Monto</th><th>Usuario</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
-                var fc = String(d.fecha).slice(0, 10), tipoClase = d.tipo_mov === "ENTRADA" ? "tipo-compra" : "tipo-venta";
+                var fc = fechaBolivia(d.fecha), tipoClase = d.tipo_mov === "ENTRADA" ? "tipo-compra" : "tipo-venta";
                 h += '<tr><td style="font-size:11px;color:var(--muted)">' + fc + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td class="' + tipoClase + '" style="font-size:11px">' + d.tipo_mov + '</td><td style="font-size:10px;color:var(--muted)">' + (d.origen || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.monto).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + (d.usuario || '') + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
@@ -300,7 +300,7 @@ export function imprimirReporte(title, cols, datos, resumen) {
     h += '<div class="print-sub">Sistema de Inventario</div>';
     h += '</div>';
     h += '<div class="print-title">' + title + '</div>';
-    h += '<div class="print-meta">Generado: ' + new Date().toLocaleString() + ' · Usuario: ' + store.sessionUser + '</div>';
+    h += '<div class="print-meta">Generado: ' + new Date().toLocaleString("es-BO", { timeZone: "America/La_Paz", hour12: false }) + ' · Usuario: ' + store.sessionUser + '</div>';
     if (resumen) {
         h += '<div class="print-summary">';
         for (var k in resumen) {
