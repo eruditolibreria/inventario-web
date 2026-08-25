@@ -165,15 +165,16 @@ export function buscarClienteVenta() {
 function agregarPorProducto(prod, sucursal) {
     const carrito = [...store.carrito];
     const ex = carrito.find(i => i.producto === prod.producto);
+    const precio = prod.precio_venta ?? prod.precio ?? prod.precioVenta ?? 0;
     if (ex) {
         ex.cantidad += 1;
         ex.total = ex.precio * ex.cantidad;
     } else {
         carrito.push({
             producto: prod.producto,
-            precio: prod.precio_venta || prod.precio,
+            precio: precio,
             cantidad: 1,
-            total: prod.precio_venta || prod.precio,
+            total: precio,
             imagen: prod.imagen || ""
         });
     }
@@ -181,6 +182,11 @@ function agregarPorProducto(prod, sucursal) {
     renderCarrito();
     vibrar("ok");
     mostrarMsg("📷 " + prod.producto + " agregado (codigo: " + (prod.codigoBarras || "manual") + ")", "ok");
+}
+
+// Un precio es valido si es un numero finito (0 es valido: puede ser bonus)
+function _precioValido(item) {
+    return Number.isFinite(item.precio);
 }
 
 function renderCarritoEscaner() {
@@ -193,7 +199,10 @@ function renderCarritoEscaner() {
         total += Number(it.total || 0);
         const fila = document.createElement("div");
         fila.className = "scanner-carrito-item";
-        fila.innerHTML = `<div class="scanner-carrito-producto">${it.producto}</div><div class="scanner-carrito-detalle"><span>${it.cantidad} x ${formatearBs(it.precio)}</span><strong>${formatearBs(it.total)}</strong></div>`;
+        const precioOK = _precioValido(it);
+        const precioTxt = precioOK ? formatearBs(it.precio) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
+        const totalTxt = precioOK ? formatearBs(it.total) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
+        fila.innerHTML = `<div class="scanner-carrito-producto">${it.producto}</div><div class="scanner-carrito-detalle"><span>${it.cantidad} x ${precioTxt}</span><strong>${totalTxt}</strong></div>`;
         lista.appendChild(fila);
     });
     if (!store.carrito.length) {
@@ -418,8 +427,11 @@ function initScannerInput() {
                 let tot = 0;
     const carrito = store.carrito;
     carrito.forEach( (it, i) => {
-        tot += it.total;
-        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>${formatearBs(it.precio)}</td><td>${formatearBs(it.total)}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
+        tot += Number(it.total || 0);
+        const precioOK = _precioValido(it);
+        const precioCelda = precioOK ? formatearBs(it.precio) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
+        const totalCelda = precioOK ? formatearBs(it.total) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
+        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>${precioCelda}</td><td>${totalCelda}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
         if (it.imagen) {
             const mini = document.createElement("div");
             mini.className = "miniatura";
@@ -638,6 +650,11 @@ export function actualizarCambioVenta() {
                 }
                 if (store.carrito.length === 0) {
         mostrarMsg("El carrito esta vacio", "err");
+        return
+    }
+    const sinPrecio = store.carrito.filter(it => !_precioValido(it));
+    if (sinPrecio.length > 0) {
+        mostrarMsg("⚠ Producto(s) sin precio: " + sinPrecio.map(i => i.producto).join(", "), "err");
         return
     }
     const sucursal = store.sessionSucursal || document.getElementById("sucursalVenta").value
