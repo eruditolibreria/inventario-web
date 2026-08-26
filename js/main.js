@@ -68,7 +68,8 @@ import { initServicios, calcTotalServ, agregarServicio,
          cargarResumenServicios, eliminarServicio }
   from './modos/servicios.js';
 import { initTransferencias, buscarProductoTransf, actualizarInfoTransf,
-         registrarTransferencia, listarTransferencias, cambiarPaginaTransf }
+         registrarTransferencia, listarTransferencias, cambiarPaginaTransf,
+         abrirEscanerTransferencia }
   from './modos/transferencias.js';
 import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
          renderTablaReporte, cargarMasVendidos, cargarMenosVendidos,
@@ -284,6 +285,7 @@ function inicializarApp() {
     window.registrarTransferencia = registrarTransferencia;
     window.listarTransferencias = listarTransferencias;
     window.cambiarPaginaTransf = cambiarPaginaTransf;
+    window.abrirEscanerTransferencia = abrirEscanerTransferencia;
     window.cargarMasVendidos = cargarMasVendidos;
     window.cargarMenosVendidos = cargarMenosVendidos;
     window.setReporteStock = setReporteStock;

@@ -4,7 +4,8 @@ import { api } from '../api.js';
 import { TRANSF_LIMITE } from '../config.js';
 import { mostrarMsg, normBusqueda, debounce, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
-import { listarProductos, buscarProductoPorNombre } from '../db.js';
+import { listarProductos, buscarProductoPorNombre, buscarProductoPorCodigo } from '../db.js';
+import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 let _verificarEstadoCaja = null;
 export function initTransferencias(cb) { if (cb?.verificarEstadoCaja) _verificarEstadoCaja = cb.verificarEstadoCaja; }
@@ -46,6 +47,49 @@ export function buscarProductoTransf() {
     info.classList.remove("show");
     if (t.length < 1) { l.classList.remove("show"); return }
     _transfAcBuscar(t, l)
+}
+
+// Escanea un producto usando la sucursal de origen seleccionada
+export async function abrirEscanerTransferencia() {
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    const origenEl = document.getElementById("transfOrigen");
+    const origen = origenEl.value;
+    if (!origen) {
+        mostrarMsg("Selecciona la sucursal de origen antes de escanear", "err");
+        origenEl.focus();
+        return;
+    }
+    if (!modal || !video) return;
+    modal.style.display = "flex";
+    if (estado) estado.textContent = "Apuntando cámara...";
+    try {
+        const codigo = await iniciarEscanerCamara(video);
+        let p = null;
+        try {
+            p = await buscarProductoPorCodigo(String(codigo || "").trim(), origen);
+        } catch (_) {
+            mostrarMsg("Error de conexión al buscar el producto", "err");
+            return;
+        }
+        if (!p) {
+            mostrarMsg("Producto no encontrado en " + origen + ": " + codigo, "err");
+            return;
+        }
+        document.getElementById("transfProducto").value = p.producto || "";
+        document.getElementById("listaTransf").classList.remove("show");
+        await actualizarInfoTransf();
+    } catch (e) {
+        if (e.message === "NO_SOPORTADO") {
+            mostrarMsg("Escaner no soportado en este navegador", "err");
+        } else {
+            mostrarMsg("Error de cámara", "err");
+        }
+    } finally {
+        detenerEscanerCamara();
+        modal.style.display = "none";
+    }
 }
 
 // Muestra info del producto seleccionado para transferir

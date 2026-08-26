@@ -954,7 +954,10 @@
                             <div id="transf-REGISTRAR">
                                 <div class="field-group">
                                     <label class="field-label">Producto</label>
-                                    <input id="transfProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoTransf()">
+                                    <div class="transf-producto-busqueda">
+                                        <input id="transfProducto" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoTransf()">
+                                        <button type="button" class="btn-icon transf-scan-btn" onclick="abrirEscanerTransferencia()" title="Escanear producto" aria-label="Escanear producto">📷</button>
+                                    </div>
                                     <div id="listaTransf" class="autocomplete"></div>
                                     <div id="infoTransf" class="info-prod"></div>
                                 </div>
