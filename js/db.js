@@ -103,4 +103,18 @@ export async function buscarProductoPorCodigo(codigo, sucursal) {
     return data && data.length ? _mapProducto(data[0]) : null;
 }
 
+/** Devuelve los datos de la ultima compra registrada del producto (misma sucursal) */
+export async function ultimaCompraProducto(producto, sucursal) {
+    _ensureAuth();
+    let qb = client.from("compras")
+        .select("costo_paquete,cant_paquete,unid_paquete,proveedor")
+        .eq("producto", producto)
+        .order("fecha_entrada", { ascending: false })
+        .limit(1);
+    if (sucursal) qb = qb.eq("sucursal", sucursal);
+    const { data, error } = await qb;
+    if (error) throw error;
+    return data && data.length ? data[0] : null;
+}
+
 export { client };

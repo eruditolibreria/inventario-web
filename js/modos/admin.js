@@ -36,7 +36,7 @@ const _busquedaAcBuscar = debounce(async function(t, sucFiltro, l) {
                 div.addEventListener("click", () => {
                     document.getElementById("busquedaInput").value = p.producto;
                     l.classList.remove("show");
-                    ejecutarBusquedaDetalle(p.clave || p.producto)
+                    ejecutarBusquedaDetalle(p.producto)
                 });
                 l.appendChild(div)
             });

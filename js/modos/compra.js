@@ -26,7 +26,7 @@ import { api } from '../api.js';
 import { mostrarMsg, hoy, normBusqueda, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC } from '../inventario.js';
-import { listarProductos } from '../db.js';
+import { listarProductos, buscarProductoPorCodigo, ultimaCompraProducto } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
@@ -44,20 +44,44 @@ export function initCompra(callbacks) {
 
 // Busca productos en inventario para autocompletar en la compra
 // (paginado server-side con debounce de 300ms; RLS aplica)
+// Al seleccionar, precarga todos los datos del producto + los de su ultima compra
 const _compraAcBuscar = debounce(async function(t, s, l, info) {
     try {
         const { datos } = await listarProductos({ query: t, sucursal: s, limite: 8 });
-        construirAC(l, datos, p => {
+        construirAC(l, datos, async p => {
             document.getElementById("productoCompra").value = p.producto;
             document.getElementById("categoriaCompra").value = p.categoria || "";
             mostrarValorInput(document.getElementById("precioVentaCompra"), p.precio);
             document.getElementById("proveedorCompra").value = p.proveedor || "";
             document.getElementById("ubicacionCompra").value = p.ubicacion || "";
+            await precargarUltimaCompra(p.producto, s);
             info.textContent = "Stock actual: " + p.stock;
             info.classList.add("show")
         });
     } catch (_) {}
 }, 300);
+
+// Prellena costo paquete, cant. paquetes, unid. x paquete (y proveedor si falta)
+// con los valores de la ultima compra registrada del producto
+async function precargarUltimaCompra(producto, sucursal) {
+    const limpiar = () => {
+        document.getElementById("costoCompra").value = "";
+        document.getElementById("cantidadCompra").value = "";
+        document.getElementById("unidadesCompra").value = "";
+    };
+    try {
+        const uc = await ultimaCompraProducto(producto, sucursal);
+        if (!uc) { limpiar(); return; }
+        mostrarValorInput(document.getElementById("costoCompra"), Number(uc.costo_paquete || 0));
+        document.getElementById("cantidadCompra").value = uc.cant_paquete != null ? uc.cant_paquete : "";
+        document.getElementById("unidadesCompra").value = uc.unid_paquete != null ? uc.unid_paquete : "";
+        if (!document.getElementById("proveedorCompra").value.trim()) {
+            document.getElementById("proveedorCompra").value = uc.proveedor || "";
+        }
+    } catch (_) {
+        limpiar();
+    }
+}
 
 export function buscarProductoCompra() {
     const t = normBusqueda(document.getElementById("productoCompra").value)
@@ -134,19 +158,15 @@ export async function abrirEscanerCompra() {
     try {
         const codigo = await iniciarEscanerCamara(video);
         const suc = document.getElementById("sucursalCompra").value;
-        const data = await api({
-            ACCION: "BUSCAR_PRODUCTO_CODIGO",
-            CODIGO: codigo,
-            SUCURSAL: suc,
-            TOKEN: store.sessionToken
-        });
-        if (data.ok && data.producto) {
-            const p = data.producto;
+        const p = await buscarProductoPorCodigo(codigo, suc);
+        if (p) {
             document.getElementById("productoCompra").value = p.producto || "";
             document.getElementById("categoriaCompra").value = p.categoria || "";
-            mostrarValorInput(document.getElementById("precioVentaCompra"), p.precioVenta);
+            mostrarValorInput(document.getElementById("precioVentaCompra"), p.precio);
             document.getElementById("codigoBarrasCompra").value = p.codigoBarras || codigo;
-            document.getElementById("ubicacionCompra").value = "";
+            document.getElementById("proveedorCompra").value = p.proveedor || "";
+            document.getElementById("ubicacionCompra").value = p.ubicacion || "";
+            await precargarUltimaCompra(p.producto, suc);
             mostrarMsg("Producto encontrado: " + p.producto + " | Stock: " + (p.stock || 0), "ok");
         } else {
             document.getElementById("codigoBarrasCompra").value = codigo;
