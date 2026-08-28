@@ -70,6 +70,7 @@ body.desktop {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .desktop-header .user-badge {
@@ -79,7 +80,9 @@ body.desktop {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 5px 14px 5px 8px;
+  min-width: 0;
+  max-width: min(280px, calc(100vw - 180px));
+  padding: 4px 10px 4px 6px;
   font-size: 12px;
   cursor: pointer;
   transition: border-color 0.2s;
@@ -90,6 +93,7 @@ body.desktop {
 }
 
 .desktop-header .user-badge .avatar {
+  flex: 0 0 24px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -103,11 +107,28 @@ body.desktop {
 .desktop-header .user-badge .uname {
   font-weight: 600;
   color: #fff;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desktop-header .user-badge .user-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 6px;
+  min-width: 0;
+}
+
+.desktop-header .user-badge .rol-pill {
+  grid-column: 2;
+  grid-row: 1;
+  white-space: nowrap;
 }
 
 .desktop-header .user-badge .logout-hint {
-  color: var(--muted);
-  font-size: 10px;
+  display: none;
 }
 
 .desktop-header .caja-badge {
@@ -121,7 +142,15 @@ body.desktop {
   background: var(--accent-dim);
   color: var(--accent-text);
   border: 1px solid var(--accent);
-  margin-top: 2px;
+  grid-column: 1 / -1;
+  margin-top: 1px;
+  padding: 1px 5px;
+  font-size: 8px;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .desktop-header .rol-pill {

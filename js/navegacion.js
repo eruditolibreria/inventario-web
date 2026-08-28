@@ -97,7 +97,8 @@ export function aplicarRol(rol) {
         setSubModoCuentas("COBRAR");
     document.getElementById("subtab-lam-AGREGAR").classList.toggle("hidden-tab", !["ADMIN", "ALMACEN"].includes(ru));
     var modoRestaurado = _leerModoGuardado();
-    setModo(modoRestaurado && tabs.includes(modoRestaurado) ? modoRestaurado : inicio);
+    // La restauración no debe animarse: garantiza un único panel visible al volver a la app.
+    setModo(modoRestaurado && tabs.includes(modoRestaurado) ? modoRestaurado : inicio, 0);
 }
 
 
@@ -127,18 +128,50 @@ export function initPushContainer() {
     });
 }
 
+var _transicionActiva = false;
+
+function _actualizarTabs(modo) {
+    TODOS_MODOS.forEach(function(m) {
+        var tab = document.getElementById("tab-" + m);
+        if (tab) tab.classList.toggle("active", m === modo);
+    });
+    actualizarIndicador(modo);
+}
+
+function _mostrarSoloModo(modo) {
+    TODOS_MODOS.forEach(function(m) {
+        var sec = document.getElementById("seccion-" + m);
+        if (!sec) return;
+        sec.classList.toggle("oculto", m !== modo);
+        sec.classList.remove("push-transitioning", "push-dragging");
+        sec.style.animation = "";
+        sec.style.transform = "";
+        sec.style.transition = "";
+        sec.style.willChange = "";
+    });
+}
+
+function _prepararTransicion(origen, destino) {
+    TODOS_MODOS.forEach(function(m) {
+        if (m === origen || m === destino) return;
+        var sec = document.getElementById("seccion-" + m);
+        if (!sec) return;
+        sec.classList.add("oculto");
+        sec.classList.remove("push-transitioning", "push-dragging");
+        sec.style.animation = "";
+        sec.style.transform = "";
+        sec.style.transition = "";
+        sec.style.willChange = "";
+    });
+}
+
 export function setModo(modo, direccion, velocidad) {
+    if (_transicionActiva) return;
+
     var modoAnterior = store.modoActual;
+    _actualizarTabs(modo);
     if (modoAnterior === modo) {
-        var secMisma = document.getElementById("seccion-" + modo);
-        if (secMisma) {
-            secMisma.classList.remove("oculto", "push-transitioning", "push-dragging");
-            secMisma.style.animation = "";
-            secMisma.style.transform = "";
-            secMisma.style.willChange = "";
-            secMisma.style.display = "";
-        }
-        actualizarIndicador(modo);
+        _mostrarSoloModo(modo);
         return;
     }
 
@@ -167,84 +200,41 @@ export function setModo(modo, direccion, velocidad) {
     var secEntrante = document.getElementById("seccion-" + modo);
     var secSaliente = document.getElementById("seccion-" + modoAnterior);
 
-    TODOS_MODOS.forEach(function(m) {
-        document.getElementById("tab-" + m).classList.toggle("active", m === modo);
-    });
-    actualizarIndicador(modo);
-
     var tabActivo = document.getElementById("tab-" + modo);
     if (tabActivo) {
         tabActivo.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     }
 
     if (direccion === 0) {
-        TODOS_MODOS.forEach(function(m) {
-            var sec = document.getElementById("seccion-" + m);
-            var act = m === modo;
-            if (act) {
-                sec.classList.remove("oculto");
-                sec.style.animation = "";
-                sec.style.transform = "";
-                sec.style.willChange = "";
-                sec.classList.remove("push-transitioning", "push-dragging");
-            } else {
-                sec.classList.add("oculto");
-                sec.style.animation = "";
-                sec.style.transform = "";
-                sec.style.willChange = "";
-                sec.classList.remove("push-transitioning", "push-dragging");
-            }
-        });
-    } else if (direccion === 1) {
+        _mostrarSoloModo(modo);
+    } else if (secEntrante && secSaliente) {
+        _transicionActiva = true;
+        _prepararTransicion(modoAnterior, modo);
         secEntrante.classList.remove("oculto", "push-dragging");
-        secSaliente.classList.remove("push-dragging");
+        secSaliente.classList.remove("oculto", "push-dragging");
 
         secEntrante.style.transform = "";
         secEntrante.style.willChange = "transform";
-        secEntrante.style.animation = "pushInFromRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
-
         secSaliente.style.transform = "";
         secSaliente.style.willChange = "transform";
         secSaliente.classList.add("push-transitioning");
-        secSaliente.style.animation = "pushOutToLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+        var entra = direccion === 1 ? "pushInFromRight" : "pushInFromLeft";
+        var sale = direccion === 1 ? "pushOutToLeft" : "pushOutToRight";
+        secEntrante.style.animation = entra + " " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
+        secSaliente.style.animation = sale + " " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
 
-        var onEnd = function() {
-            secSaliente.classList.add("oculto");
-            secSaliente.classList.remove("push-transitioning");
-            secSaliente.style.animation = "";
-            secSaliente.style.transform = "";
-            secSaliente.style.willChange = "";
-            secSaliente.removeEventListener("animationend", onEnd);
-            secEntrante.style.animation = "";
-            secEntrante.style.transform = "";
-            secEntrante.style.willChange = "";
+        var terminada = false;
+        var finalizar = function(e) {
+            if (e && e.target !== secSaliente) return;
+            if (terminada) return;
+            terminada = true;
+            _mostrarSoloModo(modo);
+            _transicionActiva = false;
         };
-        secSaliente.addEventListener("animationend", onEnd, { once: true });
-    } else if (direccion === -1) {
-        secEntrante.classList.remove("oculto", "push-dragging");
-        secSaliente.classList.remove("push-dragging");
-
-        secEntrante.style.transform = "";
-        secEntrante.style.willChange = "transform";
-        secEntrante.style.animation = "pushInFromLeft " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
-
-        secSaliente.style.transform = "";
-        secSaliente.style.willChange = "transform";
-        secSaliente.classList.add("push-transitioning");
-        secSaliente.style.animation = "pushOutToRight " + duracion + "ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards";
-
-        var onEnd = function() {
-            secSaliente.classList.add("oculto");
-            secSaliente.classList.remove("push-transitioning");
-            secSaliente.style.animation = "";
-            secSaliente.style.transform = "";
-            secSaliente.style.willChange = "";
-            secSaliente.removeEventListener("animationend", onEnd);
-            secEntrante.style.animation = "";
-            secEntrante.style.transform = "";
-            secEntrante.style.willChange = "";
-        };
-        secSaliente.addEventListener("animationend", onEnd, { once: true });
+        secSaliente.addEventListener("animationend", finalizar, { once: true });
+        setTimeout(finalizar, duracion + 80);
+    } else {
+        _mostrarSoloModo(modo);
     }
 
     /* Acciones al entrar a cada modo */
@@ -288,6 +278,7 @@ function bloquearSucursalParaNoAdmin() {
 
 // ══ SWIPE TÁCTIL (push con arrastre de dedo) ══
 var _swipeStartX = 0;
+var _swipeStartY = 0;
 var _swipeModoOrigen = "";
 var _swipeActive = false;
 var _swipeDireccion = 0;
@@ -299,20 +290,24 @@ export function initSwipe() {
     panel.addEventListener("touchstart", _swipeStart, { passive: true });
     panel.addEventListener("touchmove", _swipeMove, { passive: true });
     panel.addEventListener("touchend", _swipeEnd, { passive: true });
+    panel.addEventListener("touchcancel", _swipeCancel, { passive: true });
 }
 
 function _swipeStart(e) {
-    if (_swipeActive || _swipeBloqueado) return;
-    if (e.target.closest(".mode-tabs")) return;
+    if (_swipeActive || _swipeBloqueado || _transicionActiva) return;
+    if (e.target.closest(".mode-tabs, input, select, textarea, button, a, label, [contenteditable='true'], .sub-tabs")) return;
     _swipeStartX = e.touches[0].clientX;
+    _swipeStartY = e.touches[0].clientY;
     _swipeModoOrigen = store.modoActual;
     _swipeDireccion = 0;
 }
 
 function _swipeMove(e) {
-    if (_swipeBloqueado) return;
-    if (e.target.closest(".mode-tabs")) return;
+    if (_swipeBloqueado || _transicionActiva) return;
+    if (e.target.closest(".mode-tabs, input, select, textarea, button, a, label, [contenteditable='true'], .sub-tabs")) return;
     var deltaX = e.touches[0].clientX - _swipeStartX;
+    var deltaY = e.touches[0].clientY - _swipeStartY;
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
     if (!_swipeActive) {
         if (Math.abs(deltaX) < 15) return;
         var modoDestino = _modoVecino(_swipeModoOrigen, deltaX > 0 ? -1 : 1);
@@ -333,7 +328,7 @@ function _swipeMove(e) {
     var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
     if (!secSaliente || !secEntrante) return;
     var panelAncho = document.querySelector(".panel-body")?.offsetWidth || 360;
-    var porcentaje = Math.max(-1, Math.min(1, deltaX / panelAncho * 0.7));
+    var porcentaje = Math.max(-1, Math.min(1, deltaX / panelAncho));
     if (_swipeDireccion === 1) {
         secEntrante.style.transform = "translateX(" + ((1 + porcentaje) * 100) + "%)";
         secSaliente.style.transform = "translateX(" + (porcentaje * 100) + "%)";
@@ -352,7 +347,7 @@ function _swipeEnd(e) {
     var modoDestino = _modoVecino(_swipeModoOrigen, _swipeDireccion);
     var secSaliente = document.getElementById("seccion-" + _swipeModoOrigen);
     var secEntrante = modoDestino ? document.getElementById("seccion-" + modoDestino) : null;
-    var umbral = panelAncho * 0.6;
+    var umbral = panelAncho * 0.3;
     if (Math.abs(deltaX) > umbral && secSaliente && secEntrante) {
         secSaliente.classList.remove("push-dragging");
         secEntrante.classList.remove("push-dragging");
@@ -363,24 +358,48 @@ function _swipeEnd(e) {
         setModo(modoDestino, _swipeDireccion, 0);
         setTimeout(function() { _swipeBloqueado = false; }, 350);
     } else {
-        _resetSwipe(secSaliente, secEntrante);
-        setTimeout(function() { _swipeBloqueado = false; }, 50);
+        _resetSwipe(secSaliente, secEntrante, _swipeDireccion);
+        setTimeout(function() { _swipeBloqueado = false; }, 220);
     }
     _swipeStartX = 0;
+    _swipeStartY = 0;
 }
 
-function _resetSwipe(secSaliente, secEntrante) {
+function _swipeCancel() {
+    if (!_swipeActive) return;
+    _swipeActive = false;
+    _swipeBloqueado = true;
+    _resetSwipe(
+        document.getElementById("seccion-" + _swipeModoOrigen),
+        document.getElementById("seccion-" + _modoVecino(_swipeModoOrigen, _swipeDireccion)),
+        _swipeDireccion
+    );
+    setTimeout(function() { _swipeBloqueado = false; }, 220);
+}
+
+function _resetSwipe(secSaliente, secEntrante, direccion) {
+    var transicion = "transform 180ms cubic-bezier(0.25, 0.8, 0.25, 1)";
     if (secSaliente) {
         secSaliente.classList.remove("push-dragging");
-        secSaliente.style.transform = "";
+        secSaliente.style.transition = transicion;
         secSaliente.style.willChange = "";
     }
     if (secEntrante) {
         secEntrante.classList.remove("push-dragging");
-        secEntrante.classList.add("oculto");
-        secEntrante.style.transform = "";
+        secEntrante.style.transition = transicion;
         secEntrante.style.willChange = "";
     }
+    requestAnimationFrame(function() {
+        if (secSaliente) secSaliente.style.transform = "translateX(0)";
+        if (secEntrante) secEntrante.style.transform = "translateX(" + (direccion === 1 ? 100 : -100) + "%)";
+    });
+    setTimeout(function() {
+        if (secEntrante) secEntrante.classList.add("oculto");
+        if (secSaliente) secSaliente.style.transform = "";
+        if (secEntrante) secEntrante.style.transform = "";
+        if (secSaliente) secSaliente.style.transition = "";
+        if (secEntrante) secEntrante.style.transition = "";
+    }, 180);
 }
 
 function _modoVecino(modoActual, direccion) {
