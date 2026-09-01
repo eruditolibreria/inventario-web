@@ -21,7 +21,7 @@
  *   initVenta({ verificarEstadoCaja });
  */
 
-import { CARRITO_KEY, CARRITO_CHUNK_SIZE } from '../config.js';
+import { CARRITO_KEY } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs, debounce, hoy, horaActual } from '../utils.js';
@@ -44,6 +44,8 @@ function _guardarCarritoDraft() {
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _verificarEstadoCaja = null;
 let _clientesVenta = [];
+let _clienteVentaSeleccionado = null;
+let _clienteVentaTimer = null;
 let _escanerVentaMovilActivo = false;
 
 export function initVenta(callbacks) {
@@ -66,7 +68,7 @@ function initEscanerVenta() {
         if (!CODIGO_REGEX.test(codigo)) return;
         agregarPorCodigoScan(codigo);
         const activo = document.activeElement;
-        if (activo && activo !== input && activo.tagName === "INPUT" && ["productoVenta", "cantidadVenta", "clienteVenta"].includes(activo.id)) {
+        if (activo && activo !== input && activo.tagName === "INPUT" && ["productoVenta", "cantidadVenta"].includes(activo.id)) {
             activo.value = "";
         }
         input.value = "";
@@ -119,16 +121,24 @@ async function agregarPorCodigoScan(codigo) {
 }
 
 // Mantiene visible el campo de cliente para cualquier metodo de pago
-            export function toggleClienteVenta() {
+export function toggleClienteVenta() {
                 document.getElementById("campoClienteVenta")?.classList.remove("oculto");
+                const esCredito = document.getElementById("metodoPagoVenta")?.value === "CREDITO";
+                document.getElementById("campoVencimientoVenta")?.classList.toggle("oculto", !esCredito);
+                const fecha = document.getElementById("fechaVencimientoVenta");
+                if (esCredito && fecha && !fecha.value) {
+                    const d = new Date(); d.setDate(d.getDate() + 30);
+                    fecha.value = d.toISOString().slice(0, 10);
+                }
             }
 
-// Carga clientes existentes para el autocompletado de ventas
-export async function cargarClientes() {
+// Carga clientes registrados para el selector de ventas
+export async function cargarClientes(busqueda = "") {
     if (!store.sessionToken) return;
     try {
         const data = await api({
-            ACCION: "LISTAR_CLIENTES",
+            ACCION: "BUSCAR_CLIENTES_VENTA",
+            BUSQUEDA: busqueda,
             TOKEN: store.sessionToken
         });
         if (data.ok) _clientesVenta = data.datos || [];
@@ -140,26 +150,38 @@ export function buscarClienteVenta() {
     const input = document.getElementById("clienteVenta");
     const lista = document.getElementById("listaClienteVenta");
     if (!input || !lista) return;
-    const texto = input.value.trim().toLowerCase();
+    const texto = input.value.trim();
+    document.getElementById("clienteVentaId").value = "";
+    document.getElementById("clienteCreditoVenta").textContent = "";
+    _clienteVentaSeleccionado = null;
     lista.innerHTML = "";
     if (!texto) {
         lista.classList.remove("show");
         return;
     }
-    _clientesVenta
-        .filter(cliente => normBusqueda(cliente).includes(normBusqueda(texto)))
-        .slice(0, 8)
-        .forEach(cliente => {
+    clearTimeout(_clienteVentaTimer);
+    _clienteVentaTimer = setTimeout(async () => {
+        await cargarClientes(texto);
+        lista.innerHTML = "";
+        _clientesVenta.slice(0, 8).forEach(cliente => {
             const item = document.createElement("div");
             item.className = "ac-item";
-            item.textContent = cliente;
+            const titulo = document.createElement("strong");
+            titulo.textContent = cliente.nombre;
+            const detalle = document.createElement("small");
+            detalle.textContent = `${cliente.codigoCliente}${cliente.documento ? " · " + cliente.documento : ""}`;
+            item.append(titulo, detalle);
             item.addEventListener("click", () => {
-                input.value = cliente;
+                input.value = cliente.nombre;
+                document.getElementById("clienteVentaId").value = cliente.id;
+                document.getElementById("clienteCreditoVenta").textContent = `Deuda: ${formatearBs(cliente.deuda)} · Disponible: ${formatearBs(cliente.creditoDisponible)}`;
+                _clienteVentaSeleccionado = cliente;
                 lista.classList.remove("show");
             });
             lista.appendChild(item);
         });
-    lista.classList.toggle("show", lista.children.length > 0);
+        lista.classList.toggle("show", lista.children.length > 0);
+    }, 220);
 }
 
 // Agrega producto al carrito por objeto producto (usado por escaner)
@@ -683,15 +705,21 @@ export function actualizarCambioVenta() {
     }
     const sucursal = store.sessionSucursal || document.getElementById("sucursalVenta").value
       , metodoPago = document.getElementById("metodoPagoVenta").value
-      , cliente = document.getElementById("clienteVenta").value || "MOSTRADOR";
+      , clienteId = document.getElementById("clienteVentaId").value || null
+      , cliente = _clienteVentaSeleccionado?.nombre || "MOSTRADOR"
+      , fechaVencimiento = document.getElementById("fechaVencimientoVenta")?.value || null;
     const mEfMixto = Number((document.getElementById("montoEfectivoMixtoVenta") || {}).value || 0);
     const mTrMixto = Number((document.getElementById("montoTransferenciaMixtoVenta") || {}).value || 0);
     if (!sucursal) {
         mostrarMsg("Selecciona una sucursal", "err");
         return
     }
-    if (metodoPago === "CREDITO" && !document.getElementById("clienteVenta").value.trim()) {
-        mostrarMsg("Ingresa el nombre del cliente para ventas a credito", "err");
+    if (metodoPago === "CREDITO" && !clienteId) {
+        mostrarMsg("Selecciona un cliente registrado para vender a crédito", "err");
+        return
+    }
+    if (metodoPago === "CREDITO" && !fechaVencimiento) {
+        mostrarMsg("Selecciona la fecha de vencimiento", "err");
         return
     }
     if (metodoPago === "MIXTO") {
@@ -719,41 +747,13 @@ export function actualizarCambioVenta() {
             producto: i.producto,
             cantidad: i.cantidad
         }));
-                    let carritoParam = {};
-                    if (items.length <= CARRITO_CHUNK_SIZE) {
-                        carritoParam = {
-                            CARRITO: JSON.stringify(items)
-                        };
-                    } else {
-                        let carritoId = null;
-                        for (let i = 0; i < items.length; i += CARRITO_CHUNK_SIZE) {
-                            const chunk = items.slice(i, i + CARRITO_CHUNK_SIZE);
-                            const params = {
-                                ACCION: "CARRITO_GUARDAR",
-                                ITEMS: JSON.stringify(chunk),
-                                TOKEN: store.sessionToken
-                            };
-                            if (carritoId)
-                                params.CARRITO_ID = carritoId;
-                            const res = await api(params);
-                            if (!res.ok) {
-                                mostrarMsg("Error preparando carrito: " + (res.error || "desconocido"), "err");
-                                loader.style.display = "none";
-                                btn.disabled = false;
-                                return
-                            }
-                            carritoId = res.carritoId;
-                        }
-                        carritoParam = {
-                            CARRITO_ID: carritoId
-                        };
-                    }
                     const payload = {
                         ACCION: "VENTA_POS",
-                        ...carritoParam,
+                        CARRITO: JSON.stringify(items),
                         SUCURSAL: sucursal,
                         METODO_PAGO: metodoPago,
-                        CLIENTE: cliente,
+                        CLIENTE_ID: clienteId,
+                        FECHA_VENCIMIENTO: fechaVencimiento,
                         TOKEN: store.sessionToken
                     };
                     if (metodoPago === "MIXTO") {
@@ -779,6 +779,8 @@ export function actualizarCambioVenta() {
                             metodoPago: metodoPago,
                             sucursal: sucursal,
                             cliente: cliente,
+                            clienteId: clienteId,
+                            operacionId: data.operacionId,
                             usuario: store.sessionUser,
                             fecha: hoy(),
                             hora: horaActual()
@@ -804,6 +806,9 @@ export function actualizarCambioVenta() {
                             limpiarCarritoDraft();  // llamada directa
                             renderCarrito();
                         document.getElementById("clienteVenta").value = "";
+                        document.getElementById("clienteVentaId").value = "";
+                        document.getElementById("clienteCreditoVenta").textContent = "";
+                        _clienteVentaSeleccionado = null;
                         const ef = document.getElementById("efectivoRecibidoVenta");
                         if (ef) ef.value = "";
                         const cm = document.getElementById("cambioVenta");

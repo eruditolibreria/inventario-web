@@ -33,6 +33,7 @@ let _cargarUsuarios = null;
 let _cargarResumenServicios = null;
 let _setReporteStock = null;
 let _setReporteFinanciero = null;
+let _cargarClientesModulo = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -44,6 +45,7 @@ export function initNavegacion(callbacks) {
     if (callbacks.cargarResumenServicios) _cargarResumenServicios = callbacks.cargarResumenServicios;
     if (callbacks.setReporteStock) _setReporteStock = callbacks.setReporteStock;
     if (callbacks.setReporteFinanciero) _setReporteFinanciero = callbacks.setReporteFinanciero;
+    if (callbacks.cargarClientesModulo) _cargarClientesModulo = callbacks.cargarClientesModulo;
     _bindTabClicks();
 }
 
@@ -134,6 +136,8 @@ function _actualizarTabs(modo) {
     TODOS_MODOS.forEach(function(m) {
         var tab = document.getElementById("tab-" + m);
         if (tab) tab.classList.toggle("active", m === modo);
+        var sidebarTab = document.getElementById("sidebar-tab-" + m);
+        if (sidebarTab) sidebarTab.classList.toggle("active", m === modo);
     });
     actualizarIndicador(modo);
 }
@@ -249,6 +253,8 @@ export function setModo(modo, direccion, velocidad) {
     }
     if (modo === "USUARIOS")
         if (_cargarUsuarios) _cargarUsuarios();
+    if (modo === "CLIENTES" && store.sessionToken)
+        if (_cargarClientesModulo) _cargarClientesModulo(1);
     if (modo === "TRANSFERENCIAS")
         setSubModoTransf("REGISTRAR");
     if (modo === "LAMINAS")

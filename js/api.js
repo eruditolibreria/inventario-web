@@ -15,7 +15,7 @@
  *   if (!data.ok) { manejarRespuesta(data); return; }
  */
 
-import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES } from './config.js';
+import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES, BASE_URL_CLIENTES, SUPABASE_ANON_KEY } from './config.js';
 import { store, setTokens, setToken } from './store.js';
 
 /**
@@ -83,6 +83,13 @@ function resolverBaseUrl(accion) {
         REGISTRAR_COMPROBANTE: BASE_URL_COMPROBANTES,
         LISTAR_COMPROBANTES: BASE_URL_COMPROBANTES,
         OBTENER_COMPROBANTE: BASE_URL_COMPROBANTES,
+        LISTAR_CLIENTES_MODULO: BASE_URL_CLIENTES,
+        BUSCAR_CLIENTES_VENTA: BASE_URL_CLIENTES,
+        OBTENER_CLIENTE: BASE_URL_CLIENTES,
+        CREAR_CLIENTE: BASE_URL_CLIENTES,
+        ACTUALIZAR_CLIENTE: BASE_URL_CLIENTES,
+        REGISTRAR_PAGO_CLIENTE: BASE_URL_CLIENTES,
+        ANULAR_PAGO_CLIENTE: BASE_URL_CLIENTES,
     };
     return RUTAS[accion] || BASE_URL_ERUDITOS;
 }
@@ -94,7 +101,8 @@ async function api(params) {
             const r = await fetch(resolverBaseUrl("REFRESH_TOKEN"), {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
                 },
                 body: JSON.stringify({
                     ACCION: "REFRESH_TOKEN",
@@ -112,7 +120,8 @@ async function api(params) {
     const res = await fetch(resolverBaseUrl(params.ACCION), {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${params.TOKEN || SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(body)
     });

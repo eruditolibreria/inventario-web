@@ -50,6 +50,8 @@ import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra,
   from './modos/compra.js';
 import { initGasto, toggleAcreedorGasto, registrarGasto }
   from './modos/gasto.js';
+import { initClientes, cargarClientesModulo }
+  from './modos/clientes.js';
 import { initCuentasCobrar, listarCuentasCobrar, abrirFormAbonoCobrar,
          cancelarAbonoCobrar, confirmarAbonoCobrar, registrarCuentaCobrar }
   from './modos/cuentas_cobrar.js';
@@ -377,6 +379,7 @@ function inicializarApp() {
         cargarResumenServicios,
         setReporteStock,
         setReporteFinanciero,
+        cargarClientesModulo,
     });
 
     // Inyectar dependencias en inventario
@@ -394,6 +397,7 @@ function inicializarApp() {
     initVenta({ verificarEstadoCaja: verif });
     initCompra({ verificarEstadoCaja: verif });
     initGasto({ verificarEstadoCaja: verif });
+    initClientes();
     initCuentasCobrar({ verificarEstadoCaja: verif });
     initCuentasPagar({ verificarEstadoCaja: verif });
     initDevoluciones({ verificarEstadoCaja: verif });
@@ -413,6 +417,7 @@ function inicializarApp() {
         metodoPago._efectivoBound = true;
         metodoPago.addEventListener("change", () => {
             if (window._actualizarVisibilidadEfectivo) window._actualizarVisibilidadEfectivo();
+            toggleClienteVenta();
         });
     }
 

@@ -159,6 +159,10 @@
                             <span class="tab-icon"><i class="fa-solid fa-sack-dollar"></i></span>
                             Venta
                         </div>
+                        <div class="mode-tab" id="tab-CLIENTES" aria-label="Clientes">
+                            <span class="tab-icon"><i class="fa-solid fa-address-book"></i></span>
+                            Clientes
+                        </div>
                         <div class="mode-tab" id="tab-COMPRA" aria-label="Compra">
                             <span class="tab-icon"><i class="fa-solid fa-cart-shopping"></i></span>
                             Compra
@@ -271,9 +275,15 @@
                             </div>
                             <div class="field-group" style="margin:0" id="campoClienteVenta">
                                 <label class="field-label">Cliente</label>
-                                <input id="clienteVenta" placeholder="Nombre del cliente" autocomplete="off" oninput="buscarClienteVenta()">
+                                <input type="hidden" id="clienteVentaId">
+                                <input id="clienteVenta" placeholder="Buscar cliente registrado" autocomplete="off" oninput="buscarClienteVenta()">
                                 <div class="autocomplete" id="listaClienteVenta"></div>
+                                <small id="clienteCreditoVenta" class="cliente-credito-info"></small>
                             </div>
+                        </div>
+                        <div id="campoVencimientoVenta" class="field-group mb-12 oculto">
+                            <label class="field-label">Vencimiento del crédito</label>
+                            <input id="fechaVencimientoVenta" type="date">
                         </div>
                         <div id="campoEfectivoVenta" class="row-2 mb-12 oculto">
                             <div class="field-group" style="margin:0">
@@ -323,6 +333,11 @@
                             </div>
                         </div>
                     </div>
+                    <!-- CLIENTES -->
+                    <div id="seccion-CLIENTES" class="oculto">
+                        <div id="clientesRoot"></div>
+                    </div>
+
                     <!-- COMPRA -->
                     <div id="seccion-COMPRA" class="oculto">
                         <div class="section-label">Registrar compra</div>
@@ -635,6 +650,8 @@
                                     <button class="btn btn-ghost" onclick="cancelarAbonoCobrar()">✕ Cancelar</button>
                                 </div>
                             </div>
+                            <div class="empty-state">Las deudas nuevas se crean desde una venta a crédito con un cliente registrado.</div>
+                            <div class="oculto">
                             <div class="divider"></div>
                             <div class="section-label">Registrar nueva cuenta</div>
                             <div class="row-2">
@@ -666,6 +683,7 @@
                             </div>
                             <div class="loader" id="loaderNuevaCobrar"></div>
                             <button class="btn btn-blue mt-8" onclick="registrarCuentaCobrar()">➕ Registrar cuenta</button>
+                            </div>
                         </div>
                         <div id="cuentas-PAGAR" class="oculto">
                             <div class="row-2 mb-12">

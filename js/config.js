@@ -1,6 +1,6 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-const LOCAL = false; // cambiar a true para desarrollo local
+const LOCAL = true; // cambiar a true para desarrollo local
 
 export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
@@ -25,6 +25,7 @@ export const BASE_URL_REPORTES      = `${HOST}/reportes`;
 export const BASE_URL_CUENTAS       = `${HOST}/cuentas`;
 export const BASE_URL_DEVOLUCIONES  = `${HOST}/devoluciones`;
 export const BASE_URL_COMPROBANTES  = `${HOST}/comprobantes`;
+export const BASE_URL_CLIENTES      = `${HOST}/clientes`;
 
 export const COMPROBANTE_ANCHO_DEFAULT = "57";
 
@@ -33,15 +34,15 @@ export const DEVOL_LIMITE = 20
   , CARRITO_CHUNK_SIZE = 10;
 export const CARRITO_KEY = "eruditos_carrito_draft";
 
-export const TODOS_MODOS = ["VENTA", "COMPRA", "GASTO", "CAJA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
-export const ORDEN_MODOS = ["VENTA","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];
+export const TODOS_MODOS = ["VENTA", "CLIENTES", "COMPRA", "GASTO", "CAJA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
+export const ORDEN_MODOS = ["VENTA","CLIENTES","COMPRA","GASTO","CAJA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];
 export const PERMISOS = {
     ADMIN: {
         tabs: [...TODOS_MODOS],
         inicio: "VENTA"
     },
     VENDEDOR: {
-        tabs: ["VENTA", "CUENTAS", "DEVOLUCIONES", "BUSQUEDA", "LAMINAS", "SERVICIOS"],
+        tabs: ["VENTA", "CLIENTES", "CUENTAS", "DEVOLUCIONES", "BUSQUEDA", "LAMINAS", "SERVICIOS"],
         inicio: "VENTA"
     },
     ALMACEN: {

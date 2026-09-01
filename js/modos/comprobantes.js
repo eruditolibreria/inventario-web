@@ -42,6 +42,8 @@ async function _postComprobante(venta) {
         ACCION: "REGISTRAR_COMPROBANTE",
         SUCURSAL: venta.sucursal,
         CLIENTE: venta.cliente || "MOSTRADOR",
+        CLIENTE_ID: venta.clienteId || undefined,
+        OPERACION_ID: venta.operacionId || undefined,
         METODO_PAGO: venta.metodoPago,
         TOTAL: venta.total,
         TOTAL_REDONDEADO: venta.totalRedondeado ?? venta.total,
