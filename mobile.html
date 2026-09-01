@@ -597,9 +597,9 @@
                     </div>
                     <!-- CUENTAS -->
                     <div id="seccion-CUENTAS" class="oculto">
-                        <div class="section-label">Cuentas por cobrar / pagar</div>
+                        <div class="section-label">Cuentas diversas / por pagar</div>
                         <div class="sub-tabs">
-                            <div class="sub-tab active" id="subtab-cuentas-COBRAR">📥 Por cobrar</div>
+                            <div class="sub-tab active" id="subtab-cuentas-COBRAR">📥 Diversas</div>
                             <div class="sub-tab" id="subtab-cuentas-PAGAR">📤 Por pagar</div>
                         </div>
                         <div id="cuentas-COBRAR">
@@ -650,10 +650,10 @@
                                     <button class="btn btn-ghost" onclick="cancelarAbonoCobrar()">✕ Cancelar</button>
                                 </div>
                             </div>
-                            <div class="empty-state">Las deudas nuevas se crean desde una venta a crédito con un cliente registrado.</div>
-                            <div class="oculto">
+                            <div class="empty-state">Las ventas a crédito se administran en <b>Clientes</b>. Registra aquí préstamos, anticipos y otras deudas no comerciales.</div>
+                            <div id="formNuevaCobrar">
                             <div class="divider"></div>
-                            <div class="section-label">Registrar nueva cuenta</div>
+                            <div class="section-label">Registrar cuenta diversa</div>
                             <div class="row-2">
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Sucursal</label>
@@ -663,23 +663,69 @@
                                     </select>
                                 </div>
                                 <div class="field-group" style="margin:0">
-                                    <label class="field-label">Cliente</label>
-                                    <input id="nuevaCobrarCliente" placeholder="Nombre del cliente">
+                                    <label class="field-label">Tipo</label>
+                                    <select id="nuevaCobrarTipo">
+                                        <option value="PRESTAMO">Préstamo</option>
+                                        <option value="ANTICIPO">Anticipo</option>
+                                        <option value="OTRO">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row-2 mt-8">
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Deudor</label>
+                                    <input id="nuevaCobrarDeudor" placeholder="Nombre de la persona o entidad">
+                                </div>
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Teléfono</label>
+                                    <input id="nuevaCobrarTelefono" placeholder="Opcional">
+                                </div>
+                            </div>
+                            <div class="row-2 mt-8">
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Documento</label>
+                                    <input id="nuevaCobrarDocumento" placeholder="CI o referencia (opcional)">
+                                </div>
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Origen</label>
+                                    <select id="nuevaCobrarOrigen" onchange="toggleMovimientoCuentaCobrar()">
+                                        <option value="NUEVA">Dinero entregado ahora</option>
+                                        <option value="PREVIA">Deuda ya existente</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="field-group mt-8">
                                 <label class="field-label">Concepto</label>
-                                <input id="nuevaCobrarConcepto" placeholder="Descripción de la deuda">
+                                <input id="nuevaCobrarConcepto" placeholder="Motivo o descripción de la deuda">
                             </div>
                             <div class="row-2 mt-8">
                                 <div class="field-group" style="margin:0">
-                                    <label class="field-label">Total (Bs)</label>
+                                    <label class="field-label">Monto adeudado (Bs)</label>
                                     <input id="nuevaCobrarTotal" type="number" min="0.01" step="0.01" placeholder="0.00">
                                 </div>
                                 <div class="field-group" style="margin:0">
-                                    <label class="field-label">Abono inicial</label>
-                                    <input id="nuevaCobrarAbono" type="number" min="0" step="0.01" placeholder="0.00">
+                                    <label class="field-label">Vencimiento</label>
+                                    <input id="nuevaCobrarVencimiento" type="date">
                                 </div>
+                            </div>
+                            <div class="field-group mt-8" style="margin-bottom:0">
+                                <label class="field-label">¿Registrar salida de dinero ahora?</label>
+                                <select id="nuevaCobrarMovimiento" onchange="toggleMovimientoCuentaCobrar()">
+                                    <option value="SI">Sí, registrar la salida</option>
+                                    <option value="NO">No, solo registrar la deuda</option>
+                                </select>
+                                <small style="color:var(--muted)">El método de entrega se solicita únicamente si eliges “Sí”.</small>
+                            </div>
+                            <div id="nuevaCobrarEntregaWrap" class="field-group mt-8" style="margin-bottom:0">
+                                <label class="field-label">Método de entrega</label>
+                                <select id="nuevaCobrarMetodo">
+                                    <option value="EFECTIVO">💵 Efectivo</option>
+                                    <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                                </select>
+                            </div>
+                            <div class="field-group mt-8">
+                                <label class="field-label">Observaciones</label>
+                                <input id="nuevaCobrarObservaciones" placeholder="Opcional">
                             </div>
                             <div class="loader" id="loaderNuevaCobrar"></div>
                             <button class="btn btn-blue mt-8" onclick="registrarCuentaCobrar()">➕ Registrar cuenta</button>

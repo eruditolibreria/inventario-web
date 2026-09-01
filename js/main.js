@@ -53,7 +53,8 @@ import { initGasto, toggleAcreedorGasto, registrarGasto }
 import { initClientes, cargarClientesModulo }
   from './modos/clientes.js';
 import { initCuentasCobrar, listarCuentasCobrar, abrirFormAbonoCobrar,
-         cancelarAbonoCobrar, confirmarAbonoCobrar, registrarCuentaCobrar }
+         cancelarAbonoCobrar, confirmarAbonoCobrar, registrarCuentaCobrar,
+         toggleMovimientoCuentaCobrar }
   from './modos/cuentas_cobrar.js';
 import { initCuentasPagar, listarCuentasPagar, abrirFormAbonoPagar,
          cancelarAbonoPagar, confirmarAbonoPagar, registrarCuentaPagar }
@@ -264,6 +265,7 @@ function inicializarApp() {
     window.cancelarAbonoCobrar = cancelarAbonoCobrar;
     window.confirmarAbonoCobrar = confirmarAbonoCobrar;
     window.registrarCuentaCobrar = registrarCuentaCobrar;
+    window.toggleMovimientoCuentaCobrar = toggleMovimientoCuentaCobrar;
     window.listarCuentasPagar = listarCuentasPagar;
     window.abrirFormAbonoPagar = abrirFormAbonoPagar;
     window.cancelarAbonoPagar = cancelarAbonoPagar;
@@ -380,6 +382,7 @@ function inicializarApp() {
         setReporteStock,
         setReporteFinanciero,
         cargarClientesModulo,
+        listarCuentasCobrar,
     });
 
     // Inyectar dependencias en inventario

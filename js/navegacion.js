@@ -34,6 +34,7 @@ let _cargarResumenServicios = null;
 let _setReporteStock = null;
 let _setReporteFinanciero = null;
 let _cargarClientesModulo = null;
+let _listarCuentasCobrar = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -46,6 +47,7 @@ export function initNavegacion(callbacks) {
     if (callbacks.setReporteStock) _setReporteStock = callbacks.setReporteStock;
     if (callbacks.setReporteFinanciero) _setReporteFinanciero = callbacks.setReporteFinanciero;
     if (callbacks.cargarClientesModulo) _cargarClientesModulo = callbacks.cargarClientesModulo;
+    if (callbacks.listarCuentasCobrar) _listarCuentasCobrar = callbacks.listarCuentasCobrar;
     _bindTabClicks();
 }
 
@@ -255,6 +257,8 @@ export function setModo(modo, direccion, velocidad) {
         if (_cargarUsuarios) _cargarUsuarios();
     if (modo === "CLIENTES" && store.sessionToken)
         if (_cargarClientesModulo) _cargarClientesModulo(1);
+    if (modo === "CUENTAS" && store.sessionToken)
+        if (_listarCuentasCobrar) _listarCuentasCobrar();
     if (modo === "TRANSFERENCIAS")
         setSubModoTransf("REGISTRAR");
     if (modo === "LAMINAS")
