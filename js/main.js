@@ -43,9 +43,12 @@ import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          limpiarCarritoDraft, abrirEscanerVenta, cerrarEscanerVenta,
          revisarOrdenEscaner }
   from './modos/venta.js';
-import { verificarEstadoCaja, abrirCaja, cerrarCaja, registrarAporteRetiro,
+import { verificarEstadoCaja, abrirCaja, registrarAporteRetiro,
          abrirDetalleCaja, cerrarDetalleCaja }
   from './modos/caja.js';
+import { initArqueo, cargarArqueo, iniciarArqueo, cerrarArqueo,
+         listarArqueos, verDetalleArqueo, cerrarDetalleArqueo }
+  from './modos/arqueo.js';
 import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra, abrirEscanerCompra }
   from './modos/compra.js';
 import { initGasto, toggleAcreedorGasto, registrarGasto }
@@ -256,10 +259,15 @@ function inicializarApp() {
     window.registrarGasto = registrarGasto;
     window.toggleAcreedorGasto = toggleAcreedorGasto;
     window.abrirCaja = abrirCaja;
-    window.cerrarCaja = cerrarCaja;
     window.registrarAporteRetiro = registrarAporteRetiro;
     window.abrirDetalleCaja = abrirDetalleCaja;
     window.cerrarDetalleCaja = cerrarDetalleCaja;
+    window.cargarArqueo = cargarArqueo;
+    window.iniciarArqueo = iniciarArqueo;
+    window.cerrarArqueo = cerrarArqueo;
+    window.listarArqueos = listarArqueos;
+    window.verDetalleArqueo = verDetalleArqueo;
+    window.cerrarDetalleArqueo = cerrarDetalleArqueo;
     window.listarCuentasCobrar = listarCuentasCobrar;
     window.abrirFormAbonoCobrar = abrirFormAbonoCobrar;
     window.cancelarAbonoCobrar = cancelarAbonoCobrar;
@@ -383,6 +391,7 @@ function inicializarApp() {
         setReporteFinanciero,
         cargarClientesModulo,
         listarCuentasCobrar,
+        cargarArqueo,
     });
 
     // Inyectar dependencias en inventario
@@ -400,6 +409,7 @@ function inicializarApp() {
     initVenta({ verificarEstadoCaja: verif });
     initCompra({ verificarEstadoCaja: verif });
     initGasto({ verificarEstadoCaja: verif });
+    initArqueo({ verificarEstadoCaja: verif });
     initClientes();
     initCuentasCobrar({ verificarEstadoCaja: verif });
     initCuentasPagar({ verificarEstadoCaja: verif });

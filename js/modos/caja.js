@@ -1,8 +1,8 @@
-/* === MODO CAJA: Apertura, cierre, estado y movimientos === */
+/* === MODO CAJA: Apertura, estado y movimientos === */
 
 /*
  * Funciones del modulo de caja: verificacion de estado por sucursal,
- * apertura con saldo inicial, cierre con saldo final y diferencia,
+ * apertura con saldo inicial, estado de caja,
  * y registro de aportes/retiros.
  *
  * Dependencias directas (ya modulos):
@@ -12,7 +12,7 @@
  *   - ../ui.js           (manejarRespuesta)
  *
  * Uso:
- *   import { initCaja, verificarEstadoCaja, abrirCaja, cerrarCaja } from './modos/caja.js';
+ *   import { initCaja, verificarEstadoCaja, abrirCaja } from './modos/caja.js';
  */
 
 import { store } from '../store.js';
@@ -32,9 +32,7 @@ var _cajasCache = [];
                         ACCION: "ESTADO_CAJA",
                         TOKEN: store.sessionToken
                     });
-                    const cb = document.getElementById("cajaBadge")
-                      , cs = document.getElementById("cierreCajaId");
-                    if (cs) cs.innerHTML = '<option value="">🏪 Seleccionar sucursal</option>';
+                    const cb = document.getElementById("cajaBadge");
                     const t = {
                         ERUDITOS: {
                             txt: document.getElementById("cajaTxtEruditos"),
@@ -70,36 +68,12 @@ var _cajasCache = [];
                         const saldoStr = c.saldoActual !== undefined ? `Bs ${Number(c.saldoActual).toFixed(2)} (actual)` : `Bs ${Number(c.saldoInicial).toFixed(2)} (inicial)`;
                         x.det.textContent = saldoStr + (negativo ? ' · ⚠ Saldo negativo' : '') + ' · ' + c.usuarioApertura;
                         x.card.style.borderColor = negativo ? "var(--red)" : "var(--accent)";
-                        const o = document.createElement("option");
-                        o.value = c.cajaId;
-                        o.textContent = s + " · " + saldoStr;
-                        if (cs) cs.appendChild(o)
                     }
                     );
                     cb.style.display = hay ? "inline-block" : "none";
-                    if (ca.length === 1 && cs)
-                        cs.value = ca[0].cajaId;
                     _bindCajaCardClicks(ca);
-                    _bindCierrePreview(cs);
                 } catch (e) {}
             }
-
-function _bindCierrePreview(cs) {
-    if (!cs || cs._cierrePreviewBound) return;
-    cs._cierrePreviewBound = true;
-    cs.addEventListener("change", function() {
-        const caja = _cajasCache.find(c => c.cajaId === this.value);
-        const sysEl = document.getElementById("cierreValSistema");
-        const conEl = document.getElementById("cierreValContado");
-        const difEl = document.getElementById("cierreValDif");
-        if (!caja || !sysEl) return;
-        const negativo = Number(caja.saldoActual) < 0;
-        sysEl.textContent = (negativo ? "⚠ " : "") + formatearBs(caja.saldoActual);
-        sysEl.className = "val " + (negativo ? "val-neg" : "val-neu");
-        if (conEl) { conEl.textContent = "—"; conEl.className = "val val-neu"; }
-        if (difEl) { difEl.textContent = "—"; difEl.className = "val"; }
-    });
-}
 
 function _bindCajaCardClicks(cajas) {
     var map = { ERUDITOS: "cajaCardEruditos", CENTRAL: "cajaCardCentral" };
@@ -151,62 +125,6 @@ function _bindCajaCardClicks(cajas) {
                         document.getElementById("aperturaNotas").value = "";
                         document.getElementById("aperturaSucursal").value = "";
                         await verificarEstadoCaja()
-                    } else {
-                        mostrarMsg("Error: " + (data.error || JSON.stringify(data)), "err")
-                    }
-                } catch (e) {
-                    mostrarMsg("Error de conexión", "err")
-                }
-                loader.style.display = "none";
-            }
-
-// Cierra una caja abierta con saldo final y calcula diferencia
-            export async function cerrarCaja() {
-                if (!store.sessionToken) {
-                    mostrarMsg("Sesión expirada", "err");
-                    return
-                }
-                const id = document.getElementById("cierreCajaId").value
-                  , sf = Number(document.getElementById("cierreSaldo").value);
-                if (!id) {
-                    mostrarMsg("No hay caja abierta para cerrar", "err");
-                    return
-                }
-                if (isNaN(sf) || sf < 0) {
-                    mostrarMsg("Ingresa el saldo final contado", "err");
-                    return
-                }
-                if (!confirm("¿Confirmar cierre de caja con saldo final Bs " + sf + "?"))
-                    return;
-                const loader = document.getElementById("loaderCierre");
-                loader.style.display = "block";
-                try {
-                    const data = await api({
-                        ACCION: "CIERRE_CAJA",
-                        ID: id,
-                        SALDO_FINAL: sf,
-                        NOTAS: document.getElementById("cierreNotas").value,
-                        TOKEN: store.sessionToken
-                    });
-                    if (!manejarRespuesta(data)) {
-                        loader.style.display = "none";
-                        return
-                    }
-                    if (data.ok) {
-                        const resumen = document.getElementById("cierreResumen");
-                        const sActual = Number(data.saldoActual || 0)
-                          , sFinal = Number(data.saldoFinal || sf)
-                          , dif = Number(data.diferencia || 0);
-                        document.getElementById("cierreValSistema").textContent = `Bs ${sActual.toFixed(2)}`;
-                        document.getElementById("cierreValContado").textContent = `Bs ${sFinal.toFixed(2)}`;
-                        const difEl = document.getElementById("cierreValDif");
-                        difEl.textContent = (dif >= 0 ? "+" : "") + `Bs ${dif.toFixed(2)}`;
-                        difEl.className = "val " + (dif === 0 ? "val-neu" : dif > 0 ? "val-pos" : "val-neg");
-                        resumen.classList.add("show");
-                        mostrarMsg("🔒 Caja cerrada · Diferencia: " + (dif >= 0 ? "+" : "") + `Bs ${dif.toFixed(2)}`, "ok");
-                        document.getElementById("cierreSaldo").value = "";
-                        document.getElementById("cierreNotas").value = "";
-                        await verificarEstadoCaja();
                     } else {
                         mostrarMsg("Error: " + (data.error || JSON.stringify(data)), "err")
                     }

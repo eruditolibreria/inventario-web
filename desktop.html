@@ -188,6 +188,10 @@
                     <span class="sidebar-icon"><i class="fa-solid fa-cash-register"></i></span>
                     <span>Caja</span>
                 </div>
+                <div class="sidebar-item" id="sidebar-tab-ARQUEO" data-modo="ARQUEO" onclick="document.getElementById('tab-ARQUEO').click()">
+                    <span class="sidebar-icon"><i class="fa-solid fa-scale-balanced"></i></span>
+                    <span>Arqueo</span>
+                </div>
                 <div class="sidebar-item" id="sidebar-tab-CUENTAS" data-modo="CUENTAS" onclick="document.getElementById('tab-CUENTAS').click()">
                     <span class="sidebar-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
                     <span>Cuentas</span>
@@ -261,6 +265,9 @@
                             </div>
                             <div class="mode-tab" id="tab-CAJA" aria-label="Caja">
                                 <span class="tab-icon"><i class="fa-solid fa-cash-register"></i></span>Caja
+                            </div>
+                            <div class="mode-tab" id="tab-ARQUEO" aria-label="Arqueo">
+                                <span class="tab-icon"><i class="fa-solid fa-scale-balanced"></i></span>Arqueo
                             </div>
                             <div class="mode-tab" id="tab-CUENTAS" aria-label="Cuentas">
                                 <span class="tab-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>Cuentas
@@ -587,7 +594,6 @@
                             </div>
                             <div class="sub-tabs">
                                 <div class="sub-tab active" id="subtab-caja-APERTURA">🔓 Apertura</div>
-                                <div class="sub-tab" id="subtab-caja-CIERRE">🔒 Cierre</div>
                                 <div class="sub-tab" id="subtab-caja-APORTES">💼 Aportes</div>
                             </div>
                             <div id="caja-APERTURA">
@@ -609,38 +615,6 @@
                                 </div>
                                 <div class="loader" id="loaderApertura"></div>
                                 <button class="btn btn-primary" onclick="abrirCaja()">🔓 Abrir Caja</button>
-                            </div>
-                            <div id="caja-CIERRE" class="oculto">
-                                <div class="field-group">
-                                    <label class="field-label">Sucursal a cerrar</label>
-                                    <select id="cierreCajaId">
-                                        <option value="">🏪 Seleccionar sucursal</option>
-                                    </select>
-                                </div>
-                                <div class="field-group">
-                                    <label class="field-label">Saldo final contado (efectivo físico total, no un ajuste)</label>
-                                    <input id="cierreSaldo" type="number" min="0" step="0.01" placeholder="Bs 0.00">
-                                </div>
-                                <div class="field-group">
-                                    <label class="field-label">Notas de cierre (opcional)</label>
-                                    <input id="cierreNotas" placeholder="Observaciones de cierre">
-                                </div>
-                                <div id="cierreResumen" class="cierre-resumen">
-                                    <div class="cierre-row">
-                                        <span class="label">Sistema esperaba</span>
-                                        <span class="val val-neu" id="cierreValSistema">—</span>
-                                    </div>
-                                    <div class="cierre-row">
-                                        <span class="label">Contaste</span>
-                                        <span class="val val-neu" id="cierreValContado">—</span>
-                                    </div>
-                                    <div class="cierre-row">
-                                        <span class="label">Diferencia</span>
-                                        <span class="val" id="cierreValDif">—</span>
-                                    </div>
-                                </div>
-                                <div class="loader" id="loaderCierre"></div>
-                                <button class="btn btn-red mt-8" onclick="cerrarCaja()">🔒 Cerrar Caja</button>
                             </div>
                             <div id="caja-APORTES" class="oculto">
                                 <div class="row-2">
@@ -684,6 +658,34 @@
                                 <div class="loader" id="loaderAporte"></div>
                                 <button class="btn btn-purple mt-8" onclick="registrarAporteRetiro()">💼 Registrar</button>
                             </div>
+                        </div>
+
+                        <!-- ARQUEO -->
+                        <div id="seccion-ARQUEO" class="oculto">
+                            <div class="section-label">Arqueo y cierre de caja</div>
+                            <div class="arqueo-intro">Cuenta el efectivo físico por denominación. El sistema calcula el saldo esperado desde los movimientos registrados.</div>
+                            <div class="row-2 mt-8">
+                                <div class="field-group" style="margin:0"><label class="field-label">Caja abierta</label><select id="arqueoCajaId"><option value="">Seleccionar caja abierta</option></select></div>
+                                <div class="arqueo-accion"><button class="btn btn-primary" onclick="iniciarArqueo()">Preparar arqueo</button></div>
+                            </div>
+                            <div class="arqueo-periodo" id="arqueoPeriodo">—</div>
+                            <div class="arqueo-resumen-grid">
+                                <div><span>Saldo inicial</span><strong id="arqueoSaldoInicial">—</strong></div><div><span>Ventas efectivo</span><strong id="arqueoVentas">—</strong></div><div><span>Ingresos</span><strong id="arqueoIngresos">—</strong></div><div><span>Gastos</span><strong id="arqueoGastos">—</strong></div><div><span>Retiros y reversos</span><strong id="arqueoRetiros">—</strong></div><div class="arqueo-esperado"><span>Saldo esperado</span><strong id="arqueoSaldoEsperado">—</strong></div>
+                            </div>
+                            <div class="section-label">Conteo físico</div>
+                            <div id="arqueoConteo" class="arqueo-conteo"></div>
+                            <div class="arqueo-total"><span>Total contado</span><strong id="arqueoTotalContado">Bs 0.00</strong></div>
+                            <div class="arqueo-resultado"><span>Diferencia</span><strong id="arqueoDiferencia" class="arqueo-diferencia cuadra">Bs 0.00</strong><b id="arqueoResultado">CUADRA</b></div>
+                            <div class="field-group"><label class="field-label">Observación (obligatoria si hay diferencia)</label><textarea id="arqueoObservaciones" rows="2" placeholder="Describe el faltante o sobrante, si corresponde"></textarea></div>
+                            <div class="loader" id="loaderArqueo"></div>
+                            <button class="btn btn-red" onclick="cerrarArqueo()">Cerrar arqueo y caja</button>
+                            <div class="section-label arqueo-historial-titulo">Historial de arqueos</div>
+                            <div class="row-2"><div class="field-group" style="margin:0"><label class="field-label">Desde</label><input id="arqueoFechaDesde" type="date"></div><div class="field-group" style="margin:0"><label class="field-label">Hasta</label><input id="arqueoFechaHasta" type="date"></div></div>
+                            <div class="row-2 mt-8"><select id="arqueoEstadoFiltro"><option value="">Todos los estados</option><option value="CERRADO">Cerrados</option><option value="ABIERTO">Abiertos</option></select><select id="arqueoResultadoFiltro"><option value="">Todos los resultados</option><option value="CUADRA">Cuadran</option><option value="FALTANTE">Faltantes</option><option value="SOBRANTE">Sobrantes</option></select></div>
+                            <div class="row-2 mt-8"><select id="arqueoSucursalFiltro"><option value="">Todas las sucursales</option><option value="ERUDITOS">ERUDITOS</option><option value="CENTRAL">CENTRAL</option></select><input id="arqueoUsuarioFiltro" placeholder="Usuario exacto (opcional)"></div>
+                            <input id="arqueoBusqueda" class="mt-8" placeholder="Buscar por usuario o caja">
+                            <button class="btn btn-ghost mt-8" onclick="listarArqueos()">Cargar historial</button>
+                            <div id="tablaArqueos"></div>
                         </div>
 
                         <!-- CUENTAS -->
@@ -1875,6 +1877,13 @@
         <div id="cajaDetalleResumen" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:16px"></div>
         <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Movimientos</div>
         <div id="cajaDetalleMovimientos" style="max-height:40vh;overflow-y:auto;font-size:11px"></div>
+    </div>
+</div>
+
+<div id="arqueoDetalleOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarDetalleArqueo(event)">
+    <div class="producto-detalle-card arqueo-detalle-card" onclick="event.stopPropagation()">
+        <div class="arqueo-modal-head"><strong>Detalle del arqueo</strong><button class="btn-icon" onclick="cerrarDetalleArqueo()">✕</button></div>
+        <div id="arqueoDetalleContenido"></div>
     </div>
 </div>
 

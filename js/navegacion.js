@@ -35,6 +35,7 @@ let _setReporteStock = null;
 let _setReporteFinanciero = null;
 let _cargarClientesModulo = null;
 let _listarCuentasCobrar = null;
+let _cargarArqueo = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -48,6 +49,7 @@ export function initNavegacion(callbacks) {
     if (callbacks.setReporteFinanciero) _setReporteFinanciero = callbacks.setReporteFinanciero;
     if (callbacks.cargarClientesModulo) _cargarClientesModulo = callbacks.cargarClientesModulo;
     if (callbacks.listarCuentasCobrar) _listarCuentasCobrar = callbacks.listarCuentasCobrar;
+    if (callbacks.cargarArqueo) _cargarArqueo = callbacks.cargarArqueo;
     _bindTabClicks();
 }
 
@@ -61,7 +63,7 @@ function _bindTabClicks() {
 
 function _bindSubTabClicks() {
     var subMap = {
-        caja:      { fn: setSubModoCaja,   keys: ["APERTURA","CIERRE","APORTES"] },
+        caja:      { fn: setSubModoCaja,   keys: ["APERTURA","APORTES"] },
         cuentas:   { fn: setSubModoCuentas, keys: ["COBRAR","PAGAR"] },
         devol:     { fn: setSubModoDevol,   keys: ["REGISTRAR","LISTAR"] },
         transf:    { fn: setSubModoTransf,  keys: ["REGISTRAR","HISTORIAL"] },
@@ -246,6 +248,8 @@ export function setModo(modo, direccion, velocidad) {
     /* Acciones al entrar a cada modo */
     if (modo === "CAJA" && store.sessionToken)
         if (_verificarEstadoCaja) _verificarEstadoCaja();
+    if (modo === "ARQUEO" && store.sessionToken)
+        if (_cargarArqueo) _cargarArqueo();
     if (modo === "DEVOLUCIONES")
         setSubModoDevol("REGISTRAR");
     if (modo === "REPORTES") {
@@ -433,12 +437,10 @@ function _modoVecino(modoActual, direccion) {
 
 
 export function setSubModoCaja(s) {
-    ["APERTURA", "CIERRE", "APORTES"].forEach(x => {
+    ["APERTURA", "APORTES"].forEach(x => {
         document.getElementById("caja-" + x).classList.toggle("oculto", x !== s);
         document.getElementById("subtab-caja-" + x).classList.toggle("active", x === s);
     });
-    if (s !== "CIERRE")
-        document.getElementById("cierreResumen").classList.remove("show");
 }
 
 
