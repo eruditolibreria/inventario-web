@@ -94,16 +94,16 @@ export async function listarCuentasCobrar() {
       return;
     }
     _cuentasVisibles = new Map(data.datos.map((cuenta) => [cuenta.id, cuenta]));
-    let html = '<table><thead><tr><th class="col-prod">Deudor</th><th>Tipo</th><th>Origen</th><th>Monto</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>';
+    let html = '<table class="cuentas-diversas-tabla"><thead><tr><th class="col-prod">Deudor</th><th>Tipo</th><th>Origen</th><th>Monto</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>';
     data.datos.forEach((cuenta) => {
       const cancelada = cuenta.estado === "CANCELADO" || cuenta.estado === "ANULADA";
       const detalle = [cuenta.codigo, cuenta.concepto, cuenta.fechaVencimiento ? `Vence: ${cuenta.fechaVencimiento}` : ""].filter(Boolean).map(escapar).join(" · ");
       html += `<tr>
         <td class="col-prod"><button class="cuenta-deudor-btn" data-cuenta-detalle="${escapar(cuenta.id)}"><strong>${escapar(cuenta.deudor)}</strong><small>${detalle}</small></button></td>
-        <td>${escapar(cuenta.tipo)}</td><td>${cuenta.origen === "PREVIA" ? "Previa" : "Nueva"}</td>
-        <td>${monto(cuenta.totalVenta)}</td><td>${monto(cuenta.saldo)}</td>
-        <td class="${cancelada ? "estado-cancelado" : "estado-pendiente"}">${escapar(cuenta.estado)}</td>
-        <td>${!cancelada ? `<button class="btn-ghost btn-sm" data-accion="abrir-form-abono" data-id="${escapar(cuenta.id)}">💳 Abonar</button>` : ""}</td>
+        <td data-label="Tipo">${escapar(cuenta.tipo)}</td><td data-label="Origen">${cuenta.origen === "PREVIA" ? "Previa" : "Nueva"}</td>
+        <td data-label="Monto">${monto(cuenta.totalVenta)}</td><td data-label="Saldo">${monto(cuenta.saldo)}</td>
+        <td data-label="Estado" class="${cancelada ? "estado-cancelado" : "estado-pendiente"}">${escapar(cuenta.estado)}</td>
+        <td data-label="Acción">${!cancelada ? `<button class="btn-ghost btn-sm" data-accion="abrir-form-abono" data-id="${escapar(cuenta.id)}">💳 Abonar</button>` : ""}</td>
       </tr>`;
     });
     tabla.innerHTML = html + "</tbody></table>";
