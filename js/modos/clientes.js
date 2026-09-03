@@ -151,7 +151,7 @@ export async function cargarClientesModulo(pagina) {
 function renderClientes(clientes) {
     const tabla = document.getElementById('tablaClientes');
     if (!clientes.length) { tabla.innerHTML = '<div class="empty-state">Sin clientes encontrados</div>'; return; }
-    tabla.innerHTML = `<div class="clientes-tabla-wrap"><table class="clientes-tabla"><thead><tr><th>Código</th><th>Cliente</th><th>Contacto</th><th>Compras</th><th>Total comprado</th><th>Deuda</th><th>Estado</th><th></th></tr></thead><tbody>${clientes.map(c => `
+    tabla.innerHTML = `<div class="clientes-tabla-wrap clientes-lista-tabla"><table class="clientes-tabla"><thead><tr><th>Código</th><th>Cliente</th><th>Contacto</th><th>Compras</th><th>Total comprado</th><th>Deuda</th><th>Estado</th><th></th></tr></thead><tbody>${clientes.map(c => `
       <tr>
         <td><span class="cliente-codigo">${esc(c.codigoCliente)}</span></td>
         <td><strong>${esc(c.nombre)}</strong><small>${esc(c.documento || 'Sin documento')}</small></td>
@@ -161,7 +161,21 @@ function renderClientes(clientes) {
         <td class="${Number(c.deuda) > 0 ? 'cliente-deuda' : 'cliente-al-dia'}">${formatearBs(c.deuda)}</td>
         <td><span class="cliente-estado ${c.estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${esc(c.estado)}</span></td>
         <td><button class="btn btn-ghost btn-sm" data-cliente-id="${esc(c.id)}">Ver</button></td>
-      </tr>`).join('')}</tbody></table></div>`;
+      </tr>`).join('')}</tbody></table></div>
+      <div class="clientes-cards">${clientes.map(c => `
+        <article class="cliente-card">
+          <div class="cliente-card-head">
+            <div><strong>${esc(c.nombre)}</strong><small>${esc(c.documento || 'Sin documento')}</small></div>
+            <span class="cliente-estado ${c.estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${esc(c.estado)}</span>
+          </div>
+          <div class="cliente-card-info">
+            <div><span>Teléfono</span><strong>${esc(c.telefono || '—')}</strong></div>
+            <div><span>Compras</span><strong>${Number(c.numeroCompras || 0)}</strong></div>
+            <div><span>Total comprado</span><strong>${formatearBs(c.totalComprado)}</strong></div>
+            <div><span>Deuda</span><strong class="${Number(c.deuda) > 0 ? 'cliente-deuda' : 'cliente-al-dia'}">${formatearBs(c.deuda)}</strong></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" data-cliente-id="${esc(c.id)}">Ver</button>
+        </article>`).join('')}</div>`;
     tabla.querySelectorAll('[data-cliente-id]').forEach(btn => btn.addEventListener('click', () => abrirPerfilCliente(btn.dataset.clienteId)));
 }
 

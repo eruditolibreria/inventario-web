@@ -309,7 +309,7 @@ export function initSwipe() {
 
 function _swipeStart(e) {
     if (_swipeActive || _swipeBloqueado || _transicionActiva) return;
-    if (e.target.closest(".mode-tabs, input, select, textarea, button, a, label, [contenteditable='true'], .sub-tabs")) return;
+    if (e.target.closest(".mode-tabs, input, select, textarea, button, a, label, [contenteditable='true'], .sub-tabs, .clientes-tabla-wrap")) return;
     _swipeStartX = e.touches[0].clientX;
     _swipeStartY = e.touches[0].clientY;
     _swipeModoOrigen = store.modoActual;
@@ -318,7 +318,7 @@ function _swipeStart(e) {
 
 function _swipeMove(e) {
     if (_swipeBloqueado || _transicionActiva) return;
-    if (e.target.closest(".mode-tabs, input, select, textarea, button, a, label, [contenteditable='true'], .sub-tabs")) return;
+    if (e.target.closest(".mode-tabs, input, select, textarea, button, a, label, [contenteditable='true'], .sub-tabs, .clientes-tabla-wrap")) return;
     var deltaX = e.touches[0].clientX - _swipeStartX;
     var deltaY = e.touches[0].clientY - _swipeStartY;
     if (Math.abs(deltaY) > Math.abs(deltaX)) return;
