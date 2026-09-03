@@ -48,6 +48,12 @@ let _clienteVentaSeleccionado = null;
 let _clienteVentaTimer = null;
 let _escanerVentaMovilActivo = false;
 
+// Para administradores la sucursal seleccionada en ventas tiene prioridad.
+// En otros roles el selector ya queda bloqueado en la sucursal de la sesion.
+function sucursalVentaActual() {
+    return document.getElementById("sucursalVenta")?.value || store.sessionSucursal || "";
+}
+
 export function initVenta(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
     initEscanerVenta();
@@ -96,7 +102,7 @@ function initEscanerVenta() {
 
 // Busca producto por codigo (local + backend) y lo agrega al carrito
 async function agregarPorCodigoScan(codigo) {
-    const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+    const suc = sucursalVentaActual();
     if (!suc) {
         mostrarMsg("Selecciona una sucursal", "err");
         return;
@@ -255,7 +261,7 @@ export function revisarOrdenEscaner() {
 
 async function procesarCodigoEscanerVenta(codigo) {
     const estado = document.getElementById("escanerEstado");
-    const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+    const suc = sucursalVentaActual();
     if (!suc) {
         if (estado) estado.textContent = "Selecciona una sucursal antes de escanear";
         return;
@@ -314,7 +320,7 @@ export async function abrirEscanerVenta() {
     estado.textContent = "Apuntando camara...";
     try {
         const codigo = await iniciarEscanerCamara(video);
-        const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+        const suc = sucursalVentaActual();
         let prod = await buscarPorCodigo(codigo, suc);
         if (!prod) {
             const data = await api({
@@ -349,7 +355,7 @@ function initScannerInput() {
     if (!input) return;
     input.addEventListener("input", function() {
         const valor = this.value.trim();
-        const suc = store.sessionSucursal || document.getElementById("sucursalVenta").value;
+        const suc = sucursalVentaActual();
         if (!valor || !suc) return;
         onInputScanner(valor, suc, async function(prod) {
             if (prod) {
@@ -673,7 +679,7 @@ export function actualizarCambioVenta() {
                 const carrito = [...store.carrito]
                   , item = carrito[i];
                 if (!item) return;
-                const su = store.sessionSucursal || document.getElementById("sucursalVenta").value
+                const su = sucursalVentaActual()
                   , nueva = item.cantidad + 1;
                 let p = null;
                 try { p = await buscarProductoPorNombre(item.producto, su); } catch (_) {}
@@ -703,7 +709,14 @@ export function actualizarCambioVenta() {
         mostrarMsg("⚠ Producto(s) sin precio: " + sinPrecio.map(i => i.producto).join(", "), "err");
         return
     }
-    const sucursal = store.sessionSucursal || document.getElementById("sucursalVenta").value
+    const sucursalesCarrito = [...new Set(
+        store.carrito.map(item => String(item.sucursal || "").trim()).filter(Boolean)
+    )];
+    if (sucursalesCarrito.length > 1) {
+        mostrarMsg("El carrito contiene productos de distintas sucursales", "err");
+        return;
+    }
+    const sucursal = sucursalesCarrito[0] || sucursalVentaActual()
       , metodoPago = document.getElementById("metodoPagoVenta").value
       , clienteId = document.getElementById("clienteVentaId").value || null
       , cliente = _clienteVentaSeleccionado?.nombre || "MOSTRADOR"

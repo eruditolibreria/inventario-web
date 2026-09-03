@@ -21,6 +21,14 @@ const fecha = (v) => {
     return new Date(s).toLocaleDateString('es-BO');
 };
 
+function detalleMetodoVenta(venta) {
+    if (venta.metodoPago !== 'MIXTO') return venta.metodoPago;
+    const partes = [];
+    if (Number(venta.montoEfectivo || 0) > 0) partes.push(`Efectivo ${formatearBs(venta.montoEfectivo)}`);
+    if (Number(venta.montoTransferencia || 0) > 0) partes.push(`Transferencia ${formatearBs(venta.montoTransferencia)}`);
+    return partes.length ? partes.join(' + ') : 'MIXTO';
+}
+
 export function initClientes() {
     const root = document.getElementById('clientesRoot');
     if (!root || root.dataset.ready) return;
@@ -256,12 +264,12 @@ function renderPerfil(tab) {
 function renderPerfilTab(tab) {
     const cont = document.getElementById('clienteTabContenido'), c = _perfil.cliente;
     if (tab === 'HISTORIAL') {
-        cont.innerHTML = tablaSimple(['Fecha','Sucursal','Método','Total','Estado'], _perfil.ventas.map(v => [fecha(v.fecha), esc(v.sucursal), esc(v.metodoPago), formatearBs(v.total), esc(v.estado)]));
+        cont.innerHTML = tablaSimple(['Fecha','Sucursal','Método','Total','Estado'], _perfil.ventas.map(v => [fecha(v.fecha), esc(v.sucursal), esc(detalleMetodoVenta(v)), formatearBs(v.total), esc(v.estado)]));
     } else if (tab === 'DEUDAS') {
         cont.innerHTML = tablaSimple(['Venta','Emisión','Vencimiento','Monto','Pagado','Devuelto','Saldo','Estado',''], _perfil.deudas.map(d => [esc(String(d.ventaId).slice(0,8)), fecha(d.fechaEmision), fecha(d.fechaVencimiento), formatearBs(d.montoOriginal), formatearBs(d.montoPagado), formatearBs(d.montoAjustado), formatearBs(d.saldo), `<span class="cliente-estado ${d.estado === 'VENCIDA' ? 'vencida' : ''}">${esc(d.estado)}</span>`, Number(d.saldo) > 0 && d.estado !== 'ANULADA' ? `<button class="btn btn-primary btn-sm" data-pagar-cuenta="${esc(d.id)}">Pagar</button>` : '']));
         cont.querySelectorAll('[data-pagar-cuenta]').forEach(btn => btn.addEventListener('click', () => abrirPagoCliente(btn.dataset.pagarCuenta)));
     } else if (tab === 'PAGOS') {
-        cont.innerHTML = tablaSimple(['Fecha','Monto','Método','Usuario','Estado',''], _perfil.pagos.map(p => [fecha(p.fechaPago), formatearBs(p.monto), esc(p.metodoPago), esc(p.usuario), esc(p.estado), store.sessionRol === 'ADMIN' && p.estado === 'REGISTRADO' ? `<button class="btn btn-ghost btn-sm" data-anular-pago="${esc(p.id)}">Anular</button>` : '']));
+        cont.innerHTML = tablaSimple(['Fecha','Origen','Monto','Método','Usuario','Estado',''], _perfil.pagos.map(p => [fecha(p.fechaPago), esc(p.origen || 'Abono a crédito'), formatearBs(p.monto), esc(p.metodoPago), esc(p.usuario), esc(p.estado), store.sessionRol === 'ADMIN' && p.anulable !== false && p.estado === 'REGISTRADO' ? `<button class="btn btn-ghost btn-sm" data-anular-pago="${esc(p.id)}">Anular</button>` : '']));
         cont.querySelectorAll('[data-anular-pago]').forEach(btn => btn.addEventListener('click', () => anularPagoCliente(btn.dataset.anularPago)));
     } else {
         cont.innerHTML = `<div class="cliente-datos-grid"><div><span>Documento</span><strong>${esc(c.documento || '—')}</strong></div><div><span>Teléfono</span><strong>${esc(c.telefono || '—')}</strong></div><div><span>Email</span><strong>${esc(c.email || '—')}</strong></div><div><span>Dirección</span><strong>${esc(c.direccion || '—')}</strong></div><div><span>Límite</span><strong>${formatearBs(c.limiteCredito)}</strong></div><div><span>Observaciones</span><strong>${esc(c.observaciones || '—')}</strong></div></div>`;

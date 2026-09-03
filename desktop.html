@@ -1449,6 +1449,13 @@
                                     <option value="CENTRAL">CENTRAL</option>
                                 </select>
                             </div>
+                            <div class="field-group srv-sucursal-select">
+                                <label class="field-label">Método de pago</label>
+                                <select id="srvMetodoPago">
+                                    <option value="EFECTIVO">💵 Efectivo</option>
+                                    <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                                </select>
+                            </div>
                             <div class="sub-tabs">
                                 <div class="sub-tab active" id="subtab-srv-COPIAS">🖨️ Copias/Imp.</div>
                                 <div class="sub-tab" id="subtab-srv-ANILLADOS">📎 Anillados</div>
@@ -1518,11 +1525,10 @@
                             <div id="srv-ANILLADOS" class="oculto">
                                 <div class="row-2 mb-12">
                                     <div class="field-group" style="margin:0">
-                                        <label class="field-label">Tipo de anillado</label>
+                                        <label class="field-label">Tamaño de anillado</label>
                                         <select id="srvAnilladoTipo">
-                                            <option value="Plástico">Plástico</option>
-                                            <option value="Espiral">Espiral</option>
-                                            <option value="Metal">Metal</option>
+                                            <option value="Carta">Carta</option>
+                                            <option value="Oficio">Oficio</option>
                                         </select>
                                     </div>
                                     <div class="field-group" style="margin:0">

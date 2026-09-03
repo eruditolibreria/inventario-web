@@ -20,6 +20,8 @@ export async function agregarServicio(tipo) {
     if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return }
     const sucursal = document.getElementById("srvSucursal").value;
     if (!sucursal) { mostrarMsg("Selecciona una sucursal primero", "err"); return }
+    const metodoPago = document.getElementById("srvMetodoPago").value;
+    if (!metodoPago) { mostrarMsg("Selecciona el método de pago", "err"); return }
     const hora = horaActual();
     let params = {}, loaderEl, camposLimpiar = [];
     if (tipo === "COPIAS") {
@@ -52,7 +54,7 @@ export async function agregarServicio(tipo) {
     const loader = document.getElementById(loaderEl);
     loader.style.display = "block";
     try {
-        const data = await api({ ACCION: "REGISTRAR_SERVICIO", TIPO: tipo, SUCURSAL: sucursal, HORA: hora, FECHA: hoy(), ...params, TOKEN: store.sessionToken });
+        const data = await api({ ACCION: "REGISTRAR_SERVICIO", TIPO: tipo, SUCURSAL: sucursal, METODO_PAGO: metodoPago, HORA: hora, FECHA: hoy(), ...params, TOKEN: store.sessionToken });
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return }
         if (data.ok) {
             mostrarMsg(`✅ Registro agregado · Bs ${data.total.toFixed(2)}`, "ok");
@@ -83,10 +85,10 @@ export async function cargarResumenServicios() {
         document.getElementById("srvResumenIngresos").innerHTML = fila("Copias/Impresiones", "Bs " + (t.ingrCopias || 0).toFixed(2)) + fila("Anillados", "Bs " + (t.ingrAnillados || 0).toFixed(2)) + fila("Plastificados", "Bs " + (t.ingrPlast || 0).toFixed(2)) + fila("Otros Servicios", "Bs " + (t.ingrOtros || 0).toFixed(2)) + fila("TOTAL INGRESOS", "Bs " + (t.totalGeneral || 0).toFixed(2), true);
         const registros = data.registros || [];
         if (registros.length === 0) { document.getElementById("srvTablaRegistros").innerHTML = `<div class="empty-state">Sin registros para esta fecha</div>`; loader.style.display = "none"; return }
-        let h = `<table><thead><tr><th>Hora</th><th class="col-prod">Servicio</th><th>Detalle</th><th>Cant.</th><th>Total</th><th></th></tr></thead><tbody>`;
+        let h = `<table><thead><tr><th>Hora</th><th class="col-prod">Servicio</th><th>Detalle</th><th>Pago</th><th>Cant.</th><th>Total</th><th></th></tr></thead><tbody>`;
         registros.forEach(r => {
             const detalle = r.tipo === "COPIAS" ? `${r.subTipo === "COPIA" ? "Copia" : "Imp."} ${r.color === "BN" ? "B&N" : "Color"} ${r.presentacion === "SIMPLE" ? "Simple" : "Doble"} · ${r.papel}` : r.subTipo;
-            h += `<tr class="srv-tabla-row"><td style="color:var(--muted)">${r.hora}</td><td class="col-prod">${r.tipo}</td><td style="color:var(--muted);font-size:10px">${detalle}${r.observaciones ? '<br>' + r.observaciones : ''}</td><td style="font-family:var(--mono)">${r.cantidad}</td><td style="font-family:var(--mono);color:var(--accent-text)">Bs ${Number(r.total).toFixed(2)}</td><td><button class="btn-del" onclick="eliminarServicio('${r.id}')">✕</button></td></tr>`;
+            h += `<tr class="srv-tabla-row"><td style="color:var(--muted)">${r.hora}</td><td class="col-prod">${r.tipo}</td><td style="color:var(--muted);font-size:10px">${detalle}${r.observaciones ? '<br>' + r.observaciones : ''}</td><td style="font-size:10px">${r.metodoPago || 'Sin dato'}</td><td style="font-family:var(--mono)">${r.cantidad}</td><td style="font-family:var(--mono);color:var(--accent-text)">Bs ${Number(r.total).toFixed(2)}</td><td><button class="btn-del" onclick="eliminarServicio('${r.id}')">✕</button></td></tr>`;
         });
         document.getElementById("srvTablaRegistros").innerHTML = h + "</tbody></table>";
     } catch (e) { mostrarMsg("Error de conexión", "err") }
@@ -96,11 +98,11 @@ export async function cargarResumenServicios() {
 
 // eliminarServicio
 export async function eliminarServicio(id) {
-    if (!confirm("¿Eliminar este registro?")) return;
+    if (!confirm("¿Anular este registro?")) return;
     try {
         const data = await api({ ACCION: "ELIMINAR_SERVICIO", ID: id, TOKEN: store.sessionToken });
         if (!manejarRespuesta(data)) return;
-        if (data.ok) { mostrarMsg("🗑️ Registro eliminado", "ok"); cargarResumenServicios(); }
+        if (data.ok) { mostrarMsg(data.eliminado ? "🗑️ Registro eliminado" : "↩️ Registro anulado", "ok"); cargarResumenServicios(); }
         else { mostrarMsg("Error: " + data.error, "err") }
     } catch (e) { mostrarMsg("Error de conexión", "err") }
 }

@@ -65,8 +65,11 @@ var _cajasCache = [];
                         x.txt.className = "caja-estado-ok";
                         x.txt.innerHTML = `<span class="caja-live-dot"></span>Abierta`;
                         const negativo = Number(c.saldoActual) < 0;
-                        const saldoStr = c.saldoActual !== undefined ? `Bs ${Number(c.saldoActual).toFixed(2)} (actual)` : `Bs ${Number(c.saldoInicial).toFixed(2)} (inicial)`;
-                        x.det.textContent = saldoStr + (negativo ? ' · ⚠ Saldo negativo' : '') + ' · ' + c.usuarioApertura;
+                        const saldoStr = c.saldoActual !== undefined ? `Efectivo: Bs ${Number(c.saldoActual).toFixed(2)}` : `Efectivo inicial: Bs ${Number(c.saldoInicial).toFixed(2)}`;
+                        const transferencias = c.transferenciasEntrada !== undefined
+                            ? ` · Transferencias netas: Bs ${(Number(c.transferenciasEntrada || 0) - Number(c.transferenciasSalida || 0)).toFixed(2)}`
+                            : "";
+                        x.det.textContent = saldoStr + transferencias + (negativo ? ' · ⚠ Saldo negativo' : '') + ' · ' + c.usuarioApertura;
                         x.card.style.borderColor = negativo ? "var(--red)" : "var(--accent)";
                     }
                     );
@@ -206,7 +209,8 @@ export function abrirDetalleCaja(sucursal) {
     var resumen = document.getElementById("cajaDetalleResumen");
     resumen.innerHTML =
         '<div class="caja-detalle-item"><span class="cdi-key">Saldo inicial</span><span class="cdi-val">' + formatearBs(c.saldoInicial) + '</span></div>' +
-        '<div class="caja-detalle-item"><span class="cdi-key">Saldo actual</span><span class="cdi-val">' + formatearBs(c.saldoActual) + '</span></div>' +
+        '<div class="caja-detalle-item"><span class="cdi-key">Efectivo actual</span><span class="cdi-val">' + formatearBs(c.saldoActual) + '</span></div>' +
+        (c.transferenciasEntrada !== undefined ? '<div class="caja-detalle-item"><span class="cdi-key">Transferencias</span><span class="cdi-val">+' + formatearBs(c.transferenciasEntrada) + ' / −' + formatearBs(c.transferenciasSalida) + '</span></div>' : '') +
         '<div class="caja-detalle-item"><span class="cdi-key">Apertura</span><span class="cdi-val" style="font-size:12px">' + (c.usuarioApertura || "—") + '</span></div>' +
         '<div class="caja-detalle-item"><span class="cdi-key">Fecha</span><span class="cdi-val" style="font-size:12px">' + (c.fecha || "—") + '</span></div>';
 

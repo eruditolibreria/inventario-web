@@ -1,6 +1,6 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-const LOCAL = false; // usar true solo para desarrollo local
+const LOCAL = true; // usar true solo para desarrollo local
 
 export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
