@@ -80,7 +80,7 @@ export function setReporteStock(s) {
 
 // ══ CAMBIO DE SUBPESTAÑA FINANCIERO ═════════════════════════════
 export function setReporteFinanciero(s) {
-    ["VENTAS", "UTILIDAD", "FLUJO", "COBRAR"].forEach(function (x) {
+    ["VENTAS", "UTILIDAD", "FLUJO", "COBRAR", "ARQUEOS"].forEach(function (x) {
         document.getElementById("fin-" + x).classList.toggle("oculto", x !== s);
         document.getElementById("subtab-fin-" + x).classList.toggle("active", x === s);
     });
@@ -204,15 +204,21 @@ export async function cargarVentasPeriodo() {
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return; }
         if (!data.datos || data.datos.length === 0) { tabla.innerHTML = '<div class="empty-state">Sin datos de ventas</div>'; }
         else {
-            var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Tipo</th><th>Metodo</th><th>Operaciones</th><th>Unidades</th><th>Total Bs</th></tr></thead><tbody>';
+            var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Tipo</th><th>Metodo</th><th>Operaciones</th><th>Líneas históricas</th><th>Unidades</th><th>Total Bs</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var periodo = d.dia || d.semana || d.mes || '';
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-size:11px">' + (d.tipo || '') + '</td><td style="font-size:10px;color:var(--muted)">' + (d.metodo_pago || '') + '</td><td style="font-family:var(--mono)">' + d.operaciones + '</td><td style="font-family:var(--mono)">' + d.unidades + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.total_bs).toFixed(2) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-size:11px">' + (d.tipo || '') + '</td><td style="font-size:10px;color:var(--muted)">' + (d.metodo_pago || '') + '</td><td style="font-family:var(--mono)">' + d.operaciones + '</td><td style="font-family:var(--mono)">' + (d.lineas_legacy || 0) + '</td><td style="font-family:var(--mono)">' + d.unidades + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.total_bs).toFixed(2) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("ventasPeriodo", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Tipo', 'Metodo', 'Operaciones', 'Unidades', 'Total Bs'], title: 'Ventas por Periodo', resumen: data.resumen || null });
+            setRptCache("ventasPeriodo", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Tipo', 'Metodo', 'Operaciones', 'Líneas históricas', 'Unidades', 'Total Bs'], title: 'Ventas por Periodo', resumen: data.resumen || null });
             document.getElementById('btnPdfVentas').style.display = 'inline-block';
-            if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Operaciones</div><div class="rtc-val">' + (data.resumen.operaciones || 0) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Unidades</div><div class="rtc-val">' + (data.resumen.unidades || 0) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Total Bs</div><div class="rtc-val">Bs ' + Number(data.resumen.total_bs || 0).toFixed(2) + '</div></div>'; }
+            if (data.resumen) {
+                tdiv.style.display = "grid";
+                var r = data.resumen;
+                var cards = '<div class="reporte-total-card"><div class="rtc-label">Operaciones</div><div class="rtc-val">' + (r.operaciones || 0) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Líneas históricas</div><div class="rtc-val">' + (r.lineas_legacy || 0) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Unidades</div><div class="rtc-val">' + (r.unidades || 0) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Ventas brutas</div><div class="rtc-val">Bs ' + Number(r.total_bs || 0).toFixed(2) + '</div></div>';
+                if (r.ventas_netas !== undefined) cards += '<div class="reporte-total-card"><div class="rtc-label">Devoluciones</div><div class="rtc-val">Bs ' + Number(r.devoluciones || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Ventas netas</div><div class="rtc-val">Bs ' + Number(r.ventas_netas || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Efectivo</div><div class="rtc-val">Bs ' + Number(r.efectivo || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Transferencia</div><div class="rtc-val">Bs ' + Number(r.transferencia || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Crédito</div><div class="rtc-val">Bs ' + Number(r.credito || 0).toFixed(2) + '</div></div>';
+                tdiv.innerHTML = cards;
+            }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
     loader.style.display = "none";
@@ -228,15 +234,15 @@ export async function cargarUtilidadBruta() {
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return; }
         if (!data.datos || data.datos.length === 0) { tabla.innerHTML = '<div class="empty-state">Sin datos de utilidad</div>'; }
         else {
-            var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Cant</th><th>Ingresos</th><th>Costo</th><th>Utilidad</th></tr></thead><tbody>';
+            var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Cant</th><th>Ingresos</th><th>Costo</th><th>Utilidad</th><th>Sin costo</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var periodo = d.dia || d.semana || d.mes || '';
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td style="font-family:var(--mono)">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.ingresos).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_bruta).toFixed(2) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td style="font-family:var(--mono)">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.ingresos).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_bruta).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.unidades_sin_costo || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("utilidad", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Producto', 'Cant', 'Ingresos', 'Costo', 'Utilidad'], title: 'Utilidad Bruta', resumen: data.resumen || null });
+            setRptCache("utilidad", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Producto', 'Cant', 'Ingresos', 'Costo', 'Utilidad', 'Sin costo'], title: 'Utilidad Bruta', resumen: data.resumen || null });
             document.getElementById('btnPdfUtilidad').style.display = 'inline-block';
-            if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Ingresos totales</div><div class="rtc-val">Bs ' + Number(data.resumen.ingresos || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Costos totales</div><div class="rtc-val">Bs ' + Number(data.resumen.costo || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad bruta</div><div class="rtc-val">Bs ' + Number(data.resumen.utilidad_bruta || 0).toFixed(2) + '</div></div>'; }
+            if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Ingresos netos</div><div class="rtc-val">Bs ' + Number(data.resumen.ingresos || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Costos históricos</div><div class="rtc-val">Bs ' + Number(data.resumen.costo || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad bruta</div><div class="rtc-val">Bs ' + Number(data.resumen.utilidad_bruta || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Unidades sin costo</div><div class="rtc-val">' + Number(data.resumen.unidades_sin_costo || 0) + '</div></div>'; }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
     loader.style.display = "none";
@@ -252,17 +258,39 @@ export async function cargarFlujoCajaReporte() {
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return; }
         if (!data.datos || data.datos.length === 0) { tabla.innerHTML = '<div class="empty-state">Sin datos de flujo de caja</div>'; }
         else {
-            var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Entradas</th><th>Salidas</th><th>Saldo neto</th></tr></thead><tbody>';
+            var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Método</th><th>Tipo</th><th>Entradas</th><th>Salidas</th><th>Saldo neto</th><th>Mov.</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var periodo = d.dia || d.semana || d.mes || '';
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_entradas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_salidas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_neto).toFixed(2) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono);font-size:10px">' + (d.metodo_pago || '') + '</td><td style="font-size:10px">' + (d.tipo || '') + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_entradas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_salidas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_neto).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.movimientos || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("flujo", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Entradas', 'Salidas', 'Saldo neto'], title: 'Flujo de Caja', resumen: data.resumen || null });
+            setRptCache("flujo", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Método', 'Tipo', 'Entradas', 'Salidas', 'Saldo neto', 'Mov.'], title: 'Flujo de Caja', resumen: data.resumen || null });
             document.getElementById('btnPdfFlujo').style.display = 'inline-block';
             if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Total entradas</div><div class="rtc-val">Bs ' + Number(data.resumen.total_entradas || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Total salidas</div><div class="rtc-val">Bs ' + Number(data.resumen.total_salidas || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo neto</div><div class="rtc-val">Bs ' + Number(data.resumen.saldo_neto || 0).toFixed(2) + '</div></div>'; }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
+    loader.style.display = "none";
+}
+
+// ══ ARQUEOS ════════════════════════════════════════════════════
+export async function cargarArqueosReporte() {
+    if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }
+    var loader = document.getElementById("loaderArqueosRep"), tabla = document.getElementById("tablaArqueosRep"), tdiv = document.getElementById("totalesArqueosRep");
+    loader.style.display = "block"; tabla.innerHTML = ""; tdiv.style.display = "none";
+    try {
+        var data = await api({ ACCION: "ARQUEOS_REPORTE", SUCURSAL: document.getElementById("arqueosSucursal").value, FECHA_DESDE: document.getElementById("arqueosFechaDesde").value, FECHA_HASTA: document.getElementById("arqueosFechaHasta").value, TOKEN: store.sessionToken });
+        if (!manejarRespuesta(data)) { loader.style.display = "none"; return; }
+        if (!data.datos || data.datos.length === 0) tabla.innerHTML = '<div class="empty-state">Sin arqueos para el período</div>';
+        else {
+            var h = '<table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Usuario</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th>Resultado</th><th>Estado</th></tr></thead><tbody>';
+            data.datos.forEach(function (d) {
+                h += '<tr><td style="font-family:var(--mono);font-size:10px">' + d.fecha + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td>' + d.usuario + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_esperado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.efectivo_contado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.diferencia).toFixed(2) + '</td><td>' + d.resultado + '</td><td>' + d.estado + '</td></tr>';
+            });
+            tabla.innerHTML = h + '</tbody></table>';
+            setRptCache("arqueos", { datos: data.datos, cols: ['Fecha', 'Sucursal', 'Usuario', 'Esperado', 'Contado', 'Diferencia', 'Resultado', 'Estado'], title: 'Arqueos de Caja', resumen: data.resumen || null });
+            if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Arqueos</div><div class="rtc-val">' + Number(data.resumen.arqueos || 0) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Efectivo esperado</div><div class="rtc-val">Bs ' + Number(data.resumen.saldo_esperado || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Efectivo contado</div><div class="rtc-val">Bs ' + Number(data.resumen.efectivo_contado || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Diferencia acumulada</div><div class="rtc-val">Bs ' + Number(data.resumen.diferencia || 0).toFixed(2) + '</div></div>'; }
+        }
+    } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>'; }
     loader.style.display = "none";
 }
 

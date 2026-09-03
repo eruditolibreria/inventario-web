@@ -83,7 +83,7 @@ import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
          cargarRotacionInventario, cargarValorizacionInventario,
          cargarHistorialMovimientos, cambiarPaginaMov,
          cargarVentasPeriodo, cargarUtilidadBruta,
-         cargarFlujoCajaReporte, cargarCuentasCobrarReporte,
+         cargarFlujoCajaReporte, cargarArqueosReporte, cargarCuentasCobrarReporte,
          imprimirReporte, imprimirReporteAlertas, imprimirReporteRotacion,
          imprimirReporteValorizacion, imprimirReporteMovimientos,
          imprimirReporteVentas, imprimirReporteUtilidad,
@@ -311,6 +311,7 @@ function inicializarApp() {
     window.cargarVentasPeriodo = cargarVentasPeriodo;
     window.cargarUtilidadBruta = cargarUtilidadBruta;
     window.cargarFlujoCajaReporte = cargarFlujoCajaReporte;
+    window.cargarArqueosReporte = cargarArqueosReporte;
     window.cargarCuentasCobrarReporte = cargarCuentasCobrarReporte;
     window.imprimirReporteMasVendidos = imprimirReporteMasVendidos;
     window.imprimirReporteMenosVendidos = imprimirReporteMenosVendidos;

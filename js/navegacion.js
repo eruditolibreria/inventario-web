@@ -71,7 +71,7 @@ function _bindSubTabClicks() {
         lam:       { fn: setSubModoLaminas, keys: ["BUSCAR","AGREGAR"] },
         srv:       { fn: setSubModoServicios,keys: ["COPIAS","ANILLADOS","PLASTIFICADOS","OTROS","RESUMEN"] },
         "stock":   { fn: function(s) { if (_setReporteStock) _setReporteStock(s); }, keys: ["ALERTAS","ROTACION","VALORIZACION","MOVIMIENTOS"] },
-        "fin":     { fn: function(s) { if (_setReporteFinanciero) _setReporteFinanciero(s); }, keys: ["VENTAS","UTILIDAD","FLUJO","COBRAR"] },
+        "fin":     { fn: function(s) { if (_setReporteFinanciero) _setReporteFinanciero(s); }, keys: ["VENTAS","UTILIDAD","FLUJO","ARQUEOS","COBRAR"] },
     };
     Object.keys(subMap).forEach(function(prefix) {
         subMap[prefix].keys.forEach(function(key) {

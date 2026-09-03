@@ -1235,6 +1235,7 @@
                                     <div class="sub-tab active" id="subtab-fin-VENTAS">&#128202; Ventas</div>
                                     <div class="sub-tab" id="subtab-fin-UTILIDAD">&#128200; Utilidad</div>
                                     <div class="sub-tab" id="subtab-fin-FLUJO">&#128181; Flujo caja</div>
+                                    <div class="sub-tab" id="subtab-fin-ARQUEOS">&#129534; Arqueos</div>
                                     <div class="sub-tab" id="subtab-fin-COBRAR">&#129534; Ctas. cobrar</div>
                                 </div>
                                 <div id="fin-VENTAS">
@@ -1316,6 +1317,26 @@
                                     <button class="btn btn-ghost btn-sm ml-8 no-print" id="btnPdfFlujo" style="display:none" onclick="imprimirReporteFlujo()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                                     <div id="totalesFlujo" class="reporte-totales" style="display:none"></div>
                                     <div id="tablaFlujo"></div>
+                                </div>
+                                <div id="fin-ARQUEOS" class="oculto">
+                                    <div class="field-group">
+                                        <label class="field-label">Sucursal</label>
+                                        <select id="arqueosSucursal"><option value="">Todas</option></select>
+                                    </div>
+                                    <div class="row-2 mt-8">
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Fecha desde</label>
+                                            <input id="arqueosFechaDesde" type="date">
+                                        </div>
+                                        <div class="field-group" style="margin:0">
+                                            <label class="field-label">Fecha hasta</label>
+                                            <input id="arqueosFechaHasta" type="date">
+                                        </div>
+                                    </div>
+                                    <div class="loader" id="loaderArqueosRep"></div>
+                                    <button class="btn btn-primary mt-8 mb-12" onclick="cargarArqueosReporte()"><i class="fa-solid fa-magnifying-glass"></i> Generar</button>
+                                    <div id="totalesArqueosRep" class="reporte-totales" style="display:none"></div>
+                                    <div id="tablaArqueosRep"></div>
                                 </div>
                                 <div id="fin-COBRAR" class="oculto">
                                     <div class="field-group">
