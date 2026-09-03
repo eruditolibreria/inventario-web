@@ -791,6 +791,7 @@ export function actualizarCambioVenta() {
                             ajusteRedondeo: ajusteRedondeo,
                             metodoPago: metodoPago,
                             sucursal: sucursal,
+                            sucursalVisible: document.getElementById("sucursalVenta")?.selectedOptions[0]?.textContent?.trim() || sucursal,
                             cliente: cliente,
                             clienteId: clienteId,
                             operacionId: data.operacionId,

@@ -129,7 +129,7 @@ export async function listarComprobantes(pg, termino) {
                 card.innerHTML = `
                     <div style="flex:1;min-width:0">
                         <div style="font-weight:600;color:var(--text);font-size:13px">N° ${c.numero} · ${c.cliente || "—"}</div>
-                        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.fecha} ${c.hora} · ${c.sucursal} · <b>Bs ${Number(c.total).toFixed(2)}</b></div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.fecha} ${c.hora} · ${c.sucursalVisible || c.sucursal} · <b>Bs ${Number(c.total).toFixed(2)}</b></div>
                     </div>
                     <button class="btn btn-ghost btn-sm" data-accion="reimprimir" data-id="${c.id}">🖨️ Imprimir</button>
                 `;
@@ -204,7 +204,7 @@ function _crearTicketHtml(c) {
     h += '<div class="t-head">';
     h += '<img src="/logo.png" alt="" class="t-logo" onerror="this.style.display=\'none\'">';
     h += '<div class="t-nombre">LIBRERIA ERUDITOS</div>';
-    h += '<div class="t-sucursal">' + (c.sucursal || "") + '</div>';
+    h += '<div class="t-sucursal">' + (c.sucursalVisible || c.sucursal || "") + '</div>';
     if (c.numero !== undefined && c.numero !== null) h += '<div class="t-num">N° ' + c.numero + '</div>';
     h += '</div>';
     h += '<div class="t-linea"></div>';
@@ -353,7 +353,7 @@ function _textoComprobante(c) {
         "Comprobante de venta",
         c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "",
         `${c.fecha || ""} ${c.hora || ""}`.trim(),
-        "Sucursal: " + (c.sucursal || ""),
+        "Sucursal: " + (c.sucursalVisible || c.sucursal || ""),
         "Cliente: " + (c.cliente || "MOSTRADOR"),
         items.join("\n"),
         "TOTAL: " + _fmtBs(c.totalRedondeado ?? c.total)

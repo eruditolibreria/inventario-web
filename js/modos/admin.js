@@ -12,6 +12,9 @@ import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 let busquedaTimer = null;
 let _detalleSeq = 0;
 let _verif = null;
+let _sucursalesCache = [];
+let _usuariosCache = [];
+let _sucursalDetalleId = null;
 export function initAdmin(cb) {
     if (cb && cb.verificarEstadoCaja) _verif = cb.verificarEstadoCaja;
 }
@@ -21,6 +24,27 @@ const ROL_LABELS = {
     VENDEDOR: "Vendedor",
     ALMACEN: "Almacen"
 };
+
+const escaparSucursal = valor => String(valor ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const nombreSucursal = sucursal => sucursal.nombre_visible || sucursal.nombre;
+
+function renderListaSucursales(sucursales) {
+    const lista = document.getElementById("listaSucursales");
+    if (!lista) return;
+    if (!sucursales.length) {
+        lista.innerHTML = '<div class="empty-state">Sin sucursales registradas</div>';
+        return;
+    }
+    lista.innerHTML = "";
+    sucursales.forEach(sucursal => {
+        const card = document.createElement("div");
+        card.className = "usuario-card";
+        card.style.cursor = "pointer";
+        card.innerHTML = '<div><div class="u-name">🏪 ' + escaparSucursal(nombreSucursal(sucursal)) + '</div><span style="font-size:11px;color:var(--muted)">Código: ' + escaparSucursal(sucursal.nombre) + '</span></div><span class="u-estado-' + (sucursal.estado === "ACTIVO" ? "ok" : "err") + '">● ' + escaparSucursal(sucursal.estado) + '</span>';
+        card.addEventListener("click", () => abrirDetalleSucursal(sucursal.id));
+        lista.appendChild(card);
+    });
+}
 
 // ── buscarProductoDetalle ──
 // Autocomplete rapido: consulta paginada server-side con debounce de 300ms
@@ -230,7 +254,7 @@ window.addEventListener("inventario:cambio", function() {
 // ── cargarUsuarios ──
 export async function cargarUsuarios() {
     if (!store.sessionToken) return;
-    cargarSucursalesEnDropdowns();
+    const sucursales = await cargarSucursalesEnDropdowns();
     const loader = document.getElementById("loaderUsuarios")
       , lista = document.getElementById("listaUsuarios");
     loader.style.display = "block";
@@ -245,6 +269,8 @@ export async function cargarUsuarios() {
             return
         }
         const usuarios = data.datos || [];
+        _usuariosCache = usuarios;
+        renderListaSucursales(sucursales);
         if (usuarios.length === 0) {
             lista.innerHTML = `<div class="empty-state">Sin usuarios encontrados</div>`
         } else {
@@ -520,6 +546,7 @@ export async function crearSucursal() {
         return
     }
     const nombre = document.getElementById("nuevaSucursalNombre").value.trim().toUpperCase();
+    const nombreVisible = document.getElementById("nuevaSucursalNombreVisible").value.trim() || nombre;
     if (!nombre || nombre.length < 2) {
         mostrarMsg("Ingresa un nombre valido (min. 2 caracteres)", "err");
         return
@@ -528,15 +555,20 @@ export async function crearSucursal() {
         const data = await api({
             ACCION: "CREAR_SUCURSAL",
             NOMBRE: nombre,
+            NOMBRE_VISIBLE: nombreVisible,
             TOKEN: store.sessionToken
         });
         if (!manejarRespuesta(data)) return;
         if (data.ok) {
-            mostrarMsg("Sucursal " + data.nombre + " creada", "ok");
+            mostrarMsg("Sucursal " + (data.nombreVisible || data.nombre) + " creada", "ok");
             document.getElementById("nuevaSucursalNombre").value = "";
-            await cargarSucursalesEnDropdowns();
+            document.getElementById("nuevaSucursalNombreVisible").value = "";
+            await cargarUsuarios();
+            if (_verif) _verif();
         } else if (data.error === "SUCURSAL_DUPLICADA") {
             mostrarMsg("Esa sucursal ya existe", "err")
+        } else if (data.error === "CODIGO_SUCURSAL_INVALIDO") {
+            mostrarMsg("El código interno usa solo letras, números o guion bajo", "err")
         } else {
             mostrarMsg("Error: " + data.error, "err")
         }
@@ -552,9 +584,10 @@ export async function cargarSucursalesEnDropdowns() {
             ACCION: "LISTAR_SUCURSALES",
             TOKEN: store.sessionToken
         });
-        if (!data.ok) return;
+        if (!data.ok) return [];
         const sucursales = data.datos || [];
-        if (sucursales.length === 0) return;
+        _sucursalesCache = sucursales;
+        if (sucursales.length === 0) return sucursales;
         const selects = document.querySelectorAll("select[id$='Sucursal'], select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto");
         selects.forEach(function(sel) {
             if (sel.disabled) return;
@@ -565,7 +598,7 @@ export async function cargarSucursalesEnDropdowns() {
             }
             sucursales.forEach(function(s) {
                 if (s.estado !== "ACTIVO") return;
-                sel.add(new Option(s.nombre, s.nombre));
+                sel.add(new Option(nombreSucursal(s), s.nombre));
             });
             if (actual) {
                 for (let i = 0; i < sel.options.length; i++) {
@@ -573,7 +606,73 @@ export async function cargarSucursalesEnDropdowns() {
                 }
             }
         });
-    } catch (_) {}
+        return sucursales;
+    } catch (_) { return []; }
+}
+
+export function abrirDetalleSucursal(sucursalId) {
+    const sucursal = _sucursalesCache.find(s => s.id === sucursalId);
+    if (!sucursal) return;
+    _sucursalDetalleId = sucursal.id;
+    document.getElementById("sucursalDetalleNombre").textContent = nombreSucursal(sucursal);
+    document.getElementById("sucursalDetalleEstado").value = sucursal.estado;
+    document.getElementById("sucursalDetalleCodigo").value = sucursal.nombre || "";
+    document.getElementById("sucursalDetalleNombreVisible").value = nombreSucursal(sucursal);
+    document.getElementById("sucursalDetalleDireccion").value = sucursal.direccion || "";
+    document.getElementById("sucursalDetalleTelefono").value = sucursal.telefono || "";
+    document.getElementById("sucursalDetalleObservaciones").value = sucursal.observaciones || "";
+    document.getElementById("sucursalDetalleCreada").textContent = sucursal.creado_en ? new Date(sucursal.creado_en).toLocaleString("es-BO") : "—";
+    const encargado = document.getElementById("sucursalDetalleEncargado");
+    encargado.innerHTML = '<option value="">Sin encargado asignado</option>';
+    _usuariosCache.filter(u => u.estado === "ACTIVO" || u.usuario === sucursal.encargado_usuario).forEach(u => {
+        encargado.add(new Option(u.usuario, u.usuario));
+    });
+    encargado.value = sucursal.encargado_usuario || "";
+    editarSucursal(false);
+    document.getElementById("sucursalDetalleOverlay").style.display = "flex";
+}
+
+export function cerrarDetalleSucursal(e) {
+    if (e && e.target !== document.getElementById("sucursalDetalleOverlay")) return;
+    document.getElementById("sucursalDetalleOverlay").style.display = "none";
+    _sucursalDetalleId = null;
+}
+
+export function editarSucursal(activo = true) {
+    ["sucursalDetalleNombreVisible", "sucursalDetalleDireccion", "sucursalDetalleTelefono"].forEach(id => {
+        document.getElementById(id).readOnly = !activo;
+    });
+    ["sucursalDetalleEncargado", "sucursalDetalleObservaciones"].forEach(id => {
+        document.getElementById(id).disabled = !activo;
+    });
+    document.getElementById("btnEditarSucursal").style.display = activo ? "none" : "inline-block";
+    document.getElementById("btnGuardarSucursal").style.display = activo ? "inline-block" : "none";
+}
+
+export async function guardarSucursal() {
+    if (!_sucursalDetalleId || !store.sessionToken) return;
+    const nombreVisible = document.getElementById("sucursalDetalleNombreVisible").value.trim();
+    if (nombreVisible.length < 2) return mostrarMsg("El nombre visible debe tener al menos 2 caracteres", "err");
+    try {
+        const data = await api({
+            ACCION: "ACTUALIZAR_SUCURSAL",
+            ID: _sucursalDetalleId,
+            NOMBRE_VISIBLE: nombreVisible,
+            DIRECCION: document.getElementById("sucursalDetalleDireccion").value.trim(),
+            TELEFONO: document.getElementById("sucursalDetalleTelefono").value.trim(),
+            ENCARGADO_USUARIO: document.getElementById("sucursalDetalleEncargado").value,
+            OBSERVACIONES: document.getElementById("sucursalDetalleObservaciones").value.trim(),
+            TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) return;
+        if (!data.ok) return mostrarMsg("Error: " + data.error, "err");
+        await cargarUsuarios();
+        abrirDetalleSucursal(_sucursalDetalleId);
+        if (_verif) _verif();
+        mostrarMsg("Sucursal actualizada", "ok");
+    } catch (_) {
+        mostrarMsg("Error de conexión", "err");
+    }
 }
 
 // ── Init admin ──

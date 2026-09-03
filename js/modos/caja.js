@@ -21,6 +21,36 @@ import { mostrarMsg, formatearBs } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 
 var _cajasCache = [];
+var _sucursalesCajaCache = [];
+
+function nombreSucursalCaja(codigo) {
+    var sucursal = _sucursalesCajaCache.find(function(s) { return s.nombre === codigo; });
+    return sucursal ? (sucursal.nombre_visible || sucursal.nombre) : codigo;
+}
+
+function renderCardsCaja(sucursales) {
+    var contenedor = document.getElementById("cajaCards");
+    if (!contenedor) return;
+    contenedor.innerHTML = "";
+    sucursales.filter(function(s) { return s.estado === "ACTIVO"; }).forEach(function(sucursal) {
+        var card = document.createElement("div");
+        card.className = "caja-card";
+        card.style.margin = "0";
+        card.dataset.cajaSucursal = sucursal.nombre;
+        var nombre = document.createElement("div");
+        nombre.className = "sr-key";
+        nombre.style.marginBottom = "6px";
+        nombre.textContent = sucursal.nombre_visible || sucursal.nombre;
+        var estado = document.createElement("div");
+        estado.className = "caja-estado-err";
+        estado.textContent = "🔴 Cerrada";
+        var detalle = document.createElement("div");
+        detalle.className = "caja-detalle";
+        card.append(nombre, estado, detalle);
+        card.addEventListener("click", function() { abrirDetalleCaja(sucursal.nombre); });
+        contenedor.appendChild(card);
+    });
+}
 
 
 // Verifica el estado de caja en todas las sucursales y actualiza badges
@@ -28,23 +58,23 @@ var _cajasCache = [];
                 if (!store.sessionToken)
                     return;
                 try {
-                    const data = await api({
-                        ACCION: "ESTADO_CAJA",
-                        TOKEN: store.sessionToken
-                    });
+                    const respuestas = await Promise.all([
+                        api({ ACCION: "ESTADO_CAJA", TOKEN: store.sessionToken }),
+                        api({ ACCION: "LISTAR_SUCURSALES", TOKEN: store.sessionToken })
+                    ]);
+                    const data = respuestas[0], sucursalesData = respuestas[1];
+                    if (!data.ok || !sucursalesData.ok) return;
+                    _sucursalesCajaCache = sucursalesData.datos || [];
+                    renderCardsCaja(_sucursalesCajaCache);
                     const cb = document.getElementById("cajaBadge");
-                    const t = {
-                        ERUDITOS: {
-                            txt: document.getElementById("cajaTxtEruditos"),
-                            det: document.getElementById("cajaDetEruditos"),
-                            card: document.getElementById("cajaCardEruditos")
-                        },
-                        CENTRAL: {
-                            txt: document.getElementById("cajaTxtCentral"),
-                            det: document.getElementById("cajaDetCentral"),
-                            card: document.getElementById("cajaCardCentral")
-                        }
-                    };
+                    const t = {};
+                    document.querySelectorAll("[data-caja-sucursal]").forEach(card => {
+                        t[card.dataset.cajaSucursal] = {
+                            txt: card.querySelector(".caja-estado-err"),
+                            det: card.querySelector(".caja-detalle"),
+                            card
+                        };
+                    });
                     Object.values(t).forEach(x => {
                         if (!x.txt || !x.det || !x.card) return;
                         x.txt.className = "caja-estado-err";
@@ -74,23 +104,8 @@ var _cajasCache = [];
                     }
                     );
                     cb.style.display = hay ? "inline-block" : "none";
-                    _bindCajaCardClicks(ca);
                 } catch (e) {}
             }
-
-function _bindCajaCardClicks(cajas) {
-    var map = { ERUDITOS: "cajaCardEruditos", CENTRAL: "cajaCardCentral" };
-    cajas.forEach(function(c) {
-        var id = map[c.sucursal];
-        if (!id) return;
-        var el = document.getElementById(id);
-        if (el && !el._cajaClickBound) {
-            el._cajaClickBound = true;
-            el.style.cursor = "pointer";
-            el.addEventListener("click", function() { abrirDetalleCaja(c.sucursal); });
-        }
-    });
-}
 
 // Abre una caja con saldo inicial para una sucursal
             export async function abrirCaja() {
@@ -198,7 +213,7 @@ function _bindCajaCardClicks(cajas) {
 export function abrirDetalleCaja(sucursal) {
     var c = _cajasCache.find(function(x) { return x.sucursal === sucursal; });
     if (!c) return;
-    document.getElementById("cajaDetalleTitulo").textContent = c.sucursal || "";
+    document.getElementById("cajaDetalleTitulo").textContent = nombreSucursalCaja(c.sucursal || "");
     var estadoEl = document.getElementById("cajaDetalleEstado");
     estadoEl.textContent = "ABIERTA";
     estadoEl.className = "rol-pill";

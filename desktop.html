@@ -580,18 +580,7 @@
                         <!-- CAJA -->
                         <div id="seccion-CAJA" class="oculto">
                             <div class="section-label">Gestión de caja diaria</div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-                                <div id="cajaCardEruditos" class="caja-card" style="margin:0">
-                                    <div class="sr-key" style="margin-bottom:6px">ERUDITOS</div>
-                                    <div id="cajaTxtEruditos" class="caja-estado-err">🔴 Cerrada</div>
-                                    <div id="cajaDetEruditos" class="caja-detalle"></div>
-                                </div>
-                                <div id="cajaCardCentral" class="caja-card" style="margin:0">
-                                    <div class="sr-key" style="margin-bottom:6px">CENTRAL</div>
-                                    <div id="cajaTxtCentral" class="caja-estado-err">🔴 Cerrada</div>
-                                    <div id="cajaDetCentral" class="caja-detalle"></div>
-                                </div>
-                            </div>
+                            <div id="cajaCards" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
                             <div class="sub-tabs">
                                 <div class="sub-tab active" id="subtab-caja-APERTURA">🔓 Apertura</div>
                                 <div class="sub-tab" id="subtab-caja-APORTES">💼 Aportes</div>
@@ -1680,6 +1669,9 @@
                             <div class="loader" id="loaderUsuarios"></div>
                             <div id="listaUsuarios"></div>
                             <div class="divider"></div>
+                            <div class="section-label">Sucursales existentes</div>
+                            <div id="listaSucursales"></div>
+                            <div class="divider"></div>
                             <div class="section-label">Crear nuevo usuario</div>
                             <div class="row-2">
                                 <div class="field-group" style="margin:0">
@@ -1714,7 +1706,12 @@
                             <div class="divider"></div>
                             <div class="section-label">Crear nueva sucursal</div>
                             <div class="field-group">
-                                <input id="nuevaSucursalNombre" placeholder="Nombre de la sucursal" style="text-transform:uppercase">
+                                <label class="field-label">Código interno (no se podrá editar)</label>
+                                <input id="nuevaSucursalNombre" placeholder="Ej.: NORTE" style="text-transform:uppercase">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Nombre visible</label>
+                                <input id="nuevaSucursalNombreVisible" placeholder="Ej.: Sucursal Norte">
                             </div>
                             <button class="btn btn-primary mt-8" onclick="crearSucursal()">🏪 Crear sucursal</button>
                         </div>
@@ -1830,6 +1827,26 @@
         </select>
         <button class="btn btn-primary mt-8" onclick="confirmarCambiarSucursal()">✅ Guardar</button>
         <button class="btn btn-ghost mt-4" onclick="cerrarCambiarSucursal()">Cancelar</button>
+    </div>
+</div>
+
+<div id="sucursalDetalleOverlay" class="modal-overlay" style="display:none" onclick="cerrarDetalleSucursal(event)">
+    <div class="modal-content" style="max-width:460px" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="cerrarDetalleSucursal()">✕</button>
+        <div class="modal-header">Sucursal: <span id="sucursalDetalleNombre"></span></div>
+        <div class="row-2">
+            <div class="field-group" style="margin:0"><label class="field-label">Código interno</label><input id="sucursalDetalleCodigo" readonly style="background:var(--surface3)"></div>
+            <div class="field-group" style="margin:0"><label class="field-label">Estado</label><input id="sucursalDetalleEstado" readonly style="background:var(--surface3)"></div>
+        </div>
+        <div class="field-group mt-8"><label class="field-label">Nombre visible</label><input id="sucursalDetalleNombreVisible" readonly></div>
+        <div class="field-group"><label class="field-label">Dirección</label><input id="sucursalDetalleDireccion" readonly></div>
+        <div class="row-2">
+            <div class="field-group" style="margin:0"><label class="field-label">Teléfono</label><input id="sucursalDetalleTelefono" readonly></div>
+            <div class="field-group" style="margin:0"><label class="field-label">Encargado</label><select id="sucursalDetalleEncargado" disabled></select></div>
+        </div>
+        <div class="field-group mt-8"><label class="field-label">Observaciones</label><textarea id="sucursalDetalleObservaciones" rows="3" disabled></textarea></div>
+        <div style="font-size:11px;color:var(--muted);margin:10px 0">Creada: <span id="sucursalDetalleCreada"></span></div>
+        <div class="row-2"><button id="btnEditarSucursal" class="btn btn-primary" onclick="editarSucursal()">✏️ Editar</button><button id="btnGuardarSucursal" class="btn btn-primary" style="display:none" onclick="guardarSucursal()">✅ Guardar</button><button class="btn btn-ghost" onclick="cerrarDetalleSucursal()">Cerrar</button></div>
     </div>
 </div>
 

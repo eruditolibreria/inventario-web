@@ -102,6 +102,7 @@ import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          initAdminMode, abrirEditarProducto, cerrarEditarProducto,
          guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen,
          crearSucursal, cargarSucursalesEnDropdowns,
+         abrirDetalleSucursal, cerrarDetalleSucursal, editarSucursal, guardarSucursal,
          abrirCambiarSucursal, cerrarCambiarSucursal, confirmarCambiarSucursal,
          abrirEscanerInventarioEdit, cambiarPaginaInv, filtrarInventario }
   from './modos/admin.js';
@@ -335,6 +336,10 @@ function inicializarApp() {
     window.ejecutarBusquedaDetalle = ejecutarBusquedaDetalle;
     window.crearUsuario = crearUsuario;
     window.crearSucursal = crearSucursal;
+    window.abrirDetalleSucursal = abrirDetalleSucursal;
+    window.cerrarDetalleSucursal = cerrarDetalleSucursal;
+    window.editarSucursal = editarSucursal;
+    window.guardarSucursal = guardarSucursal;
     window.abrirEscanerVenta = abrirEscanerVenta;
     window.cerrarEscanerVenta = cerrarEscanerVenta;
     window.revisarOrdenEscaner = revisarOrdenEscaner;
