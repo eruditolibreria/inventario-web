@@ -92,7 +92,7 @@ import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
   from './modos/reportes.js';
 import { initComprobantes, imprimirComprobante, listarComprobantes,
          buscarComprobante, imprimirComprobanteGuardado,
-         cambiarAnchoComprobante, cambiarPaginaComp, toggleHistorialComprobantes,
+         cambiarAnchoComprobante, cambiarPaginaComp, cambiarSucursalComprobante, toggleHistorialComprobantes,
          cerrarVistaPreviaComprobante, imprimirVistaPreviaComprobante,
          compartirVistaPreviaComprobante }
   from './modos/comprobantes.js';
@@ -330,6 +330,7 @@ function inicializarApp() {
     window.cambiarAnchoComprobante = cambiarAnchoComprobante;
     window.toggleHistorialComprobantes = toggleHistorialComprobantes;
     window.cambiarPaginaComp = cambiarPaginaComp;
+    window.cambiarSucursalComprobante = cambiarSucursalComprobante;
     window.cerrarVistaPreviaComprobante = cerrarVistaPreviaComprobante;
     window.imprimirVistaPreviaComprobante = imprimirVistaPreviaComprobante;
     window.compartirVistaPreviaComprobante = compartirVistaPreviaComprobante;

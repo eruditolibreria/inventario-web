@@ -2,9 +2,8 @@
 
 /*
  * Registro, historial e impresion de comprobantes de venta.
- * El historial se guarda en el backend (tabla comprobantes) para que
- * sea compartido entre dispositivos. Si el registro falla tras una
- * venta, los datos quedan pendientes en localStorage y se reintentan.
+ * El historial se guarda en el backend como parte de la misma operación
+ * transaccional que crea la venta.
  */
 
 import { store } from '../store.js';
@@ -12,8 +11,6 @@ import { api } from '../api.js';
 import { COMPROBANTE_ANCHO_DEFAULT } from '../config.js';
 import { mostrarMsg } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
-
-const PENDING_KEY = "eruditos_comprobantes_pendientes";
 
 let _anchoTicket = COMPROBANTE_ANCHO_DEFAULT;
 let _paginaComp = 1;
@@ -36,58 +33,6 @@ export function cambiarAnchoComprobante() {
     if (sel) setAnchoTicket(sel.value);
 }
 
-// ── REGISTRO (con reintento) ──────────────────────────────────
-async function _postComprobante(venta) {
-    return await api({
-        ACCION: "REGISTRAR_COMPROBANTE",
-        SUCURSAL: venta.sucursal,
-        CLIENTE: venta.cliente || "MOSTRADOR",
-        CLIENTE_ID: venta.clienteId || undefined,
-        OPERACION_ID: venta.operacionId || undefined,
-        METODO_PAGO: venta.metodoPago,
-        TOTAL: venta.total,
-        TOTAL_REDONDEADO: venta.totalRedondeado ?? venta.total,
-        AJUSTE_REDONDEO: venta.ajusteRedondeo || 0,
-        ITEMS: JSON.stringify(venta.items || []),
-        TOKEN: store.sessionToken
-    });
-}
-
-function _encolarPendiente(venta) {
-    try {
-        const pend = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
-        pend.push({ venta: venta, ts: Date.now() });
-        localStorage.setItem(PENDING_KEY, JSON.stringify(pend.slice(-20)));
-    } catch (_) {}
-    mostrarMsg("⚠ Comprobante pendiente de guardar (se reintentará)", "err");
-}
-
-export async function registrarComprobante(venta) {
-    if (!store.sessionToken || !venta) return null;
-    try {
-        const data = await _postComprobante(venta);
-        if (data.ok) return { id: data.id, numero: data.numero };
-    } catch (_) {}
-    _encolarPendiente(venta);
-    return null;
-}
-
-async function _reintentarPendientes() {
-    let pend = [];
-    try { pend = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]"); } catch (_) {}
-    if (!pend.length || !store.sessionToken) return;
-    const restantes = [];
-    for (const p of pend) {
-        try {
-            const d = await _postComprobante(p.venta);
-            if (d.ok) continue;
-        } catch (_) {}
-        restantes.push(p);
-    }
-    try { localStorage.setItem(PENDING_KEY, JSON.stringify(restantes)); } catch (_) {}
-    if (pend.length - restantes.length > 0) mostrarMsg("✅ Comprobantes pendientes guardados", "ok");
-}
-
 // ── HISTORIAL ────────────────────────────────────────────────
 export async function listarComprobantes(pg, termino) {
     if (!store.sessionToken) return;
@@ -105,6 +50,7 @@ export async function listarComprobantes(pg, termino) {
         const data = await api({
             ACCION: "LISTAR_COMPROBANTES",
             CLIENTE: _terminoComp.trim() || undefined,
+            SUCURSAL: document.getElementById("sucursalComprobante")?.value || undefined,
             PAGINA: pg,
             LIMITE: 20,
             TOKEN: store.sessionToken
@@ -131,10 +77,17 @@ export async function listarComprobantes(pg, termino) {
                         <div style="font-weight:600;color:var(--text);font-size:13px">N° ${c.numero} · ${c.cliente || "—"}</div>
                         <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.fecha} ${c.hora} · ${c.sucursalVisible || c.sucursal} · <b>Bs ${Number(c.total).toFixed(2)}</b></div>
                     </div>
-                    <button class="btn btn-ghost btn-sm" data-accion="reimprimir" data-id="${c.id}">🖨️ Imprimir</button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+                        <button class="btn btn-ghost btn-sm" data-accion="reimprimir" data-id="${c.id}">🖨️ Imprimir</button>
+                        ${store.sessionRol === "ADMIN" && c.operacionId && c.estado === "ACTIVO" ? `<button class="btn btn-danger btn-sm" data-accion="anular" data-operacion-id="${c.operacionId}" data-numero="${c.numero}">Anular</button>` : ""}
+                    </div>
                 `;
                 card.querySelector('[data-accion="reimprimir"]').addEventListener("click", function () {
                     imprimirComprobanteGuardado(this.dataset.id);
+                });
+                const anular = card.querySelector('[data-accion="anular"]');
+                if (anular) anular.addEventListener("click", function () {
+                    anularVentaDesdeComprobante(this.dataset.operacionId, this.dataset.numero);
                 });
                 lista.appendChild(card);
             });
@@ -167,6 +120,26 @@ export function cambiarPaginaComp(d) {
     listarComprobantes(_paginaComp + d, _terminoComp);
 }
 
+export function cambiarSucursalComprobante() {
+    _paginaComp = 1;
+    listarComprobantes(1, _terminoComp);
+}
+
+export async function anularVentaDesdeComprobante(operacionId, numero) {
+    if (store.sessionRol !== "ADMIN" || !operacionId) return;
+    const motivo = prompt(`Motivo de anulación del comprobante N° ${numero}:`);
+    if (motivo === null) return;
+    if (!motivo.trim()) { mostrarMsg("Debes indicar el motivo de anulación", "err"); return; }
+    if (!confirm(`¿Anular definitivamente el comprobante N° ${numero}? Se restaurará el stock y se revertirán sus movimientos.`)) return;
+    try {
+        const data = await api({ ACCION: "ANULAR_VENTA", OPERACION_ID: operacionId, MOTIVO: motivo.trim(), TOKEN: store.sessionToken });
+        if (!manejarRespuesta(data)) return;
+        if (!data.ok) { mostrarMsg(data.error || "No se pudo anular la venta", "err"); return; }
+        mostrarMsg("Venta anulada correctamente", "ok");
+        listarComprobantes(_paginaComp, _terminoComp);
+    } catch (_) { mostrarMsg("Error de conexión", "err"); }
+}
+
 // Muestra u oculta el historial de comprobantes en VENTAS
 export function toggleHistorialComprobantes() {
     const cont = document.getElementById("contenedorHistorialComprobantes");
@@ -196,6 +169,8 @@ function _crearTicketHtml(c) {
         return { producto: i.producto, cantidad: Number(i.cantidad || 0), precio: Number(i.precio || 0) };
     });
     const total = Number(c.total || 0);
+    const subtotal = Number(c.subtotal ?? total);
+    const descuento = Number(c.descuento || 0);
     const totalRed = c.totalRedondeado !== undefined && c.totalRedondeado !== null ? Number(c.totalRedondeado) : total;
     const ajuste = Number(c.ajusteRedondeo || 0);
     const cliente = (c.cliente && c.cliente !== "MOSTRADOR") ? c.cliente : "MOSTRADOR";
@@ -222,8 +197,12 @@ function _crearTicketHtml(c) {
     });
     h += '</div>';
     h += '<div class="t-linea"></div>';
+    if (descuento > 0) {
+        h += '<div class="t-fila"><span>Subtotal</span><span>' + _fmtBs(subtotal) + '</span></div>';
+        h += '<div class="t-fila"><span>Descuento</span><span>− ' + _fmtBs(descuento) + '</span></div>';
+    }
     if (ajuste !== 0) {
-        h += '<div class="t-fila"><span>Subtotal</span><span>' + _fmtBs(total) + '</span></div>';
+        if (descuento === 0) h += '<div class="t-fila"><span>Subtotal</span><span>' + _fmtBs(total) + '</span></div>';
         h += '<div class="t-fila"><span>Redondeo</span><span>' + (ajuste > 0 ? "+" : "") + _fmtBs(ajuste) + '</span></div>';
         h += '<div class="t-fila t-total"><span>TOTAL</span><span>' + _fmtBs(totalRed) + '</span></div>';
     } else {
@@ -456,6 +435,5 @@ export function imprimirComprobante(comp) {
 export function initComprobantes() {
     const sel = document.getElementById("anchoComprobante");
     if (sel && !sel.value) sel.value = _anchoTicket;
-    _reintentarPendientes();
     listarComprobantes(1, "");
 }

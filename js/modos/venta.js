@@ -29,7 +29,7 @@ import { manejarRespuesta } from '../ui.js';
 import { construirAC } from '../inventario.js';
 import { listarProductos, buscarProductoPorNombre } from '../db.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
-import { registrarComprobante, listarComprobantes } from './comprobantes.js';
+import { listarComprobantes } from './comprobantes.js';
 
 function _guardarCarritoDraft() {
     try {
@@ -47,11 +47,65 @@ let _clientesVenta = [];
 let _clienteVentaSeleccionado = null;
 let _clienteVentaTimer = null;
 let _escanerVentaMovilActivo = false;
+let _cobroEnCurso = false;
 
 // Para administradores la sucursal seleccionada en ventas tiene prioridad.
 // En otros roles el selector ya queda bloqueado en la sucursal de la sesion.
 function sucursalVentaActual() {
     return document.getElementById("sucursalVenta")?.value || store.sessionSucursal || "";
+}
+
+function _calcularDescuentoVenta() {
+    const subtotal = store.carrito.reduce((s, item) => s + Number(item.total || 0), 0);
+    const tipo = document.getElementById("tipoDescuentoVenta")?.value || "PORCENTAJE";
+    const raw = document.getElementById("valorDescuentoVenta")?.value || "";
+    if (raw === "") return { subtotal, tipo, valor: 0, monto: 0, valido: true };
+    const valor = Number(raw);
+    if (!Number.isFinite(valor) || valor < 0) return { subtotal, tipo, valor, monto: 0, valido: false };
+    const monto = tipo === "PORCENTAJE" ? subtotal * valor / 100 : valor;
+    return { subtotal, tipo, valor, monto: Number(monto.toFixed(2)), valido: tipo !== "PORCENTAJE" || valor <= 100 };
+}
+
+function _actualizarResumenVenta() {
+    const d = _calcularDescuentoVenta();
+    const totalSinRedondeo = Math.max(0, d.subtotal - d.monto);
+    const esEfectivo = document.getElementById("metodoPagoVenta")?.value === "EFECTIVO";
+    const total = esEfectivo ? Math.round(totalSinRedondeo * 10) / 10 : totalSinRedondeo;
+    const ajusteRedondeo = Number((total - totalSinRedondeo).toFixed(2));
+    const sub = document.getElementById("subtotalVenta");
+    const desc = document.getElementById("descuentoVenta");
+    const redondeo = document.getElementById("redondeoVenta");
+    const totalEl = document.getElementById("totalVenta");
+    if (sub) sub.textContent = "Bs " + d.subtotal.toFixed(2);
+    if (desc) desc.textContent = "− Bs " + d.monto.toFixed(2);
+    if (redondeo) {
+        redondeo.hidden = ajusteRedondeo === 0;
+        redondeo.textContent = "Redondeo " + (ajusteRedondeo > 0 ? "+ " : "− ") + "Bs " + Math.abs(ajusteRedondeo).toFixed(2);
+    }
+    if (totalEl) totalEl.textContent = "Bs " + total.toFixed(2);
+    return { ...d, totalSinRedondeo, total, ajusteRedondeo };
+}
+
+export function actualizarDescuentoVenta() {
+    _actualizarResumenVenta();
+    _actualizarVisibilidadEfectivo();
+}
+
+function _limpiarDescuentoVenta() {
+    const valor = document.getElementById("valorDescuentoVenta");
+    const motivo = document.getElementById("motivoDescuentoVenta");
+    const tipo = document.getElementById("tipoDescuentoVenta");
+    if (valor) valor.value = "";
+    if (motivo) motivo.value = "";
+    if (tipo) tipo.value = "PORCENTAJE";
+}
+
+function _nuevaClaveIdempotencia() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+        const r = Math.floor(Math.random() * 16);
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
 }
 
 export function initVenta(callbacks) {
@@ -475,10 +529,8 @@ export async function agregarCarrito() {
                   , minis = document.getElementById("carritoMiniaturas");
                 tb.innerHTML = "";
                 minis.innerHTML = "";
-                let tot = 0;
     const carrito = store.carrito;
     carrito.forEach( (it, i) => {
-        tot += Number(it.total || 0);
         const precioOK = _precioValido(it);
         const precioCelda = precioOK ? formatearBs(it.precio) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
         const totalCelda = precioOK ? formatearBs(it.total) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
@@ -508,7 +560,7 @@ export async function agregarCarrito() {
         });
     });
     _guardarCarritoDraft();
-    document.getElementById("totalVenta").textContent = "Bs " + tot.toFixed(2);
+    _actualizarResumenVenta();
     document.getElementById("tituloCarrito").innerHTML = `🛒 Carrito <span style="color:var(--muted)">(${carrito.length})</span>`;
     renderCarritoEscaner();
     _actualizarVisibilidadEfectivo();
@@ -518,6 +570,7 @@ function _actualizarVisibilidadEfectivo() {
     const contEf = document.getElementById("campoEfectivoVenta");
     const contMixto = document.getElementById("campoMixtoVenta");
     const metodo = document.getElementById("metodoPagoVenta");
+    _actualizarResumenVenta();
     const hayItems = !!store.carrito.length;
     const esEfectivo = !!metodo && metodo.value === "EFECTIVO" && hayItems;
     const esMixto = !!metodo && metodo.value === "MIXTO" && hayItems;
@@ -694,170 +747,105 @@ export function actualizarCambioVenta() {
                 vibrar("ok");
             }
 
-// Procesa la venta POS: envia carrito a la API, maneja chunking para carritos grandes
-            export async function cobrar() {
-                if (!store.sessionToken) {
-                    mostrarMsg("Sesión expirada", "err");
-                    return
-                }
-                if (store.carrito.length === 0) {
-        mostrarMsg("El carrito esta vacio", "err");
-        return
-    }
+// Procesa la venta POS. El backend calcula importes y protege reintentos.
+export async function cobrar() {
+    if (_cobroEnCurso) return;
+    if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }
+    if (!store.carrito.length) { mostrarMsg("El carrito está vacío", "err"); return; }
     const sinPrecio = store.carrito.filter(it => !_precioValido(it));
-    if (sinPrecio.length > 0) {
-        mostrarMsg("⚠ Producto(s) sin precio: " + sinPrecio.map(i => i.producto).join(", "), "err");
-        return
-    }
-    const sucursalesCarrito = [...new Set(
-        store.carrito.map(item => String(item.sucursal || "").trim()).filter(Boolean)
-    )];
-    if (sucursalesCarrito.length > 1) {
-        mostrarMsg("El carrito contiene productos de distintas sucursales", "err");
-        return;
-    }
-    const sucursal = sucursalesCarrito[0] || sucursalVentaActual()
-      , metodoPago = document.getElementById("metodoPagoVenta").value
-      , clienteId = document.getElementById("clienteVentaId").value || null
-      , cliente = _clienteVentaSeleccionado?.nombre || "MOSTRADOR"
-      , fechaVencimiento = document.getElementById("fechaVencimientoVenta")?.value || null;
-    const mEfMixto = Number((document.getElementById("montoEfectivoMixtoVenta") || {}).value || 0);
-    const mTrMixto = Number((document.getElementById("montoTransferenciaMixtoVenta") || {}).value || 0);
-    if (!sucursal) {
-        mostrarMsg("Selecciona una sucursal", "err");
-        return
-    }
-    if (metodoPago === "CREDITO" && !clienteId) {
-        mostrarMsg("Selecciona un cliente registrado para vender a crédito", "err");
-        return
-    }
-    if (metodoPago === "CREDITO" && !fechaVencimiento) {
-        mostrarMsg("Selecciona la fecha de vencimiento", "err");
-        return
+    if (sinPrecio.length) { mostrarMsg("⚠ Producto(s) sin precio: " + sinPrecio.map(i => i.producto).join(", "), "err"); return; }
+    const sucursales = [...new Set(store.carrito.map(item => String(item.sucursal || "").trim()).filter(Boolean))];
+    if (sucursales.length > 1) { mostrarMsg("El carrito contiene productos de distintas sucursales", "err"); return; }
+
+    const sucursal = sucursales[0] || sucursalVentaActual();
+    const metodoPago = document.getElementById("metodoPagoVenta").value;
+    const clienteId = document.getElementById("clienteVentaId").value || null;
+    const cliente = _clienteVentaSeleccionado?.nombre || "MOSTRADOR";
+    const fechaVencimiento = document.getElementById("fechaVencimientoVenta")?.value || null;
+    const descuento = _actualizarResumenVenta();
+    const mEfMixto = Number(document.getElementById("montoEfectivoMixtoVenta")?.value || 0);
+    const mTrMixto = Number(document.getElementById("montoTransferenciaMixtoVenta")?.value || 0);
+    if (!sucursal) { mostrarMsg("Selecciona una sucursal", "err"); return; }
+    if (!descuento.valido || descuento.monto > descuento.subtotal) { mostrarMsg("El descuento no es válido", "err"); return; }
+    if (metodoPago === "CREDITO" && !clienteId) { mostrarMsg("Debe seleccionar un cliente para crédito", "err"); return; }
+    if (metodoPago === "CREDITO" && !fechaVencimiento) { mostrarMsg("Selecciona la fecha de vencimiento", "err"); return; }
+    if (metodoPago === "EFECTIVO") {
+        const recibido = Number(document.getElementById("efectivoRecibidoVenta")?.value || 0);
+        if (!Number.isFinite(recibido) || recibido < descuento.total) { mostrarMsg("Monto recibido insuficiente", "err"); return; }
     }
     if (metodoPago === "MIXTO") {
-        const totalMixto = store.carrito.reduce(function(s, i) { return s + (i.cantidad * i.precio); }, 0);
-        if (!Number.isFinite(mEfMixto) || mEfMixto < 0 || !Number.isFinite(mTrMixto) || mTrMixto < 0) {
-            mostrarMsg("Ingresa los montos del pago mixto", "err");
-            return
-        }
-        if (Math.abs(mEfMixto + mTrMixto - totalMixto) > 0.01) {
-            mostrarMsg("Los montos deben sumar el total", "err");
-            return
+        if (!Number.isFinite(mEfMixto) || mEfMixto < 0 || !Number.isFinite(mTrMixto) || mTrMixto < 0 || Math.abs(mEfMixto + mTrMixto - descuento.total) > 0.01) {
+            mostrarMsg("Los montos mixtos deben sumar el total", "err"); return;
         }
     }
-    const loader = document.getElementById("loaderVenta")
-      , btn = document.getElementById("btnCobrar");
+
+    const loader = document.getElementById("loaderVenta");
+    const btn = document.getElementById("btnCobrar");
+    const contenidoBoton = btn.innerHTML;
+    _cobroEnCurso = true;
     loader.style.display = "block";
     btn.disabled = true;
-
-    const totalOriginal = store.carrito.reduce(function(s, i) { return s + (i.cantidad * i.precio); }, 0);
-    const totalRedondeado = metodoPago === "EFECTIVO" ? Math.round(totalOriginal * 10) / 10 : totalOriginal;
-    const ajusteRedondeo = parseFloat((totalRedondeado - totalOriginal).toFixed(2));
-
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESANDO...';
     try {
-        const items = store.carrito.map(i => ({
-            producto: i.producto,
-            cantidad: i.cantidad
-        }));
-                    const payload = {
-                        ACCION: "VENTA_POS",
-                        CARRITO: JSON.stringify(items),
-                        SUCURSAL: sucursal,
-                        METODO_PAGO: metodoPago,
-                        CLIENTE_ID: clienteId,
-                        FECHA_VENCIMIENTO: fechaVencimiento,
-                        TOKEN: store.sessionToken
-                    };
-                    if (metodoPago === "MIXTO") {
-                        payload.MONTO_EFECTIVO = mEfMixto;
-                        payload.MONTO_TRANSFERENCIA = mTrMixto;
-                    }
-                    const data = await api(payload);
-                    if (!manejarRespuesta(data)) {
-                        loader.style.display = "none";
-                        btn.disabled = false;
-                        return
-                    }
-                    if (data.ok) {
-                        sonidoCaja();
-                        vibrar("caja");
-                        /* Cache venta para comprobante PDF */
-                        const carrito = store.carrito;
-                        const ventaResumen = {
-                            items: carrito.map(function(i){return {producto:i.producto,cantidad:i.cantidad,precio:i.precio}}),
-                            total: totalOriginal,
-                            totalRedondeado: totalRedondeado,
-                            ajusteRedondeo: ajusteRedondeo,
-                            metodoPago: metodoPago,
-                            sucursal: sucursal,
-                            sucursalVisible: document.getElementById("sucursalVenta")?.selectedOptions[0]?.textContent?.trim() || sucursal,
-                            cliente: cliente,
-                            clienteId: clienteId,
-                            operacionId: data.operacionId,
-                            usuario: store.sessionUser,
-                            fecha: hoy(),
-                            hora: horaActual()
-                        };
-                        setUltimaVenta(ventaResumen);
-                        const reg = await registrarComprobante(ventaResumen);
-                        if (reg && reg.numero !== undefined && reg.numero !== null) {
-                            ventaResumen.numero = reg.numero;
-                            setUltimaVenta(ventaResumen);
-                        }
-                        document.getElementById('btnComprobante').style.display='inline-block';
-                        var msgVenta = metodoPago === "CREDITO" ? "📝 Venta a crédito registrada" : "✅ Venta registrada (" + items.length + " productos)";
-                        if (reg && reg.numero !== undefined && reg.numero !== null) {
-                            msgVenta += " · N° " + reg.numero;
-                        }
-                        if (metodoPago === "EFECTIVO" && ajusteRedondeo !== 0) {
-                            msgVenta += " · Redondeo: " + (ajusteRedondeo > 0 ? "+" : "") + "Bs " + ajusteRedondeo.toFixed(2);
-                        }
-                        mostrarMsg(msgVenta, "ok");
-                        document.getElementById("mainPanel").classList.add("ok");
-                        setTimeout( () => document.getElementById("mainPanel").classList.remove("ok"), 700);
-                        clearCarrito();
-                            limpiarCarritoDraft();  // llamada directa
-                            renderCarrito();
-                        document.getElementById("clienteVenta").value = "";
-                        document.getElementById("clienteVentaId").value = "";
-                        document.getElementById("clienteCreditoVenta").textContent = "";
-                        _clienteVentaSeleccionado = null;
-                        const ef = document.getElementById("efectivoRecibidoVenta");
-                        if (ef) ef.value = "";
-                        const cm = document.getElementById("cambioVenta");
-                        if (cm) {
-                            cm.textContent = "—";
-                            cm.classList.remove("cambio-positivo", "cambio-negativo");
-                        }
-                        const inEfMixto = document.getElementById("montoEfectivoMixtoVenta");
-                        const inTrMixto = document.getElementById("montoTransferenciaMixtoVenta");
-                        const avisoMixto = document.getElementById("avisoMixtoVenta");
-                        if (inEfMixto) inEfMixto.value = "";
-                        if (inTrMixto) inTrMixto.value = "";
-                        if (avisoMixto) {
-                            avisoMixto.textContent = "";
-                            avisoMixto.classList.remove("cambio-positivo", "cambio-negativo");
-                        }
-                        _actualizarVisibilidadEfectivo();
-                        listarComprobantes();
-                        if (_verificarEstadoCaja) _verificarEstadoCaja();
-                    } else if (data.error === "STOCK_INSUFICIENTE") {
-                        mostrarMsg("⚠ Stock insuficiente: " + data.producto + " (disponible: " + data.disponible + ")", "err")
-                    } else {
-                        mostrarMsg("Error: " + (data.error || JSON.stringify(data)), "err")
-                    }
-                                } catch (e) {
-                                    mostrarMsg("Error de conexión", "err")
-                                }
-                loader.style.display = "none";
-                btn.disabled = false;
-            }
+        const items = store.carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad }));
+        const key = _nuevaClaveIdempotencia();
+        const data = await api({
+            ACCION: "VENTA_POS", CARRITO: JSON.stringify(items), SUCURSAL: sucursal,
+            METODO_PAGO: metodoPago, CLIENTE_ID: clienteId, FECHA_VENCIMIENTO: fechaVencimiento,
+            MONTO_EFECTIVO: metodoPago === "MIXTO" ? mEfMixto : undefined,
+            MONTO_TRANSFERENCIA: metodoPago === "MIXTO" ? mTrMixto : undefined,
+            DESCUENTO_TIPO: descuento.monto ? descuento.tipo : undefined,
+            DESCUENTO_VALOR: descuento.monto ? descuento.valor : undefined,
+            DESCUENTO_MOTIVO: document.getElementById("motivoDescuentoVenta")?.value.trim() || undefined,
+            IDEMPOTENCY_KEY: key, TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) return;
+        if (!data.ok) { mostrarMsg("Error: " + (data.error || "No se pudo registrar la venta"), "err"); return; }
+
+        sonidoCaja(); vibrar("caja");
+        const ventaResumen = {
+            items: store.carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad, precio: i.precio })),
+            subtotal: Number(data.subtotal ?? descuento.subtotal), descuento: Number(data.descuento ?? descuento.monto),
+            total: Number(data.total ?? descuento.total), totalRedondeado: Number(data.totalRedondeado ?? data.total ?? descuento.total),
+            ajusteRedondeo: Number(data.ajusteRedondeo ?? descuento.ajusteRedondeo ?? 0),
+            metodoPago, sucursal, sucursalVisible: document.getElementById("sucursalVenta")?.selectedOptions[0]?.textContent?.trim() || sucursal,
+            cliente, clienteId, operacionId: data.operacionId, numero: data.numeroComprobante,
+            usuario: store.sessionUser, fecha: hoy(), hora: horaActual()
+        };
+        setUltimaVenta(ventaResumen);
+        document.getElementById("btnComprobante").style.display = "inline-block";
+        const toast = mostrarToast(`✅ VENTA REGISTRADA · Bs ${ventaResumen.total.toFixed(2)}${data.numeroComprobante ? " · N° " + data.numeroComprobante : ""}`, "VER COMPROBANTE", () => window.imprimirComprobante?.(), 6500);
+        toast.classList.add("toast-venta-exitosa");
+        document.getElementById("mainPanel").classList.add("ok");
+        setTimeout(() => document.getElementById("mainPanel").classList.remove("ok"), 700);
+        clearCarrito(); limpiarCarritoDraft(); _limpiarDescuentoVenta(); renderCarrito();
+        document.getElementById("clienteVenta").value = "";
+        document.getElementById("clienteVentaId").value = "";
+        document.getElementById("clienteCreditoVenta").textContent = "";
+        _clienteVentaSeleccionado = null;
+        ["efectivoRecibidoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+        const cambio = document.getElementById("cambioVenta"), avisoMixto = document.getElementById("avisoMixtoVenta");
+        if (cambio) { cambio.textContent = "—"; cambio.classList.remove("cambio-positivo", "cambio-negativo"); }
+        if (avisoMixto) { avisoMixto.textContent = ""; avisoMixto.classList.remove("cambio-positivo", "cambio-negativo"); }
+        _actualizarVisibilidadEfectivo();
+        listarComprobantes();
+        if (_verificarEstadoCaja) _verificarEstadoCaja();
+        document.getElementById(document.body.classList.contains("desktop") ? "escanerVenta" : "productoVenta")?.focus();
+    } catch (_) {
+        mostrarMsg("Error de conexión", "err");
+    } finally {
+        loader.style.display = "none";
+        btn.disabled = false;
+        btn.innerHTML = contenidoBoton;
+        _cobroEnCurso = false;
+    }
+}
 
 if (typeof window !== "undefined") {
     window._actualizarVisibilidadEfectivo = _actualizarVisibilidadEfectivo;
     window.actualizarCambioVenta = actualizarCambioVenta;
     window.actualizarMixtoVenta = actualizarMixtoVenta;
+    window.actualizarDescuentoVenta = actualizarDescuentoVenta;
 }
 
 // Realtime: si cambia el precio de un producto que esta en el carrito, actualiza la fila
