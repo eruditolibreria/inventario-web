@@ -23,6 +23,7 @@ import { store } from './store.js';
 import { api } from './api.js';
 import { mostrarMsg, normBusqueda, formatearBs } from './utils.js';
 import { manejarRespuesta, renderSearchCard, abrirModalImagen, confirmarEliminar } from './ui.js';
+import { can } from './authorization.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _cargarUsuarios = null;
@@ -110,7 +111,7 @@ export async function ejecutarBusquedaDetalle(t) {
 
 // ══ INVENTARIO PANEL ADMIN ══
 export async function cargarInventarioAdmin() {
-    if (!store.sessionToken || store.sessionRol !== "ADMIN") {
+    if (!store.sessionToken || !can("inventario.ver_costos")) {
         mostrarMsg("Sin permisos", "err");
         return;
     }

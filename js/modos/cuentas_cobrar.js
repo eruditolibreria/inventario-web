@@ -3,6 +3,7 @@ import { store } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, hoy } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
+import { can } from '../authorization.js';
 
 let _verificarEstadoCaja = null;
 let _cuentasVisibles = new Map();
@@ -78,7 +79,7 @@ export async function listarCuentasCobrar() {
   const tabla = document.getElementById("tablaCobrar");
   const formulario = document.getElementById("formNuevaCobrar");
   if (!loader || !tabla) return;
-  if (formulario) formulario.classList.toggle("oculto", store.sessionRol !== "ADMIN");
+  if (formulario) formulario.classList.toggle("oculto", !can("cuentas_cobrar.crear"));
   loader.style.display = "block";
   tabla.innerHTML = "";
   try {

@@ -22,8 +22,9 @@
  *   initNavegacion({ verificarEstadoCaja, cargarUsuarios, ... });
  */
 
-import { TODOS_MODOS, ORDEN_MODOS, PERMISOS, PERMISOS_DEFAULT } from './config.js';
+import { TODOS_MODOS, ORDEN_MODOS } from './config.js';
 import { store, setModoActual } from './store.js';
+import { can, modosAutorizados } from './authorization.js';
 import { hoy } from './utils.js';
 import { cargarSucursalesEnDropdowns } from './modos/admin.js';
 
@@ -84,24 +85,19 @@ function _bindSubTabClicks() {
 
 // ══ PERMISOS Y ROL ══
 export function obtenerPermisos(r) {
-    return PERMISOS[(r || "").toUpperCase()] || PERMISOS_DEFAULT;
+    const tabs = modosAutorizados();
+    return { tabs, inicio: tabs.includes("VENTA") ? "VENTA" : tabs[0] || "BUSQUEDA" };
 }
 
 
 export function aplicarRol(rol) {
     const {tabs, inicio} = obtenerPermisos(rol);
-    TODOS_MODOS.forEach(t => document.getElementById("tab-" + t).classList.toggle("hidden-tab", !tabs.includes(t)));
-    const ru = (rol || "").toUpperCase();
-    document.getElementById("subtab-cuentas-COBRAR").classList.toggle("hidden-tab", !["ADMIN", "VENDEDOR"].includes(ru));
-    document.getElementById("subtab-rep-FINANCIERO").classList.toggle("hidden-tab", !["ADMIN"].includes(ru));
-    document.getElementById("subtab-cuentas-PAGAR").classList.toggle("hidden-tab", !["ADMIN", "ALMACEN"].includes(ru));
-    if (ru === "VENDEDOR")
-        setSubModoCuentas("COBRAR");
-    else if (ru === "ALMACEN")
-        setSubModoCuentas("PAGAR");
-    else
-        setSubModoCuentas("COBRAR");
-    document.getElementById("subtab-lam-AGREGAR").classList.toggle("hidden-tab", !["ADMIN", "ALMACEN"].includes(ru));
+    TODOS_MODOS.forEach(t => document.getElementById("tab-" + t)?.classList.toggle("hidden-tab", !tabs.includes(t)));
+    document.getElementById("subtab-cuentas-COBRAR")?.classList.toggle("hidden-tab", !can("cuentas_cobrar.ver"));
+    document.getElementById("subtab-rep-FINANCIERO")?.classList.toggle("hidden-tab", !can("reportes.ver_utilidad"));
+    document.getElementById("subtab-cuentas-PAGAR")?.classList.toggle("hidden-tab", !can("cuentas_pagar.ver"));
+    setSubModoCuentas(can("cuentas_cobrar.ver") ? "COBRAR" : "PAGAR");
+    document.getElementById("subtab-lam-AGREGAR")?.classList.toggle("hidden-tab", !can("laminas.crear"));
     var modoRestaurado = _leerModoGuardado();
     // La restauración no debe animarse: garantiza un único panel visible al volver a la app.
     setModo(modoRestaurado && tabs.includes(modoRestaurado) ? modoRestaurado : inicio, 0);
@@ -254,8 +250,7 @@ export function setModo(modo, direccion, velocidad) {
         setSubModoDevol("REGISTRAR");
     if (modo === "REPORTES") {
         setSubModoReportes("MAS");
-        const ruSM = (store.sessionRol || "").toUpperCase();
-        document.getElementById("subtab-rep-FINANCIERO").classList.toggle("hidden-tab", ruSM !== "ADMIN");
+        document.getElementById("subtab-rep-FINANCIERO")?.classList.toggle("hidden-tab", !can("reportes.ver_utilidad"));
     }
     if (modo === "USUARIOS")
         if (_cargarUsuarios) _cargarUsuarios();
@@ -277,11 +272,11 @@ export function setModo(modo, direccion, velocidad) {
 
 function bloquearSucursalParaNoAdmin() {
     const suc = store.sessionSucursal;
-    const esAdmin = store.sessionRol === "ADMIN";
+    const puedeElegir = store.sessionAccesoGlobalSucursales || store.sessionSucursales.length > 1;
     document.querySelectorAll(
         "select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto"
     ).forEach(sel => {
-        if (!esAdmin) {
+        if (!puedeElegir) {
             sel.value = suc || "";
             sel.disabled = true;
         } else {

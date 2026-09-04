@@ -3,6 +3,7 @@ import { store } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, formatearBs } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
+import { can } from '../authorization.js';
 
 let _pagina = 1;
 let _paginas = 1;
@@ -186,7 +187,8 @@ export function cambiarPaginaClientes(delta) {
 
 export function abrirFormCliente(cliente) {
     _clienteActual = cliente || null;
-    const admin = store.sessionRol === 'ADMIN';
+    const puedeCredito = can('clientes.modificar_credito');
+    const puedeEstado = can('clientes.desactivar');
     document.getElementById('clienteFormTitulo').textContent = cliente ? 'Editar cliente' : 'Nuevo cliente';
     document.getElementById('clienteFormId').value = cliente?.id || '';
     document.getElementById('clienteNombre').value = cliente?.nombre || '';
@@ -198,9 +200,9 @@ export function abrirFormCliente(cliente) {
     document.getElementById('clienteDireccion').value = cliente?.direccion || '';
     document.getElementById('clienteTipo').value = cliente?.tipoCliente || 'PARTICULAR';
     document.getElementById('clienteLimite').value = Number(cliente?.limiteCredito || 0);
-    document.getElementById('clienteLimite').disabled = !admin;
+    document.getElementById('clienteLimite').disabled = !puedeCredito;
     document.getElementById('clienteEstado').value = cliente?.estado || 'ACTIVO';
-    document.getElementById('clienteEstado').disabled = !admin;
+    document.getElementById('clienteEstado').disabled = !puedeEstado;
     document.getElementById('clienteObservaciones').value = cliente?.observaciones || '';
     document.getElementById('clienteFormOverlay').style.display = 'flex';
 }
@@ -219,7 +221,7 @@ export async function guardarCliente() {
         TIPO_CLIENTE: document.getElementById('clienteTipo').value, OBSERVACIONES: document.getElementById('clienteObservaciones').value.trim(),
         TOKEN: store.sessionToken
     };
-    if (store.sessionRol === 'ADMIN') {
+    if (can('clientes.modificar_credito')) {
         payload.LIMITE_CREDITO = Number(document.getElementById('clienteLimite').value || 0);
         if (id) payload.ESTADO = document.getElementById('clienteEstado').value;
     }
@@ -283,7 +285,7 @@ function renderPerfilTab(tab) {
         cont.innerHTML = tablaSimple(['Venta','Emisión','Vencimiento','Monto','Pagado','Devuelto','Saldo','Estado',''], _perfil.deudas.map(d => [esc(String(d.ventaId).slice(0,8)), fecha(d.fechaEmision), fecha(d.fechaVencimiento), formatearBs(d.montoOriginal), formatearBs(d.montoPagado), formatearBs(d.montoAjustado), formatearBs(d.saldo), `<span class="cliente-estado ${d.estado === 'VENCIDA' ? 'vencida' : ''}">${esc(d.estado)}</span>`, Number(d.saldo) > 0 && d.estado !== 'ANULADA' ? `<button class="btn btn-primary btn-sm" data-pagar-cuenta="${esc(d.id)}">Pagar</button>` : '']));
         cont.querySelectorAll('[data-pagar-cuenta]').forEach(btn => btn.addEventListener('click', () => abrirPagoCliente(btn.dataset.pagarCuenta)));
     } else if (tab === 'PAGOS') {
-        cont.innerHTML = tablaSimple(['Fecha','Origen','Monto','Método','Usuario','Estado',''], _perfil.pagos.map(p => [fecha(p.fechaPago), esc(p.origen || 'Abono a crédito'), formatearBs(p.monto), esc(p.metodoPago), esc(p.usuario), esc(p.estado), store.sessionRol === 'ADMIN' && p.anulable !== false && p.estado === 'REGISTRADO' ? `<button class="btn btn-ghost btn-sm" data-anular-pago="${esc(p.id)}">Anular</button>` : '']));
+        cont.innerHTML = tablaSimple(['Fecha','Origen','Monto','Método','Usuario','Estado',''], _perfil.pagos.map(p => [fecha(p.fechaPago), esc(p.origen || 'Abono a crédito'), formatearBs(p.monto), esc(p.metodoPago), esc(p.usuario), esc(p.estado), can('clientes.anular_pago') && p.anulable !== false && p.estado === 'REGISTRADO' ? `<button class="btn btn-ghost btn-sm" data-anular-pago="${esc(p.id)}">Anular</button>` : '']));
         cont.querySelectorAll('[data-anular-pago]').forEach(btn => btn.addEventListener('click', () => anularPagoCliente(btn.dataset.anularPago)));
     } else {
         cont.innerHTML = `<div class="cliente-datos-grid"><div><span>Documento</span><strong>${esc(c.documento || '—')}</strong></div><div><span>Teléfono</span><strong>${esc(c.telefono || '—')}</strong></div><div><span>Email</span><strong>${esc(c.email || '—')}</strong></div><div><span>Dirección</span><strong>${esc(c.direccion || '—')}</strong></div><div><span>Límite</span><strong>${formatearBs(c.limiteCredito)}</strong></div><div><span>Observaciones</span><strong>${esc(c.observaciones || '—')}</strong></div></div>`;

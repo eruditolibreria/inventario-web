@@ -10,6 +10,10 @@ const _state = {
     sessionUser: null,
     sessionRol: null,
     sessionSucursal: null,
+    sessionSucursalPrincipalId: null,
+    sessionSucursales: [],
+    sessionAccesoGlobalSucursales: false,
+    sessionPermisos: [],
     sessionRefreshToken: null,
     sessionExpiresAt: 0,
     carrito: [],
@@ -32,6 +36,10 @@ export const store = {
     get sessionUser() { return _state.sessionUser; },
     get sessionRol() { return _state.sessionRol; },
     get sessionSucursal() { return _state.sessionSucursal; },
+    get sessionSucursalPrincipalId() { return _state.sessionSucursalPrincipalId; },
+    get sessionSucursales() { return _state.sessionSucursales; },
+    get sessionAccesoGlobalSucursales() { return _state.sessionAccesoGlobalSucursales; },
+    get sessionPermisos() { return _state.sessionPermisos; },
     get sessionRefreshToken() { return _state.sessionRefreshToken; },
     get sessionExpiresAt() { return _state.sessionExpiresAt; },
     get carrito() { return _state.carrito; },
@@ -48,11 +56,15 @@ export const store = {
 // ========== FUNCIONES DE ACTUALIZACION ==========
 
 /** Actualiza los datos de sesion tras login exitoso */
-export function setSession(token, user, rol, sucursal) {
+export function setSession(token, user, rol, sucursal, contexto = {}) {
     _state.sessionToken = token;
     _state.sessionUser = user;
     _state.sessionRol = rol;
     _state.sessionSucursal = sucursal || null;
+    _state.sessionSucursalPrincipalId = contexto.sucursalPrincipalId || null;
+    _state.sessionSucursales = Array.isArray(contexto.sucursales) ? contexto.sucursales : [];
+    _state.sessionAccesoGlobalSucursales = Boolean(contexto.accesoGlobalSucursales);
+    _state.sessionPermisos = Array.isArray(contexto.permisos) ? [...new Set(contexto.permisos)] : [];
     _persistSession();
 }
 
@@ -72,6 +84,10 @@ function _persistSession() {
             usuario: _state.sessionUser,
             rol: _state.sessionRol || "VENDEDOR",
             sucursal: _state.sessionSucursal || null,
+            sucursalPrincipalId: _state.sessionSucursalPrincipalId,
+            sucursales: _state.sessionSucursales,
+            accesoGlobalSucursales: _state.sessionAccesoGlobalSucursales,
+            permisos: _state.sessionPermisos,
             refreshToken: _state.sessionRefreshToken,
             expiresAt: _state.sessionExpiresAt,
         }));
@@ -82,6 +98,15 @@ function _persistSession() {
 export function setToken(token) {
     _state.sessionToken = token;
     _persistSession();
+}
+
+export function setSucursalActiva(sucursal) {
+    const encontrada = _state.sessionSucursales.find(item => item.nombre === sucursal || item.id === sucursal);
+    if (!encontrada && !_state.sessionAccesoGlobalSucursales) return false;
+    _state.sessionSucursal = encontrada?.nombre || sucursal || null;
+    _state.sessionSucursalPrincipalId = encontrada?.id || null;
+    _persistSession();
+    return true;
 }
 
 /** Reemplaza el carrito de compras */
@@ -135,6 +160,11 @@ export function clearSession() {
     _state.sessionToken = null;
     _state.sessionUser = null;
     _state.sessionRol = null;
+    _state.sessionSucursal = null;
+    _state.sessionSucursalPrincipalId = null;
+    _state.sessionSucursales = [];
+    _state.sessionAccesoGlobalSucursales = false;
+    _state.sessionPermisos = [];
     _state.sessionRefreshToken = null;
     _state.sessionExpiresAt = 0;
     try { localStorage.removeItem(SESSION_KEY); } catch (_) {}

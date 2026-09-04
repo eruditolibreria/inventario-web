@@ -75,7 +75,7 @@ export async function listarProductos({ query = "", sucursal = null, pagina = 0,
     const q = query.replace(/[%_]/g, ch => "\\" + ch);
     const desde = pagina * limite;
     const hasta = desde + limite - 1;
-    let qb = client.from("inventario").select(PRODUCTO_COLS, { count: "exact" });
+    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS, { count: "exact" });
     if (sucursal) qb = qb.eq("sucursal", sucursal);
     if (q) qb = qb.ilike("producto", `%${q}%`);
     const { data, error, count } = await qb.order("producto").range(desde, hasta);
@@ -86,7 +86,7 @@ export async function listarProductos({ query = "", sucursal = null, pagina = 0,
 /** Busca un producto exacto por nombre (y sucursal opcional) */
 export async function buscarProductoPorNombre(producto, sucursal) {
     _ensureAuth();
-    let qb = client.from("inventario").select(PRODUCTO_COLS).eq("producto", producto);
+    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS).eq("producto", producto);
     if (sucursal) qb = qb.eq("sucursal", sucursal);
     const { data, error } = await qb.limit(1);
     if (error) throw error;
@@ -96,7 +96,7 @@ export async function buscarProductoPorNombre(producto, sucursal) {
 /** Busca un producto por codigo de barras (case-insensitive) */
 export async function buscarProductoPorCodigo(codigo, sucursal) {
     _ensureAuth();
-    let qb = client.from("inventario").select(PRODUCTO_COLS).ilike("codigo_barras", codigo);
+    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS).ilike("codigo_barras", codigo);
     if (sucursal) qb = qb.eq("sucursal", sucursal);
     const { data, error } = await qb.limit(1);
     if (error) throw error;

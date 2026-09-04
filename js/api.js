@@ -16,7 +16,7 @@
  */
 
 import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES, BASE_URL_CLIENTES, BASE_URL_ARQUEO, SUPABASE_ANON_KEY } from './config.js';
-import { store, setTokens, setToken } from './store.js';
+import { store, setSession, setTokens } from './store.js';
 
 /**
  * Realiza una llamada a la API con refresh automatico de token.
@@ -37,6 +37,14 @@ function resolverBaseUrl(accion) {
         LISTAR_SUCURSALES: BASE_URL_USUARIOS,
         CREAR_SUCURSAL: BASE_URL_USUARIOS,
         CAMBIAR_SUCURSAL_USUARIO: BASE_URL_USUARIOS,
+        OBTENER_CONTEXTO_USUARIO: BASE_URL_USUARIOS,
+        LISTAR_ROLES_PERMISOS: BASE_URL_USUARIOS,
+        CREAR_ROL: BASE_URL_USUARIOS,
+        ACTUALIZAR_ROL: BASE_URL_USUARIOS,
+        ACTUALIZAR_ROL_PERMISOS: BASE_URL_USUARIOS,
+        ACTUALIZAR_PERMISOS_USUARIO: BASE_URL_USUARIOS,
+        ACTUALIZAR_ACCESO_USUARIO: BASE_URL_USUARIOS,
+        CAMBIAR_ESTADO_SUCURSAL: BASE_URL_USUARIOS,
         BUSCAR_LAMINAS: BASE_URL_LAMINAS,
         AGREGAR_LAMINA: BASE_URL_LAMINAS,
         ACTUALIZAR_ESTADO_LAMINA: BASE_URL_LAMINAS,
@@ -118,7 +126,7 @@ async function api(params) {
             });
             const rd = await r.json();
             if (rd.ok) {
-                setToken(rd.token);
+                setSession(rd.token, rd.usuario, rd.rol, rd.sucursal, rd);
                 setTokens(rd.refreshToken, rd.expiresAt);
             }
         } catch (_) {}

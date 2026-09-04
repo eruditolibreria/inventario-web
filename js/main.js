@@ -5,7 +5,7 @@
 
 // Módulos base
 import { BASE_URL_ERUDITOS, DEVOL_LIMITE, TRANSF_LIMITE, CARRITO_CHUNK_SIZE,
-         CARRITO_KEY, TODOS_MODOS, ORDEN_MODOS, PERMISOS, PERMISOS_DEFAULT }
+         CARRITO_KEY, TODOS_MODOS, ORDEN_MODOS }
   from './config.js';
 import { store, setSession, setTokens, setToken, setCarrito,
          setModoActual, setDevolPagina, setTransfPagina, setMovPagina,
@@ -124,7 +124,7 @@ function restaurarSesion() {
             localStorage.removeItem(SESSION_KEY);
             return false;
         }
-        setSession(ses.token, ses.usuario, ses.rol || "VENDEDOR", ses.sucursal || null);
+        setSession(ses.token, ses.usuario, ses.rol || "VENDEDOR", ses.sucursal || null, ses);
         if (ses.refreshToken && ses.expiresAt) {
             setTokens(ses.refreshToken, ses.expiresAt);
         }

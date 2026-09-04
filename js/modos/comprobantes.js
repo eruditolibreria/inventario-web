@@ -11,6 +11,7 @@ import { api } from '../api.js';
 import { COMPROBANTE_ANCHO_DEFAULT } from '../config.js';
 import { mostrarMsg } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
+import { can } from '../authorization.js';
 
 let _anchoTicket = COMPROBANTE_ANCHO_DEFAULT;
 let _paginaComp = 1;
@@ -79,7 +80,7 @@ export async function listarComprobantes(pg, termino) {
                     </div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                         <button class="btn btn-ghost btn-sm" data-accion="reimprimir" data-id="${c.id}">🖨️ Imprimir</button>
-                        ${store.sessionRol === "ADMIN" && c.operacionId && c.estado === "ACTIVO" ? `<button class="btn btn-danger btn-sm" data-accion="anular" data-operacion-id="${c.operacionId}" data-numero="${c.numero}">Anular</button>` : ""}
+                        ${can("ventas.anular") && c.operacionId && c.estado === "ACTIVO" ? `<button class="btn btn-danger btn-sm" data-accion="anular" data-operacion-id="${c.operacionId}" data-numero="${c.numero}">Anular</button>` : ""}
                     </div>
                 `;
                 card.querySelector('[data-accion="reimprimir"]').addEventListener("click", function () {
@@ -126,7 +127,7 @@ export function cambiarSucursalComprobante() {
 }
 
 export async function anularVentaDesdeComprobante(operacionId, numero) {
-    if (store.sessionRol !== "ADMIN" || !operacionId) return;
+    if (!can("ventas.anular") || !operacionId) return;
     const motivo = prompt(`Motivo de anulación del comprobante N° ${numero}:`);
     if (motivo === null) return;
     if (!motivo.trim()) { mostrarMsg("Debes indicar el motivo de anulación", "err"); return; }

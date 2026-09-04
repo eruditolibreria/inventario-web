@@ -138,7 +138,7 @@ export async function loginSubmit() {
             return;
         }
         if (data.ok) {
-            setSession(data.token, data.usuario, (data.rol || "").toUpperCase(), data.sucursal || null);
+            setSession(data.token, data.usuario, (data.rol || "").toUpperCase(), data.sucursal || null, data);
             setTokens(data.refreshToken || null, data.expiresAt || 0);
 
             // UI post-login
