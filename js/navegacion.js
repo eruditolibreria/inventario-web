@@ -6,7 +6,7 @@
  * Incluye animaciones push entre secciones.
  *
  * Dependencias directas (ya modulos):
- *   - config.js   (TODOS_MODOS, ORDEN_MODOS, PERMISOS, PERMISOS_DEFAULT)
+ *   - config.js   (TODOS_MODOS, ORDEN_MODOS)
  *   - store.js    (store, setModoActual y setters de submodo cuando se extraigan)
  *   - utils.js    (hoy)
  *

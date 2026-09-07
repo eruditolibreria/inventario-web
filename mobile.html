@@ -1649,6 +1649,18 @@
                                 <input id="nuevoUsuarioPass" type="password" placeholder="••••••••">
                             </div>
                         </div>
+                        <details class="mt-8" id="nuevoUsuarioOpciones">
+                            <summary style="cursor:pointer">Opciones avanzadas</summary>
+                            <div class="field-group mt-8">
+                                <label class="field-label">Estado inicial</label>
+                                <select id="nuevoUsuarioEstado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select>
+                            </div>
+                            <div class="field-group mt-8">
+                                <label class="field-label">Sucursales asignadas (mantén pulsado para varias)</label>
+                                <select id="nuevoUsuarioSucursales" multiple size="4"></select>
+                            </div>
+                            <label class="check-row mt-8"><input id="nuevoUsuarioAccesoGlobal" type="checkbox"> Acceso global a todas las sucursales</label>
+                        </details>
                         <div class="loader" id="loaderCrearUsuario"></div>
                         <button class="btn btn-primary mt-8" onclick="crearUsuario()">➕ Crear usuario</button>
                         <div class="divider"></div>

@@ -37,21 +37,3 @@ export const CARRITO_KEY = "eruditos_carrito_draft";
 
 export const TODOS_MODOS = ["VENTA", "CLIENTES", "COMPRA", "GASTO", "CAJA", "ARQUEO", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
 export const ORDEN_MODOS = ["VENTA","CLIENTES","COMPRA","GASTO","CAJA","ARQUEO","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];
-export const PERMISOS = {
-    ADMIN: {
-        tabs: [...TODOS_MODOS],
-        inicio: "VENTA"
-    },
-    VENDEDOR: {
-        tabs: ["VENTA", "CLIENTES", "ARQUEO", "CUENTAS", "DEVOLUCIONES", "BUSQUEDA", "LAMINAS", "SERVICIOS"],
-        inicio: "VENTA"
-    },
-    ALMACEN: {
-        tabs: ["COMPRA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO"],
-        inicio: "COMPRA"
-    },
-};
-export const PERMISOS_DEFAULT = {
-    tabs: ["BUSQUEDA"],
-    inicio: "BUSQUEDA"
-};

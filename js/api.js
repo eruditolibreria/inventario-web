@@ -36,6 +36,7 @@ function resolverBaseUrl(accion) {
         CAMBIAR_PASSWORD_USUARIO: BASE_URL_USUARIOS,
         LISTAR_SUCURSALES: BASE_URL_USUARIOS,
         CREAR_SUCURSAL: BASE_URL_USUARIOS,
+        ACTUALIZAR_SUCURSAL: BASE_URL_USUARIOS,
         CAMBIAR_SUCURSAL_USUARIO: BASE_URL_USUARIOS,
         OBTENER_CONTEXTO_USUARIO: BASE_URL_USUARIOS,
         LISTAR_ROLES_PERMISOS: BASE_URL_USUARIOS,
@@ -70,6 +71,7 @@ function resolverBaseUrl(accion) {
         LISTAR_CLIENTES: BASE_URL_VENTAS,
         REGISTRAR_GASTO: BASE_URL_CAJA,
         APERTURA_CAJA: BASE_URL_CAJA,
+        CIERRE_CAJA: BASE_URL_CAJA,
         REGISTRAR_APORTE_RETIRO: BASE_URL_CAJA,
         ESTADO_CAJA: BASE_URL_CAJA,
         FLUJO_CAJA_REPORTE: BASE_URL_REPORTES,
@@ -110,6 +112,7 @@ function resolverBaseUrl(accion) {
 }
 
 async function api(params) {
+    const tokenAntesDeRefrescar = store.sessionToken;
     const ahora = Math.floor(Date.now() / 1000);
     if (store.sessionRefreshToken && store.sessionExpiresAt && (store.sessionExpiresAt - ahora) < 180) {
         try {
@@ -132,11 +135,14 @@ async function api(params) {
         } catch (_) {}
     }
     const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
+    const tokenSolicitud = params.TOKEN && params.TOKEN !== tokenAntesDeRefrescar
+        ? params.TOKEN
+        : (store.sessionToken || params.TOKEN);
     const res = await fetch(resolverBaseUrl(params.ACCION), {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${params.TOKEN || SUPABASE_ANON_KEY}`
+            "Authorization": `Bearer ${tokenSolicitud || SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(body)
     });

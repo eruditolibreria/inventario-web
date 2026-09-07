@@ -223,7 +223,7 @@ function restaurarCarritoDraft(draft) {
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-function inicializarApp() {
+async function inicializarApp() {
     // ── 0. Preparar grid de secciones ANTES de cualquier setModo ──
     initPushContainer();
 
@@ -448,8 +448,34 @@ function inicializarApp() {
     // ── 6. Registrar Service Worker ────────────────────────────
     registrarServiceWorker();
 
-    // ── 7. Si hay sesión restaurada, mostrar UI inmediatamente ─
+    // ── 7. Una sesión persistida nunca es fuente de permisos. Antes de
+    // mostrar la aplicación, reconstruir el contexto desde el backend.
+    let sesionValidada = false;
     if (sesionRestaurada) {
+        try {
+            const contexto = await api({
+                ACCION: "OBTENER_CONTEXTO_USUARIO",
+                TOKEN: store.sessionToken,
+            });
+            if (contexto.ok) {
+                setSession(
+                    store.sessionToken,
+                    contexto.usuario,
+                    (contexto.rol || "").toUpperCase(),
+                    contexto.sucursal || null,
+                    contexto,
+                );
+                sesionValidada = true;
+            } else {
+                clearSession();
+            }
+        } catch (_) {
+            // Ante una validación fallida no se reutilizan permisos en caché.
+            clearSession();
+        }
+    }
+
+    if (sesionValidada) {
         const rol = store.sessionRol || "VENDEDOR";
         document.getElementById("badgeUser").textContent = store.sessionUser;
         const pill = document.getElementById("badgeRol");
@@ -489,7 +515,7 @@ function inicializarApp() {
     // (aplicarRol ya llama a setModo con el modo inicial)
 
     console.log('[MAIN] Aplicación inicializada correctamente.');
-    console.log('[MAIN] Sesión restaurada:', sesionRestaurada);
+    console.log('[MAIN] Sesión restaurada y validada:', sesionValidada);
     console.log('[MAIN] Modo actual:', store.modoActual);
 }
 

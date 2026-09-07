@@ -1,5 +1,5 @@
 /* === MODO ADMIN: Detalle, inventario, usuarios === */
-import { store } from '../store.js';
+import { store, setSucursalActiva } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
 import { manejarRespuesta, renderSearchCard, confirmarEliminar,
@@ -35,11 +35,57 @@ const ROL_LABELS = {
 const escaparSucursal = valor => String(valor ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const nombreSucursal = sucursal => sucursal.nombre_visible || sucursal.nombre;
 
+function renderSelectorSucursalActiva(sucursales) {
+    const activas = sucursales.filter(sucursal => sucursal.estado === "ACTIVO");
+    const badge = document.querySelector(".user-badge");
+    if (!badge || activas.length === 0) return;
+    let contenedor = document.getElementById("selectorSucursalActiva");
+    if (!contenedor) {
+        contenedor = document.createElement("div");
+        contenedor.id = "selectorSucursalActiva";
+        contenedor.style.cssText = "min-width:150px;max-width:220px";
+        badge.parentElement.insertBefore(contenedor, badge);
+    }
+    const esAdministrador = store.sessionRol === "ADMIN" || can("usuarios.asignar_roles_criticos");
+    if (esAdministrador) {
+        contenedor.innerHTML = '<span class="selector-sucursal-etiqueta">Sucursales</span><span class="selector-sucursal-todas">TODAS</span>';
+        return;
+    }
+    if (!contenedor.querySelector("select")) {
+        contenedor.innerHTML = '<label for="sucursalActivaGlobal" class="selector-sucursal-etiqueta">Sucursal actual</label><select id="sucursalActivaGlobal" aria-label="Sucursal actual"></select>';
+        if (!contenedor.dataset.detieneCierreSesion) {
+            contenedor.addEventListener("click", evento => evento.stopPropagation());
+            contenedor.dataset.detieneCierreSesion = "true";
+        }
+    }
+    const select = contenedor.querySelector("select");
+    select.onchange = evento => {
+        const sucursal = evento.target.value;
+        if (!setSucursalActiva(sucursal)) {
+            mostrarMsg("No tienes acceso a esa sucursal", "err");
+            evento.target.value = store.sessionSucursal || "";
+            return;
+        }
+        document.querySelectorAll("select[id*='Sucursal']:not(#sucursalActivaGlobal), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto")
+            .forEach(selectModulo => {
+                if ([...selectModulo.options].some(opcion => opcion.value === store.sessionSucursal)) selectModulo.value = store.sessionSucursal;
+            });
+        window.dispatchEvent(new CustomEvent("eruditos:sucursal-cambiada", { detail: { sucursal: store.sessionSucursal } }));
+        mostrarMsg("Sucursal actual: " + store.sessionSucursal, "ok");
+    };
+    select.innerHTML = activas.map(sucursal => `<option value="${escaparSucursal(sucursal.nombre)}">${escaparSucursal(nombreSucursal(sucursal))}</option>`).join("");
+    const seleccion = activas.some(sucursal => sucursal.nombre === store.sessionSucursal)
+        ? store.sessionSucursal
+        : activas[0].nombre;
+    select.value = seleccion;
+    if (seleccion !== store.sessionSucursal) setSucursalActiva(seleccion);
+}
+
 function asegurarPanelSeguridad() {
     const seccion = document.getElementById("seccion-USUARIOS");
     if (seccion && !document.getElementById("panelPermisosRoles")) {
         const panel = document.createElement("div");
-        panel.innerHTML = '<div class="divider"></div><div class="section-label">Permisos por rol</div><div id="panelPermisosRoles"></div>';
+        panel.innerHTML = '<div class="divider"></div><details class="roles-avanzados"><summary><span>Configuración avanzada de roles</span><small>Crear roles reutilizables y definir sus permisos</small></summary><div id="panelPermisosRoles"></div></details>';
         seccion.appendChild(panel);
     }
     if (!document.getElementById("usuarioAccesoOverlay")) {
@@ -48,12 +94,19 @@ function asegurarPanelSeguridad() {
             <div class="modal-content" style="max-width:760px;max-height:88vh;overflow:auto">
               <button class="modal-close" id="cerrarUsuarioAcceso">✕</button>
               <div class="modal-header">Acceso de <span id="usuarioAccesoNombre"></span></div>
-              <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="usuarioAccesoGlobal"> Acceso global a todas las sucursales</label>
-              <div class="section-label">Sucursales autorizadas</div>
+              <div class="acceso-opcion">
+                <label class="acceso-check-label">
+                  <input type="checkbox" id="usuarioAccesoGlobal">
+                  <span class="acceso-check-visual" aria-hidden="true">✔</span>
+                  <span class="acceso-copy"><strong>Acceso a todas las sucursales</strong><small>Actívalo solo si esta persona puede trabajar en cualquier sucursal, sin restricciones.</small></span>
+                </label>
+              </div>
+              <div class="section-label">Sucursales habilitadas</div>
+              <div class="acceso-ayuda">Marca las sucursales donde esta persona puede consultar y realizar operaciones.</div>
               <div id="usuarioAccesoSucursales" class="row-2"></div>
-              <div class="field-group mt-8"><label class="field-label">Sucursal principal</label><select id="usuarioAccesoPrincipal"><option value="">Sin principal</option></select></div>
+              <div class="field-group mt-8"><label class="field-label">Sucursal inicial</label><div class="acceso-ayuda">Será la sucursal seleccionada al iniciar sesión. Debe estar habilitada arriba.</div><select id="usuarioAccesoPrincipal"><option value="">Sin sucursal inicial</option></select></div>
               <div class="section-label">Excepciones individuales</div>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Heredar usa el permiso del rol. Permitir o denegar prevalece sobre el rol.</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Heredar usa el permiso del rol. Puedes marcar varios permisos: cada ✔ permite ese permiso de forma individual. Denegar prevalece sobre el rol.</div>
               <div id="usuarioAccesoPermisos"></div>
               <div class="loader" id="loaderUsuarioAcceso"></div>
               <div class="row-2 mt-8"><button class="btn btn-primary" id="guardarUsuarioAcceso">Guardar acceso</button><button class="btn btn-ghost" id="cancelarUsuarioAcceso">Cancelar</button></div>
@@ -76,7 +129,11 @@ function permisosAgrupadosHtml(permisos, valorPorCodigo, editable = true) {
     });
     return [...grupos].map(([modulo, items]) => `<details><summary style="cursor:pointer;padding:8px 0"><strong>${escaparSucursal(modulo)}</strong> (${items.length})</summary>${items.map(p => {
         const valor = valorPorCodigo(p.codigo);
-        return `<label style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:5px 0"><span>${escaparSucursal(p.descripcion)}${p.critico ? ' <b style="color:var(--red)">crítico</b>' : ''}</span>${editable === 'rol' ? `<input type="checkbox" data-permiso-rol="${escaparSucursal(p.codigo)}" ${valor ? 'checked' : ''}>` : `<select data-permiso-usuario="${escaparSucursal(p.codigo)}"><option value="" ${!valor ? 'selected' : ''}>Heredar</option><option value="ALLOW" ${valor === 'ALLOW' ? 'selected' : ''}>Permitir</option><option value="DENY" ${valor === 'DENY' ? 'selected' : ''}>Denegar</option></select>`}</label>`;
+        const descripcion = `${escaparSucursal(p.descripcion)}${p.critico ? ' <b style="color:var(--red)">crítico</b>' : ''}`;
+        if (editable === 'rol' || editable === 'rol-lectura') {
+            return `<label class="permiso-rol-fila"><span>${descripcion}</span><span class="permiso-rol-control"><input type="checkbox" data-permiso-rol="${escaparSucursal(p.codigo)}" ${valor ? 'checked' : ''} ${editable === 'rol-lectura' ? 'disabled' : ''}><span class="permiso-checkmark" aria-hidden="true">✔</span></span></label>`;
+        }
+        return `<div class="permiso-usuario-fila" data-permiso-fila="${escaparSucursal(p.codigo)}"><span>${descripcion}</span><div class="permiso-usuario-controles"><label class="permiso-check-control" title="Marca para permitir este permiso individual"><input type="checkbox" data-permiso-usuario-check="${escaparSucursal(p.codigo)}" ${valor === 'ALLOW' ? 'checked' : ''}><span class="permiso-checkmark" aria-hidden="true">✔</span><span>Permitir</span></label><select data-permiso-usuario="${escaparSucursal(p.codigo)}"><option value="" ${!valor ? 'selected' : ''}>Heredar</option><option value="ALLOW" ${valor === 'ALLOW' ? 'selected' : ''}>Permitir</option><option value="DENY" ${valor === 'DENY' ? 'selected' : ''}>Denegar</option></select></div></div>`;
     }).join('')}</details>`).join('');
 }
 
@@ -84,18 +141,40 @@ function renderPermisosRoles() {
     asegurarPanelSeguridad();
     const panel = document.getElementById("panelPermisosRoles");
     if (!panel) return;
-    if (!can("usuarios.cambiar_permisos")) { panel.innerHTML = '<div class="empty-state">Sin permiso para modificar roles</div>'; return; }
+    if (!can("roles.ver")) { panel.innerHTML = '<div class="empty-state">Sin permiso para consultar roles</div>'; return; }
+    const puedeCambiarPermisos = can("usuarios.cambiar_permisos");
     const activos = _rolesCache.filter(r => r.activo);
-    panel.innerHTML = `${can("roles.crear") ? '<details style="margin-bottom:10px"><summary style="cursor:pointer">Crear rol personalizado</summary><div class="row-2 mt-8"><input id="nuevoRolCodigo" placeholder="Código, ej. SUPERVISOR"><input id="nuevoRolNombre" placeholder="Nombre visible"></div><input id="nuevoRolDescripcion" class="mt-8" placeholder="Descripción"><button class="btn btn-primary mt-8" id="crearRolBtn">Crear rol</button></details>' : ''}<div class="field-group"><label class="field-label">Rol</label><select id="rolPermisosSelect">${activos.map(r => `<option value="${escaparSucursal(r.codigo)}">${escaparSucursal(r.nombre)}</option>`).join('')}</select></div><div id="rolPermisosLista"></div><button class="btn btn-primary mt-8" id="guardarRolPermisos">Guardar permisos del rol</button>`;
+    panel.innerHTML = `${can("roles.crear") ? '<details style="margin-bottom:10px"><summary style="cursor:pointer">Crear rol personalizado</summary><div class="row-2 mt-8"><input id="nuevoRolCodigo" placeholder="Código, ej. SUPERVISOR"><input id="nuevoRolNombre" placeholder="Nombre visible"></div><input id="nuevoRolDescripcion" class="mt-8" placeholder="Descripción"><button class="btn btn-primary mt-8" id="crearRolBtn">Crear rol</button></details>' : ''}<div class="field-group"><label class="field-label">Rol</label><select id="rolPermisosSelect">${activos.map(r => `<option value="${escaparSucursal(r.codigo)}">${escaparSucursal(r.nombre)}</option>`).join('')}</select></div><div id="rolEdicion"></div><div class="acceso-ayuda">Marca todos los permisos que tendrá este rol. Se aplicarán a cada usuario que tenga asignado este rol.</div><div id="rolPermisosLista"></div>${puedeCambiarPermisos ? '<button class="btn btn-primary mt-8" id="guardarRolPermisos">Guardar permisos del rol</button>' : ''}`;
     const render = () => {
-        const rol = document.getElementById("rolPermisosSelect").value;
-        const actuales = new Set(_asignacionesRol.filter(a => a.rol === rol).map(a => a.permiso));
-        document.getElementById("rolPermisosLista").innerHTML = permisosAgrupadosHtml(_permisosCache.filter(p => p.activo), codigo => actuales.has(codigo), 'rol');
+        const codigo = document.getElementById("rolPermisosSelect").value;
+        const rol = _rolesCache.find(item => item.codigo === codigo);
+        const actuales = new Set(_asignacionesRol.filter(a => a.rol === codigo).map(a => a.permiso));
+        document.getElementById("rolPermisosLista").innerHTML = permisosAgrupadosHtml(_permisosCache.filter(p => p.activo), permiso => actuales.has(permiso), puedeCambiarPermisos ? 'rol' : 'rol-lectura');
+        document.getElementById("rolEdicion").innerHTML = rol && !rol.es_sistema && can("roles.editar")
+            ? `<div class="row-2 mt-8"><input id="editarRolNombre" value="${escaparSucursal(rol.nombre)}" aria-label="Nombre del rol"><input id="editarRolDescripcion" value="${escaparSucursal(rol.descripcion || '')}" aria-label="Descripción del rol"></div><div class="row-2 mt-8"><button class="btn btn-ghost" id="actualizarRolBtn">Actualizar datos</button><button class="btn btn-ghost" id="desactivarRolBtn">Desactivar rol</button></div>`
+            : '';
+        document.getElementById("actualizarRolBtn")?.addEventListener("click", () => actualizarRol(codigo, true));
+        document.getElementById("desactivarRolBtn")?.addEventListener("click", () => actualizarRol(codigo, false));
     };
     document.getElementById("rolPermisosSelect").addEventListener("change", render);
-    document.getElementById("guardarRolPermisos").addEventListener("click", guardarPermisosRol);
+    document.getElementById("guardarRolPermisos")?.addEventListener("click", guardarPermisosRol);
     document.getElementById("crearRolBtn")?.addEventListener("click", crearRol);
     render();
+}
+
+async function actualizarRol(codigo, mantenerActivo) {
+    if (!mantenerActivo && !confirm("Desactivar el rol " + codigo + "? Los usuarios actuales conservarán su registro, pero el rol dejará de estar disponible.")) return;
+    const data = await api({
+        ACCION: "ACTUALIZAR_ROL",
+        CODIGO: codigo,
+        NOMBRE: document.getElementById("editarRolNombre")?.value,
+        DESCRIPCION: document.getElementById("editarRolDescripcion")?.value,
+        ACTIVO: mantenerActivo,
+        TOKEN: store.sessionToken,
+    });
+    if (!manejarRespuesta(data) || !data.ok) return;
+    mostrarMsg(mantenerActivo ? "Rol actualizado" : "Rol desactivado", "ok");
+    await cargarUsuarios();
 }
 
 async function crearRol() {
@@ -135,15 +214,42 @@ function abrirAccesoUsuario(usuarioId) {
     const usuario = _usuariosCache.find(u => String(u.id) === String(usuarioId));
     if (!usuario) return;
     _usuarioAccesoActual = usuario;
+    const puedeSucursales = can("usuarios.cambiar_sucursales");
+    const puedePermisos = can("usuarios.cambiar_permisos");
     document.getElementById("usuarioAccesoNombre").textContent = usuario.usuario;
     document.getElementById("usuarioAccesoGlobal").checked = Boolean(usuario.acceso_global_sucursales);
-    document.getElementById("usuarioAccesoGlobal").disabled = !can("usuarios.asignar_roles_criticos");
+    document.getElementById("usuarioAccesoGlobal").disabled = !puedeSucursales || !can("usuarios.asignar_roles_criticos");
     const asignadas = new Set((usuario.usuario_sucursales || []).map(s => String(s.sucursal_id)));
-    document.getElementById("usuarioAccesoSucursales").innerHTML = _sucursalesCache.filter(s => s.estado === "ACTIVO").map(s => `<label style="display:flex;gap:7px;align-items:center"><input type="checkbox" data-sucursal-usuario value="${escaparSucursal(s.id)}" ${asignadas.has(String(s.id)) ? 'checked' : ''}> ${escaparSucursal(nombreSucursal(s))}</label>`).join('');
-    document.querySelectorAll("[data-sucursal-usuario]").forEach(el => el.addEventListener("change", actualizarPrincipalAcceso));
+    document.getElementById("usuarioAccesoSucursales").innerHTML = _sucursalesCache.filter(s => s.estado === "ACTIVO").map(s => `<label class="acceso-sucursal-opcion"><input type="checkbox" data-sucursal-usuario value="${escaparSucursal(s.id)}" ${asignadas.has(String(s.id)) ? 'checked' : ''}><span class="acceso-check-visual" aria-hidden="true">✔</span><span class="acceso-copy"><strong>${escaparSucursal(nombreSucursal(s))}</strong><small>Permitir acceso a esta sucursal</small></span></label>`).join('');
+    document.querySelectorAll("[data-sucursal-usuario]").forEach(el => {
+        el.disabled = !puedeSucursales;
+        el.addEventListener("change", actualizarPrincipalAcceso);
+    });
     actualizarPrincipalAcceso();
+    document.getElementById("usuarioAccesoPrincipal").disabled = !puedeSucursales;
     const excepciones = new Map((usuario.usuario_permisos || []).map(p => [p.permiso, p.efecto]));
     document.getElementById("usuarioAccesoPermisos").innerHTML = permisosAgrupadosHtml(_permisosCache.filter(p => p.activo), codigo => excepciones.get(codigo), true);
+    const contenedorPermisos = document.getElementById("usuarioAccesoPermisos");
+    const sincronizar = select => {
+        const fila = select.closest("[data-permiso-fila]");
+        const check = fila?.querySelector("[data-permiso-usuario-check]");
+        if (check) check.checked = select.value === "ALLOW";
+        fila?.classList.toggle("permiso-denegado", select.value === "DENY");
+    };
+    contenedorPermisos.querySelectorAll("[data-permiso-usuario]").forEach(select => {
+        select.disabled = !puedePermisos;
+        sincronizar(select);
+        select.addEventListener("change", () => sincronizar(select));
+    });
+    contenedorPermisos.querySelectorAll("[data-permiso-usuario-check]").forEach(check => {
+        check.disabled = !puedePermisos;
+        check.addEventListener("change", () => {
+            const select = check.closest("[data-permiso-fila]")?.querySelector("[data-permiso-usuario]");
+            if (!select) return;
+            select.value = check.checked ? "ALLOW" : "";
+            sincronizar(select);
+        });
+    });
     document.getElementById("usuarioAccesoOverlay").style.display = "flex";
 }
 
@@ -152,11 +258,15 @@ async function guardarAccesoUsuario() {
     const loader = document.getElementById("loaderUsuarioAcceso");
     loader.style.display = "block";
     try {
-        const excepciones = [...document.querySelectorAll("[data-permiso-usuario]")].filter(el => el.value).map(el => ({ permiso: el.dataset.permisoUsuario, efecto: el.value }));
-        const permisos = await api({ ACCION: "ACTUALIZAR_PERMISOS_USUARIO", USUARIO_ID: _usuarioAccesoActual.id, EXCEPCIONES: excepciones, TOKEN: store.sessionToken });
-        if (!manejarRespuesta(permisos) || !permisos.ok) return;
-        const acceso = await api({ ACCION: "ACTUALIZAR_ACCESO_USUARIO", USUARIO_ID: _usuarioAccesoActual.id, SUCURSAL_IDS: [...document.querySelectorAll("[data-sucursal-usuario]:checked")].map(el => el.value), SUCURSAL_PRINCIPAL_ID: document.getElementById("usuarioAccesoPrincipal").value || null, ACCESO_GLOBAL_SUCURSALES: document.getElementById("usuarioAccesoGlobal").checked, TOKEN: store.sessionToken });
-        if (!manejarRespuesta(acceso) || !acceso.ok) return;
+        if (can("usuarios.cambiar_permisos")) {
+            const excepciones = [...document.querySelectorAll("[data-permiso-usuario]")].filter(el => el.value).map(el => ({ permiso: el.dataset.permisoUsuario, efecto: el.value }));
+            const permisos = await api({ ACCION: "ACTUALIZAR_PERMISOS_USUARIO", USUARIO_ID: _usuarioAccesoActual.id, EXCEPCIONES: excepciones, TOKEN: store.sessionToken });
+            if (!manejarRespuesta(permisos) || !permisos.ok) return;
+        }
+        if (can("usuarios.cambiar_sucursales")) {
+            const acceso = await api({ ACCION: "ACTUALIZAR_ACCESO_USUARIO", USUARIO_ID: _usuarioAccesoActual.id, SUCURSAL_IDS: [...document.querySelectorAll("[data-sucursal-usuario]:checked")].map(el => el.value), SUCURSAL_PRINCIPAL_ID: document.getElementById("usuarioAccesoPrincipal").value || null, ACCESO_GLOBAL_SUCURSALES: document.getElementById("usuarioAccesoGlobal").checked, TOKEN: store.sessionToken });
+            if (!manejarRespuesta(acceso) || !acceso.ok) return;
+        }
         document.getElementById("usuarioAccesoOverlay").style.display = "none";
         mostrarMsg("Acceso del usuario actualizado", "ok");
         await cargarUsuarios();
@@ -243,7 +353,8 @@ export async function ejecutarBusquedaDetalle(t) {
         const seq = ++_detalleSeq;
         const data = await api(body);
         if (seq !== _detalleSeq) return;
-        if (!manejarRespuesta(data)) {
+        if (!manejarRespuesta(data) || !data.ok) {
+            co.innerHTML = `<div class="empty-state">${data.error || "No se pudo realizar la búsqueda"}</div>`;
             loader.style.display = "none";
             return
         }
@@ -400,7 +511,8 @@ export async function cargarUsuarios() {
             ACCION: "LISTAR_USUARIOS_ADMIN",
             TOKEN: store.sessionToken
         });
-        if (!manejarRespuesta(data)) {
+        if (!manejarRespuesta(data) || !data.ok) {
+            lista.innerHTML = `<div class="empty-state">${data.error || "No se pudieron cargar los usuarios"}</div>`;
             loader.style.display = "none";
             return
         }
@@ -431,7 +543,14 @@ export async function cargarUsuarios() {
                 card.className = "usuario-card";
                 const esYo = u.usuario === store.sessionUser;
                 const cantidadSucursales = u.acceso_global_sucursales ? "Todas" : String((u.usuario_sucursales || []).length);
-                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}${u.protegido ? ' <span title="Cuenta protegida">🔒</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span><span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${cantidadSucursales} · principal: ${u.sucursal || 'ninguna'}</span></div><div class="u-actions"><button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button><button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button><button class="btn-icon" data-accion="editar-acceso" data-id="${u.id}" title="Sucursales y excepciones">🛡️</button>${!esYo ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : ''}</div>`;
+                const puedeCambiarEstado = u.estado === "ACTIVO" ? can("usuarios.desactivar") : can("usuarios.activar");
+                const acciones = [
+                    can("usuarios.cambiar_rol") ? `<button class="btn-icon" data-accion="editar-rol" data-usuario="${u.usuario}" data-rol="${u.rol}" title="Cambiar rol">✏️</button>` : '',
+                    can("usuarios.restablecer_password") ? `<button class="btn-icon" data-accion="reset-pass" data-usuario="${u.usuario}" title="Resetear clave">🔑</button>` : '',
+                    can("usuarios.cambiar_sucursales") || can("usuarios.cambiar_permisos") ? `<button class="btn-icon" data-accion="editar-acceso" data-id="${u.id}" title="Permisos individuales y sucursales">🛡️</button>` : '',
+                    !esYo && puedeCambiarEstado ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : '',
+                ].join('');
+                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}${u.protegido ? ' <span title="Cuenta protegida">🔒</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span><span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${cantidadSucursales} · principal: ${u.sucursal || 'ninguna'}</span></div><div class="u-actions">${acciones}</div>`;
                 lista.appendChild(card)
             });
             // Delegated listeners
@@ -471,7 +590,12 @@ export async function crearUsuario() {
     const nombre = document.getElementById("nuevoUsuarioNombre").value.trim().toUpperCase()
       , pass = document.getElementById("nuevoUsuarioPass").value
       , rol = document.getElementById("nuevoUsuarioRol").value
-      , sucursal = document.getElementById("nuevoUsuarioSucursal").value;
+      , sucursal = document.getElementById("nuevoUsuarioSucursal").value
+      , estado = document.getElementById("nuevoUsuarioEstado")?.value || "ACTIVO"
+      , accesoGlobal = Boolean(document.getElementById("nuevoUsuarioAccesoGlobal")?.checked)
+      , sucursalIds = [...(document.getElementById("nuevoUsuarioSucursales")?.selectedOptions || [])].map(opcion => opcion.value);
+    const principalId = _sucursalesCache.find(item => item.nombre === sucursal)?.id || null;
+    if (principalId && sucursalIds.length && !sucursalIds.includes(principalId)) sucursalIds.push(principalId);
     if (!nombre) {
         mostrarMsg("Ingresa un nombre de usuario", "err");
         return
@@ -488,9 +612,13 @@ export async function crearUsuario() {
             USUARIO: nombre,
             PASSWORD: pass,
             ROL: rol,
+            ESTADO: estado,
+            SUCURSAL_IDS: sucursalIds,
+            SUCURSAL_PRINCIPAL_ID: principalId,
+            ACCESO_GLOBAL_SUCURSALES: accesoGlobal,
             TOKEN: store.sessionToken
         };
-        if (sucursal) body.SUCURSAL = sucursal;
+        if (sucursal && sucursalIds.length === 0) body.SUCURSAL = sucursal;
         const data = await api(body);
         if (!manejarRespuesta(data)) {
             loader.style.display = "none";
@@ -502,6 +630,9 @@ export async function crearUsuario() {
             document.getElementById("nuevoUsuarioPass").value = "";
             document.getElementById("nuevoUsuarioRol").value = "VENDEDOR";
             document.getElementById("nuevoUsuarioSucursal").value = "";
+            if (document.getElementById("nuevoUsuarioEstado")) document.getElementById("nuevoUsuarioEstado").value = "ACTIVO";
+            if (document.getElementById("nuevoUsuarioAccesoGlobal")) document.getElementById("nuevoUsuarioAccesoGlobal").checked = false;
+            [...(document.getElementById("nuevoUsuarioSucursales")?.options || [])].forEach(opcion => { opcion.selected = false; });
             await cargarUsuarios();
         } else if (data.error === "USUARIO_DUPLICADO") {
             mostrarMsg("Ese nombre de usuario ya existe", "err")
@@ -618,7 +749,10 @@ export function abrirEditarProducto(p) {
     document.getElementById("inventarioEditNombre").textContent = p.producto;
     document.getElementById("inventarioEditUbicacion").value = ubicacion;
     document.getElementById("inventarioEditProveedor").value = proveedor;
-    mostrarValorInput(document.getElementById("inventarioEditPrecioVenta"), p.precioVenta);
+    const precioInput = document.getElementById("inventarioEditPrecioVenta");
+    mostrarValorInput(precioInput, p.precioVenta);
+    precioInput.disabled = !can("productos.cambiar_precio");
+    precioInput.title = precioInput.disabled ? "No tienes permiso para cambiar precios" : "";
     document.getElementById("inventarioEditCodigoBarras").value = p.codigoBarras || "";
     var imgDiv = document.getElementById("inventarioEditImg");
     if (p.imagen) {
@@ -644,7 +778,7 @@ export async function guardarEdicionProducto() {
             ID: id,
             UBICACION: ubicacion,
             PROVEEDOR: proveedor,
-            PRECIO_VENTA: isNaN(precioVenta) ? undefined : precioVenta,
+            PRECIO_VENTA: can("productos.cambiar_precio") && !isNaN(precioVenta) ? precioVenta : undefined,
             CODIGO_BARRAS: codigoBarras || undefined,
             TOKEN: store.sessionToken
         });
@@ -741,7 +875,7 @@ export async function cargarSucursalesEnDropdowns() {
         const sucursales = data.datos || [];
         _sucursalesCache = sucursales;
         if (sucursales.length === 0) return sucursales;
-        const selects = document.querySelectorAll("select[id$='Sucursal'], select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto");
+        const selects = document.querySelectorAll("select[id$='Sucursal']:not(#sucursalActivaGlobal), select[id*='Sucursal']:not(#sucursalActivaGlobal):not(#nuevoUsuarioSucursales), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto");
         selects.forEach(function(sel) {
             if (sel.disabled) return;
             const actual = sel.value;
@@ -759,6 +893,14 @@ export async function cargarSucursalesEnDropdowns() {
                 }
             }
         });
+        const sucursalesUsuario = document.getElementById("nuevoUsuarioSucursales");
+        if (sucursalesUsuario) {
+            sucursalesUsuario.innerHTML = sucursales.filter(s => s.estado === "ACTIVO").map(s => `<option value="${escaparSucursal(s.id)}">${escaparSucursal(nombreSucursal(s))}</option>`).join("");
+            sucursalesUsuario.disabled = !can("usuarios.cambiar_sucursales");
+        }
+        const accesoGlobal = document.getElementById("nuevoUsuarioAccesoGlobal");
+        if (accesoGlobal) accesoGlobal.disabled = !can("usuarios.asignar_roles_criticos");
+        renderSelectorSucursalActiva(sucursales);
         return sucursales;
     } catch (_) { return []; }
 }
