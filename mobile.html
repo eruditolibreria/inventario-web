@@ -362,7 +362,7 @@
 
                     <!-- COMPRA -->
                     <div id="seccion-COMPRA" class="oculto">
-                        <div class="section-label">Registrar compra</div>
+                        <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;gap:12px">Registrar compra <button class="btn btn-ghost" type="button" onclick="abrirProveedores()" style="width:auto;min-width:0;padding:5px 10px">Proveedores</button></div>
                         <div class="field-group">
                             <label class="field-label">Sucursal</label>
                             <select id="sucursalCompra">
@@ -403,7 +403,8 @@
                         </div>
                         <div class="field-group mt-8">
                             <label class="field-label">Proveedor</label>
-                            <input id="proveedorCompra" placeholder="Nombre del proveedor">
+                            <input id="proveedorCompra" list="proveedoresCompraOpciones" placeholder="Selecciona o escribe un proveedor">
+                            <datalist id="proveedoresCompraOpciones"></datalist>
                         </div>
                         <div class="row-2">
                             <div class="field-group" style="margin:0">
@@ -1586,22 +1587,26 @@
                     </div>
                     <!-- INVENTARIO ADMIN -->
                     <div id="seccion-INVENTARIO" class="oculto">
-                        <div class="section-label">Gestión de inventario</div>
-                        <div class="row-2 mb-12">
+                        <div class="inventario-encabezado">
+                            <div>
+                                <div class="section-label">Inventario</div>
+                                <p class="inventario-subtitulo">Consulta existencias y administra los datos de cada producto.</p>
+                            </div>
+                            <button class="btn btn-ghost" onclick="cargarInventarioAdmin()">🔄 Actualizar</button>
+                        </div>
+                        <div class="inventario-filtros">
                             <div class="field-group" style="margin:0">
-                                <label class="field-label">Sucursal</label>
+                                <label class="field-label" for="filtroInvSucursal">Sucursal</label>
                                 <select id="filtroInvSucursal" onchange="filtrarInventario()">
-                                    <option value="">Todas</option>
-                                    <option value="ERUDITOS">ERUDITOS</option>
-                                    <option value="CENTRAL">CENTRAL</option>
+                                    <option value="">Todas las sucursales</option>
                                 </select>
                             </div>
                             <div class="field-group" style="margin:0">
-                                <label class="field-label">Filtro</label>
-                                <input id="filtroInvProducto" placeholder="Buscar producto..." oninput="filtrarInventario()">
+                                <label class="field-label" for="filtroInvProducto">Buscar</label>
+                                <input id="filtroInvProducto" placeholder="Producto, código o categoría" autocomplete="off" oninput="filtrarInventario()">
                             </div>
                         </div>
-                        <button class="btn btn-ghost mb-12" onclick="cargarInventarioAdmin()">🔄 Cargar inventario</button>
+                        <div id="inventarioResumen" class="inventario-resumen" aria-live="polite"></div>
                         <div class="loader" id="loaderInvAdmin"></div>
                         <div id="inventarioGrid" class="inventario-grid"></div>
                         <div id="paginInv" style="display:none;align-items:center;justify-content:center;gap:10px;margin:14px 0">
@@ -1850,6 +1855,35 @@
                 <button class="btn btn-primary" onclick="guardarEdicionProducto()">✅ Guardar</button>
                 <button class="btn btn-ghost" onclick="cerrarEditarProducto()">Cancelar</button>
             </div>
+        </div>
+    </div>
+
+    <div id="inventarioAjusteOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarAjusteInventario(event)">
+        <div class="producto-detalle-card" style="max-width:470px" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+                <div><div style="font-size:20px;font-weight:800;color:var(--text)">Ajustar inventario</div><div id="inventarioAjusteProducto" style="font-size:13px;color:var(--text-light);margin-top:4px"></div></div>
+                <button class="btn btn-ghost" type="button" onclick="cerrarAjusteInventario()" style="min-width:auto;width:auto;padding:3px 9px">×</button>
+            </div>
+            <div style="margin:12px 0 16px;padding:10px 12px;background:var(--bg);border-radius:8px;color:var(--text-light)">Stock actual: <strong id="inventarioAjusteStockActual" style="color:var(--text)"></strong></div>
+            <div class="row-2"><div class="field-group" style="margin-bottom:12px"><label class="field-label">Operación</label><select id="inventarioAjusteTipo"><option value="AUMENTAR">Aumentar</option><option value="DISMINUIR">Disminuir</option></select></div><div class="field-group" style="margin-bottom:12px"><label class="field-label">Cantidad</label><input id="inventarioAjusteCantidad" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0"></div></div>
+            <div class="field-group" style="margin-bottom:12px"><label class="field-label">Motivo</label><select id="inventarioAjusteMotivo"><option value="Conteo físico">Conteo físico</option><option value="Merma o daño">Merma o daño</option><option value="Corrección de registro">Corrección de registro</option><option value="Otro">Otro</option></select></div>
+            <div class="field-group" style="margin-bottom:12px"><label class="field-label">Observación <span style="font-weight:400">(opcional)</span></label><textarea id="inventarioAjusteObservacion" rows="3" maxlength="500" placeholder="Describe el motivo si hace falta"></textarea></div>
+            <div id="inventarioAjusteResultado" aria-live="polite" style="min-height:20px;margin-bottom:12px;color:var(--danger);font-size:13px"></div>
+            <div class="row-2"><button id="btnConfirmarAjuste" class="btn btn-primary" type="button" onclick="confirmarAjusteInventario()">Guardar ajuste</button><button class="btn btn-ghost" type="button" onclick="cerrarAjusteInventario()">Cancelar</button></div>
+        </div>
+    </div>
+
+    <div id="inventarioHistorialOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarHistorialInventario(event)">
+        <div class="producto-detalle-card" style="max-width:580px" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:8px"><div><div style="font-size:20px;font-weight:800;color:var(--text)">Historial de inventario</div><div id="inventarioHistorialProducto" style="font-size:13px;color:var(--text-light);margin-top:4px"></div></div><button class="btn btn-ghost" type="button" onclick="cerrarHistorialInventario()" style="min-width:auto;width:auto;padding:3px 9px">×</button></div>
+            <div id="inventarioHistorialLista" style="max-height:55vh;overflow:auto"></div>
+        </div>
+    </div>
+
+    <div id="proveedoresOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarProveedores(event)">
+        <div class="producto-detalle-card" style="max-width:640px" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px"><div><div style="font-size:20px;font-weight:800;color:var(--text)">Proveedores</div><div style="font-size:13px;color:var(--text-light);margin-top:3px">Registro y ficha de compras</div></div><button class="btn btn-ghost" type="button" onclick="cerrarProveedores()" style="min-width:auto;width:auto;padding:3px 9px">×</button></div>
+            <div id="proveedoresContenido"></div>
         </div>
     </div>
 

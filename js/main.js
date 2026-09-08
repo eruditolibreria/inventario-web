@@ -41,7 +41,7 @@ import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          renderCarrito as renderCarritoVenta, eliminarItem,
          toggleClienteVenta, cargarClientes, buscarClienteVenta,
          limpiarCarritoDraft, abrirEscanerVenta, cerrarEscanerVenta,
-         revisarOrdenEscaner }
+         revisarOrdenEscaner, restaurarReservasCarrito, vaciarCarrito }
   from './modos/venta.js';
 import { verificarEstadoCaja, abrirCaja, registrarAporteRetiro,
          abrirDetalleCaja, cerrarDetalleCaja }
@@ -49,7 +49,8 @@ import { verificarEstadoCaja, abrirCaja, registrarAporteRetiro,
 import { initArqueo, cargarArqueo, iniciarArqueo, cerrarArqueo,
          listarArqueos, verDetalleArqueo, cerrarDetalleArqueo }
   from './modos/arqueo.js';
-import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra, abrirEscanerCompra }
+import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra, abrirEscanerCompra,
+         cargarProveedoresCompra, abrirProveedores, cerrarProveedores, abrirFormularioProveedor, guardarProveedor }
   from './modos/compra.js';
 import { initGasto, toggleAcreedorGasto, registrarGasto }
   from './modos/gasto.js';
@@ -100,7 +101,9 @@ import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          cargarInventarioAdmin, cargarUsuarios,
          crearUsuario, confirmarCambioRol, toggleEstadoUsuario,
          initAdminMode, abrirEditarProducto, cerrarEditarProducto,
-         guardarEdicionProducto, abrirZoomImagen, cerrarZoomImagen,
+         guardarEdicionProducto, abrirAjusteInventario, cerrarAjusteInventario,
+         confirmarAjusteInventario, abrirHistorialInventario, cerrarHistorialInventario,
+         abrirZoomImagen, cerrarZoomImagen,
          crearSucursal, cargarSucursalesEnDropdowns,
          abrirDetalleSucursal, cerrarDetalleSucursal, editarSucursal, guardarSucursal,
          abrirCambiarSucursal, cerrarCambiarSucursal, confirmarCambiarSucursal,
@@ -203,19 +206,25 @@ function registrarServiceWorker() {
 // ═══════════════════════════════════════════════════════════════
 // RESTAURAR CARRITO DRAFT
 // ═══════════════════════════════════════════════════════════════
-function restaurarCarritoDraft(draft) {
+async function restaurarCarritoDraft(draft) {
     if (draft && draft.carrito && draft.carrito.length) {
         setCarrito(draft.carrito);
         if (draft.sucursal) {
             var sucEl = document.getElementById("sucursalVenta");
             if (sucEl) sucEl.value = draft.sucursal;
         }
+        if (!await restaurarReservasCarrito(draft.carritoId)) {
+            clearCarrito();
+            limpiarCarritoDraft();
+            renderCarritoVenta();
+            return;
+        }
         renderCarritoVenta();
         var carrito = store.carrito;
         mostrarToast(
             "📦 Carrito restaurado (" + carrito.length + " productos)",
             "Limpiar",
-            function() { clearCarrito(); limpiarCarritoDraft(); renderCarritoVenta(); }
+            function() { void vaciarCarrito(); }
         );
     }
 }
@@ -257,6 +266,11 @@ async function inicializarApp() {
     window.buscarProductoCompra = buscarProductoCompra;
     window.registrarCompra = registrarCompra;
     window.toggleClienteCompra = toggleClienteCompra;
+    window.cargarProveedoresCompra = cargarProveedoresCompra;
+    window.abrirProveedores = abrirProveedores;
+    window.cerrarProveedores = cerrarProveedores;
+    window.abrirFormularioProveedor = abrirFormularioProveedor;
+    window.guardarProveedor = guardarProveedor;
     window.registrarGasto = registrarGasto;
     window.toggleAcreedorGasto = toggleAcreedorGasto;
     window.abrirCaja = abrirCaja;
@@ -357,6 +371,11 @@ async function inicializarApp() {
     window.abrirEditarProducto = abrirEditarProducto;
     window.cerrarEditarProducto = cerrarEditarProducto;
     window.guardarEdicionProducto = guardarEdicionProducto;
+    window.abrirAjusteInventario = abrirAjusteInventario;
+    window.cerrarAjusteInventario = cerrarAjusteInventario;
+    window.confirmarAjusteInventario = confirmarAjusteInventario;
+    window.abrirHistorialInventario = abrirHistorialInventario;
+    window.cerrarHistorialInventario = cerrarHistorialInventario;
     window.abrirZoomImagen = abrirZoomImagen;
     window.cerrarZoomImagen = cerrarZoomImagen;
     window.confirmarEliminar = confirmarEliminar;
@@ -382,6 +401,7 @@ async function inicializarApp() {
         verificarEstadoCaja,
         toggleClienteVenta,
         cargarClientes,
+        cargarProveedoresCompra,
         cargarComprobantes: initComprobantes,
         toggleClienteCompra,
         toggleAcreedorGasto,

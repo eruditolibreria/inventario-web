@@ -6,7 +6,7 @@ import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
          confirmarResetPass } from '../ui.js';
-import { listarProductos } from '../db.js';
+import { listarProductos, ajustarInventario, listarMovimientosInventario } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
 
@@ -378,7 +378,7 @@ export async function ejecutarBusquedaDetalle(t) {
 }
 
 // ── cargarInventarioAdmin ──
-// Paginado server-side: solo 20 cards por pagina (Fase 1/3)
+// Paginado server-side: solo 20 productos por página.
 const INV_PAGINA_TAM = 20;
 let _invPagina = 1;
 let _invTotal = 0;
@@ -410,14 +410,142 @@ export function filtrarInventario() {
     _invTimer = setTimeout(() => cargarInventarioAdmin(1), 300);
 }
 
+function escaparInventario(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, caracter => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[caracter]);
+}
+
+function estadoInventario(producto) {
+    return Number(producto.stock || 0) <= 0 ? "AGOTADO" : "DISPONIBLE";
+}
+
+function crearAccionesInventario(producto) {
+    const acciones = document.createElement("div");
+    acciones.className = "inventario-acciones";
+    if (can("productos.editar")) {
+        const imagen = document.createElement("button");
+        imagen.className = "btn-xs btn-xs-edit";
+        imagen.type = "button";
+        imagen.textContent = "Imagen";
+        imagen.addEventListener("click", () => abrirModalImagen(producto.producto, producto.sucursal, producto.imagen || ""));
+        acciones.appendChild(imagen);
+    }
+    if (can("productos.desactivar")) {
+        const eliminar = document.createElement("button");
+        eliminar.className = "btn-xs btn-xs-del";
+        eliminar.type = "button";
+        eliminar.textContent = "Eliminar";
+        eliminar.addEventListener("click", () => confirmarEliminar(producto.id, producto.producto));
+        acciones.appendChild(eliminar);
+    }
+    if (can("inventario.ajustar")) {
+        const ajustar = document.createElement("button");
+        ajustar.className = "btn-xs btn-xs-edit";
+        ajustar.type = "button";
+        ajustar.textContent = "Ajustar";
+        ajustar.addEventListener("click", () => abrirAjusteInventario(producto));
+        acciones.appendChild(ajustar);
+    }
+    if (can("inventario.ver_movimientos")) {
+        const historial = document.createElement("button");
+        historial.className = "btn-xs btn-xs-edit";
+        historial.type = "button";
+        historial.textContent = "Historial";
+        historial.addEventListener("click", () => abrirHistorialInventario(producto));
+        acciones.appendChild(historial);
+    }
+    return acciones;
+}
+
+function activarDetalleInventario(elemento, producto) {
+    if (!can("productos.editar")) return;
+    elemento.classList.add("inventario-interactivo");
+    elemento.addEventListener("click", evento => {
+        if (evento.target.closest("button")) return;
+        abrirEditarProducto(producto);
+    });
+}
+
+function crearMiniaturaInventario(producto) {
+    const imagen = producto.imagen
+        ? `<img src="${escaparInventario(producto.imagen)}" alt="${escaparInventario(producto.producto)}" loading="lazy">`
+        : "<span aria-hidden=\"true\">📦</span>";
+    return `<div class="inventario-miniatura">${imagen}</div>`;
+}
+
+function renderInventarioEscritorio(datos, mostrarCostos) {
+    const contenedor = document.createElement("div");
+    contenedor.className = "inventario-tabla-wrap";
+    const tabla = document.createElement("table");
+    tabla.className = "inventario-tabla";
+    tabla.innerHTML = `<thead><tr>
+        <th aria-label="Imagen"></th><th>Producto</th><th>Código</th><th>Sucursal</th><th>Stock</th>
+        ${mostrarCostos ? "<th>Costo</th>" : ""}<th>Precio</th><th>Estado</th><th aria-label="Acciones"></th>
+    </tr></thead>`;
+    const cuerpo = document.createElement("tbody");
+    datos.forEach(producto => {
+        const fila = document.createElement("tr");
+        const estado = estadoInventario(producto);
+        fila.innerHTML = `<td>${crearMiniaturaInventario(producto)}</td>
+            <td><strong>${escaparInventario(producto.producto)}</strong><small>${escaparInventario(producto.categoria || "Sin categoría")}</small></td>
+            <td class="inventario-codigo">${escaparInventario(producto.codigoBarras || "—")}</td>
+            <td>${escaparInventario(producto.sucursal || "—")}</td><td><strong>${Number(producto.stock || 0)}</strong></td>
+            ${mostrarCostos ? `<td>${producto.precioUnidad == null ? "—" : "Bs " + Number(producto.precioUnidad).toFixed(2)}</td>` : ""}
+            <td>Bs ${Number(producto.precioVenta || 0).toFixed(2)}</td>
+            <td><span class="inventario-estado inventario-estado-${estado.toLowerCase()}">${estado}</span></td>`;
+        const celdaAcciones = document.createElement("td");
+        celdaAcciones.appendChild(crearAccionesInventario(producto));
+        fila.appendChild(celdaAcciones);
+        const miniatura = fila.querySelector(".inventario-miniatura");
+        if (miniatura && producto.imagen) {
+            miniatura.classList.add("inventario-imagen-zoom");
+            miniatura.addEventListener("click", evento => { evento.stopPropagation(); abrirZoomImagen(producto.imagen); });
+        }
+        activarDetalleInventario(fila, producto);
+        cuerpo.appendChild(fila);
+    });
+    tabla.appendChild(cuerpo);
+    contenedor.appendChild(tabla);
+    return contenedor;
+}
+
+function renderInventarioMovil(datos, mostrarCostos) {
+    const lista = document.createElement("div");
+    lista.className = "inventario-lista-movil";
+    datos.forEach(producto => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "inventario-tarjeta-movil";
+        const estado = estadoInventario(producto);
+        tarjeta.innerHTML = `<div class="inventario-tarjeta-cabecera">${crearMiniaturaInventario(producto)}
+            <div><h3>${escaparInventario(producto.producto)}</h3><p>${escaparInventario(producto.sucursal || "—")} · ${escaparInventario(producto.categoria || "Sin categoría")}</p></div>
+            <span class="inventario-estado inventario-estado-${estado.toLowerCase()}">${estado}</span></div>
+            <div class="inventario-datos-movil"><span>Stock <strong>${Number(producto.stock || 0)}</strong></span>
+            <span>Precio <strong>Bs ${Number(producto.precioVenta || 0).toFixed(2)}</strong></span>
+            ${mostrarCostos ? `<span>Costo <strong>${producto.precioUnidad == null ? "—" : "Bs " + Number(producto.precioUnidad).toFixed(2)}</strong></span>` : ""}
+            <span>Código <strong>${escaparInventario(producto.codigoBarras || "—")}</strong></span></div>`;
+        const acciones = crearAccionesInventario(producto);
+        if (acciones.childElementCount) tarjeta.appendChild(acciones);
+        const miniatura = tarjeta.querySelector(".inventario-miniatura");
+        if (miniatura && producto.imagen) {
+            miniatura.classList.add("inventario-imagen-zoom");
+            miniatura.addEventListener("click", evento => { evento.stopPropagation(); abrirZoomImagen(producto.imagen); });
+        }
+        activarDetalleInventario(tarjeta, producto);
+        lista.appendChild(tarjeta);
+    });
+    return lista;
+}
+
 export async function cargarInventarioAdmin(pagina) {
     if (pagina === undefined) pagina = _invPagina;
-    if (!store.sessionToken || !can("inventario.ver_costos")) {
+    if (!store.sessionToken || !can("inventario.ver")) {
         mostrarMsg("Sin permisos", "err");
         return
     }
     const loader = document.getElementById("loaderInvAdmin")
       , grid = document.getElementById("inventarioGrid")
+      , resumen = document.getElementById("inventarioResumen")
       , filtroSuc = document.getElementById("filtroInvSucursal").value
       , filtroProd = document.getElementById("filtroInvProducto").value;
     loader.style.display = "block";
@@ -437,50 +565,13 @@ export async function cargarInventarioAdmin(pagina) {
         }
         _invPagina = pagina;
         _invTotal = total;
+        if (resumen) resumen.textContent = `${total} producto${total === 1 ? "" : "s"} encontrado${total === 1 ? "" : "s"} · página ${pagina}`;
         if (datos.length === 0) {
             grid.innerHTML = `<div class="empty-state">Sin productos encontrados</div>`
         } else {
-            datos.forEach(p => {
-                const card = document.createElement("div");
-                card.className = "inventario-card";
-                card.style.cursor = "pointer";
-                card.innerHTML = `<div class="inventario-img">${p.imagen ? `<img src="${p.imagen}" alt="${p.producto}">` : ``}</div>
-                <div class="inventario-info">
-                  <div class="nombre">${p.producto}</div>
-                  <div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2) || '—'}</div>
-                  <div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2) || '—'}</div>
-                  <div class="detalle">Stock: <b style="color:var(--accent-text)">${p.stock}</b></div>
-                  <div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div>
-                </div>
-                <div class="inventario-actions">
-                  <button class="btn-xs btn-xs-edit" data-accion="imagen" data-producto="${p.producto}" data-sucursal="${p.sucursal}" data-imagen="${p.imagen || ''}">Imagen</button>
-                  <button class="btn-xs btn-xs-del" data-accion="eliminar" data-id="${p.id}" data-producto="${p.producto}">Eliminar</button>
-                </div>`;
-                card.addEventListener("click", function(e) {
-                    if (e.target.closest(".btn-xs")) return;
-                    abrirEditarProducto(p);
-                });
-                var imgDiv = card.querySelector(".inventario-img");
-                if (imgDiv && p.imagen) {
-                    imgDiv.style.cursor = "zoom-in";
-                    imgDiv.addEventListener("click", function(e) {
-                        e.stopPropagation();
-                        abrirZoomImagen(p.imagen);
-                    });
-                }
-                grid.appendChild(card)
-            });
-            // Delegated listeners
-            grid.querySelectorAll('[data-accion="imagen"]').forEach(btn => {
-                btn.addEventListener("click", function() {
-                    abrirModalImagen(this.dataset.producto, this.dataset.sucursal, this.dataset.imagen);
-                });
-            });
-            grid.querySelectorAll('[data-accion="eliminar"]').forEach(btn => {
-                btn.addEventListener("click", function() {
-                    confirmarEliminar(this.dataset.id, this.dataset.producto);
-                });
-            });
+            const mostrarCostos = can("inventario.ver_costos");
+            grid.appendChild(renderInventarioEscritorio(datos, mostrarCostos));
+            grid.appendChild(renderInventarioMovil(datos, mostrarCostos));
         }
         _renderPaginacionInv();
     } catch (e) {
@@ -801,6 +892,115 @@ export function cerrarEditarProducto(e) {
     _productoEditando = null;
 }
 
+// ══ Ajuste de inventario (operación transaccional y auditada) ══
+let _inventarioAjustando = null;
+let _ajusteIdempotencyKey = null;
+
+function nuevaClaveAjuste() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, caracter => {
+        const aleatorio = Math.floor(Math.random() * 16);
+        return (caracter === "x" ? aleatorio : (aleatorio & 0x3) | 0x8).toString(16);
+    });
+}
+
+export function abrirAjusteInventario(producto) {
+    if (!can("inventario.ajustar")) return;
+    _inventarioAjustando = producto;
+    _ajusteIdempotencyKey = nuevaClaveAjuste();
+    document.getElementById("inventarioAjusteProducto").textContent = `${producto.producto} · ${producto.sucursal}`;
+    document.getElementById("inventarioAjusteStockActual").textContent = Number(producto.stock || 0);
+    document.getElementById("inventarioAjusteTipo").value = "AUMENTAR";
+    document.getElementById("inventarioAjusteCantidad").value = "";
+    document.getElementById("inventarioAjusteMotivo").value = "Conteo físico";
+    document.getElementById("inventarioAjusteObservacion").value = "";
+    document.getElementById("inventarioAjusteResultado").textContent = "";
+    document.getElementById("inventarioAjusteOverlay").style.display = "flex";
+    document.getElementById("inventarioAjusteCantidad").focus();
+}
+
+export function cerrarAjusteInventario(evento) {
+    const overlay = document.getElementById("inventarioAjusteOverlay");
+    if (evento && evento.target !== overlay) return;
+    overlay.style.display = "none";
+    _inventarioAjustando = null;
+    _ajusteIdempotencyKey = null;
+}
+
+export async function confirmarAjusteInventario() {
+    if (!_inventarioAjustando || !_ajusteIdempotencyKey) return;
+    const tipo = document.getElementById("inventarioAjusteTipo").value;
+    const cantidad = Number(document.getElementById("inventarioAjusteCantidad").value);
+    const motivo = document.getElementById("inventarioAjusteMotivo").value;
+    const observacion = document.getElementById("inventarioAjusteObservacion").value.trim();
+    const resultado = document.getElementById("inventarioAjusteResultado");
+    const boton = document.getElementById("btnConfirmarAjuste");
+
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+        resultado.textContent = "Ingresa una cantidad mayor a cero.";
+        return;
+    }
+    if (!motivo) {
+        resultado.textContent = "Selecciona un motivo para el ajuste.";
+        return;
+    }
+
+    boton.disabled = true;
+    resultado.textContent = "Guardando ajuste…";
+    try {
+        const data = await ajustarInventario({
+            inventarioId: _inventarioAjustando.id,
+            tipo,
+            cantidad,
+            motivo,
+            observacion,
+            idempotencyKey: _ajusteIdempotencyKey
+        });
+        if (!data?.ok) throw new Error(data?.error || "No se pudo registrar el ajuste.");
+        mostrarMsg(data.repetida ? "El ajuste ya estaba registrado." : "✅ Ajuste registrado", "ok");
+        cerrarAjusteInventario();
+        await cargarInventarioAdmin(_invPagina);
+    } catch (error) {
+        resultado.textContent = error.message || "No se pudo guardar el ajuste.";
+    } finally {
+        boton.disabled = false;
+    }
+}
+
+export async function abrirHistorialInventario(producto) {
+    if (!can("inventario.ver_movimientos")) return;
+    const overlay = document.getElementById("inventarioHistorialOverlay");
+    document.getElementById("inventarioHistorialProducto").textContent = `${producto.producto} · ${producto.sucursal}`;
+    const lista = document.getElementById("inventarioHistorialLista");
+    lista.innerHTML = "<div style=\"padding:14px;color:var(--text-light)\">Cargando movimientos…</div>";
+    overlay.style.display = "flex";
+    try {
+        const movimientos = await listarMovimientosInventario(producto.id);
+        if (!movimientos.length) {
+            lista.innerHTML = "<div style=\"padding:14px;color:var(--text-light)\">Aún no hay movimientos registrados para este producto.</div>";
+            return;
+        }
+        lista.innerHTML = movimientos.map(movimiento => {
+            const fecha = new Date(movimiento.creado_en).toLocaleString("es-BO", { dateStyle: "short", timeStyle: "short" });
+            const signo = Number(movimiento.cantidad) > 0 ? "+" : "";
+            return `<article style="padding:12px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;gap:10px"><strong>${escaparInventario(movimiento.tipo)}</strong><strong>${signo}${Number(movimiento.cantidad)}</strong></div>
+                <div style="font-size:12px;color:var(--text-light);margin-top:3px">${escaparInventario(movimiento.motivo)} · ${escaparInventario(fecha)}</div>
+                <div style="font-size:12px;color:var(--text-light);margin-top:3px">Stock: ${Number(movimiento.stock_anterior)} → ${Number(movimiento.stock_nuevo)} · ${escaparInventario(movimiento.usuario)}</div>
+                ${movimiento.observacion ? `<div style="font-size:12px;margin-top:5px">${escaparInventario(movimiento.observacion)}</div>` : ""}
+            </article>`;
+        }).join("");
+    } catch (error) {
+        lista.innerHTML = `<div style="padding:14px;color:var(--danger)">${escaparInventario(error.message || "No se pudo cargar el historial.")}</div>`;
+    }
+}
+
+export function cerrarHistorialInventario(evento) {
+    const overlay = document.getElementById("inventarioHistorialOverlay");
+    if (evento && evento.target !== overlay) return;
+    overlay.style.display = "none";
+}
+
 export async function abrirEscanerInventarioEdit() {
     const modal = document.getElementById("escanerModal");
     const video = document.getElementById("escanerVideo");
@@ -880,9 +1080,8 @@ export async function cargarSucursalesEnDropdowns() {
             if (sel.disabled) return;
             const actual = sel.value;
             while (sel.options.length > 0) sel.remove(0);
-            if (sel.hasAttribute("data-opcional") || sel.querySelector("option") || true) {
-                sel.add(new Option("🏪 Seleccionar sucursal", ""));
-            }
+            const esFiltroInventario = sel.id === "filtroInvSucursal";
+            sel.add(new Option(esFiltroInventario ? "Todas las sucursales" : "🏪 Seleccionar sucursal", ""));
             sucursales.forEach(function(s) {
                 if (s.estado !== "ACTIVO") return;
                 sel.add(new Option(nombreSucursal(s), s.nombre));

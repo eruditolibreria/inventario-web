@@ -33,9 +33,14 @@ import { listarComprobantes } from './comprobantes.js';
 
 function _guardarCarritoDraft() {
     try {
+        if (!store.carrito.length) {
+            localStorage.removeItem(CARRITO_KEY);
+            return;
+        }
         localStorage.setItem(CARRITO_KEY, JSON.stringify({
             carrito: store.carrito,
             sucursal: document.getElementById("sucursalVenta")?.value || "",
+            carritoId: _idCarrito(),
             ts: Date.now()
         }));
     } catch(e) {}
@@ -48,6 +53,7 @@ let _clienteVentaSeleccionado = null;
 let _clienteVentaTimer = null;
 let _escanerVentaMovilActivo = false;
 let _cobroEnCurso = false;
+let _carritoId = "";
 
 // Para administradores la sucursal seleccionada en ventas tiene prioridad.
 // En otros roles el selector ya queda bloqueado en la sucursal de la sesion.
@@ -106,6 +112,68 @@ function _nuevaClaveIdempotencia() {
         const r = Math.floor(Math.random() * 16);
         return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
     });
+}
+
+function _idCarrito() {
+    if (!_carritoId) _carritoId = _nuevaClaveIdempotencia();
+    return _carritoId;
+}
+
+function _mensajeReserva(error) {
+    if (String(error || "").includes("STOCK_RESERVADO_INSUFICIENTE")) {
+        return "Stock insuficiente: hay unidades reservadas en otro carrito";
+    }
+    return "No se pudo actualizar la reserva de stock";
+}
+
+async function _ajustarReserva(item, delta) {
+    const data = await api({
+        ACCION: "RESERVAR_STOCK",
+        CARRITO_ID: _idCarrito(),
+        PRODUCTO: item.producto,
+        SUCURSAL: item.sucursal,
+        DELTA: delta,
+        TOKEN: store.sessionToken
+    });
+    if (!data?.ok) throw new Error(data?.error || "RESERVA_NO_REGISTRADA");
+    return data;
+}
+
+export async function restaurarReservasCarrito(carritoId) {
+    if (carritoId) {
+        _carritoId = String(carritoId);
+        return true;
+    }
+    _carritoId = _nuevaClaveIdempotencia();
+    try {
+        for (const item of store.carrito) await _ajustarReserva(item, item.cantidad);
+        return true;
+    } catch (error) {
+        try {
+            await api({ ACCION: "LIBERAR_RESERVAS_CARRITO", CARRITO_ID: _carritoId, TOKEN: store.sessionToken });
+        } catch (_) {}
+        _carritoId = "";
+        mostrarMsg(_mensajeReserva(error.message), "err");
+        return false;
+    }
+}
+
+export async function vaciarCarrito() {
+    const carritoId = _carritoId;
+    if (carritoId && store.sessionToken) {
+        try {
+            const data = await api({ ACCION: "LIBERAR_RESERVAS_CARRITO", CARRITO_ID: carritoId, TOKEN: store.sessionToken });
+            if (!data?.ok) throw new Error(data?.error || "RESERVA_NO_LIBERADA");
+        } catch (error) {
+            mostrarMsg(_mensajeReserva(error.message), "err");
+            return false;
+        }
+    }
+    clearCarrito();
+    _carritoId = "";
+    limpiarCarritoDraft();
+    renderCarrito();
+    return true;
 }
 
 export function initVenta(callbacks) {
@@ -174,7 +242,7 @@ async function agregarPorCodigoScan(codigo) {
         } catch (_) {}
     }
     if (prod) {
-        agregarPorProducto(prod, suc);
+        await agregarPorProducto(prod, suc);
     } else {
         mostrarMsg("Producto no encontrado: " + codigo, "err");
     }
@@ -245,7 +313,14 @@ export function buscarClienteVenta() {
 }
 
 // Agrega producto al carrito por objeto producto (usado por escaner)
-function agregarPorProducto(prod, sucursal) {
+async function agregarPorProducto(prod, sucursal) {
+    const item = { producto: prod.producto, sucursal };
+    try {
+        await _ajustarReserva(item, 1);
+    } catch (error) {
+        mostrarMsg(_mensajeReserva(error.message), "err");
+        return;
+    }
     const carrito = [...store.carrito];
     const ex = carrito.find(i => i.producto === prod.producto);
     const precio = prod.precio_venta ?? prod.precio ?? prod.precioVenta ?? 0;
@@ -332,7 +407,7 @@ async function procesarCodigoEscanerVenta(codigo) {
         if (data.ok && data.producto) prod = data.producto;
     }
     if (prod) {
-        agregarPorProducto(prod, suc);
+        await agregarPorProducto(prod, suc);
         if (estado) estado.textContent = "Producto agregado. Listo para el siguiente escaneo";
     } else if (estado) {
         estado.textContent = "Producto no encontrado: " + codigo;
@@ -388,7 +463,7 @@ export async function abrirEscanerVenta() {
             }
         }
         if (prod) {
-            agregarPorProducto(prod, suc);
+            await agregarPorProducto(prod, suc);
         } else {
             mostrarMsg("Producto no encontrado: " + codigo, "err");
         }
@@ -413,7 +488,7 @@ function initScannerInput() {
         if (!valor || !suc) return;
         onInputScanner(valor, suc, async function(prod) {
             if (prod) {
-                agregarPorProducto(prod, suc);
+                await agregarPorProducto(prod, suc);
             } else if (CODIGO_REGEX.test(valor)) {
                 const data = await api({
                     ACCION: "BUSCAR_PRODUCTO_CODIGO",
@@ -422,7 +497,7 @@ function initScannerInput() {
                     TOKEN: store.sessionToken
                 });
                 if (data.ok && data.producto) {
-                    agregarPorProducto(data.producto, suc);
+                    await agregarPorProducto(data.producto, suc);
                 }
             }
             input.value = "";
@@ -494,6 +569,12 @@ export async function agregarCarrito() {
     if (p.stock < ca) {
         mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
         return
+    }
+    try {
+        await _ajustarReserva({ producto: pr, sucursal: su }, ca);
+    } catch (error) {
+        mostrarMsg(_mensajeReserva(error.message), "err");
+        return;
     }
     const carrito = [...store.carrito];
     const ex = carrito.find(i => i.producto === pr);
@@ -685,9 +766,16 @@ export function actualizarCambioVenta() {
 }
 
 // Elimina un item del carrito con animacion swipe y toast de deshacer
-                  export function eliminarItem(i) {
+                  export async function eliminarItem(i) {
                   const carrito = [...store.carrito];
     const item = carrito[i];
+    if (!item) return;
+    try {
+        await _ajustarReserva(item, -1);
+    } catch (error) {
+        mostrarMsg(_mensajeReserva(error.message), "err");
+        return;
+    }
     if (item.cantidad > 1) {
         item.cantidad -= 1;
         item.total = item.precio * item.cantidad;
@@ -717,7 +805,13 @@ export function actualizarCambioVenta() {
     mostrarToast(
         `🗑️ "${itemEliminado.producto}" eliminado`,
         "Deshacer",
-        () => {
+        async () => {
+            try {
+                await _ajustarReserva(itemEliminado, 1);
+            } catch (error) {
+                mostrarMsg(_mensajeReserva(error.message), "err");
+                return;
+            }
             const c = [...store.carrito];
             c.splice(indexEliminado, 0, itemEliminado);
             setCarrito(c);
@@ -738,6 +832,12 @@ export function actualizarCambioVenta() {
                 try { p = await buscarProductoPorNombre(item.producto, su); } catch (_) {}
                 if (p && p.stock < nueva) {
                     mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
+                    return;
+                }
+                try {
+                    await _ajustarReserva(item, 1);
+                } catch (error) {
+                    mostrarMsg(_mensajeReserva(error.message), "err");
                     return;
                 }
                 item.cantidad = nueva;
@@ -797,7 +897,7 @@ export async function cobrar() {
             DESCUENTO_TIPO: descuento.monto ? descuento.tipo : undefined,
             DESCUENTO_VALOR: descuento.monto ? descuento.valor : undefined,
             DESCUENTO_MOTIVO: document.getElementById("motivoDescuentoVenta")?.value.trim() || undefined,
-            IDEMPOTENCY_KEY: key, TOKEN: store.sessionToken
+            IDEMPOTENCY_KEY: key, CARRITO_ID: _idCarrito(), TOKEN: store.sessionToken
         });
         if (!manejarRespuesta(data)) return;
         if (!data.ok) { mostrarMsg("Error: " + (data.error || "No se pudo registrar la venta"), "err"); return; }
@@ -818,7 +918,7 @@ export async function cobrar() {
         toast.classList.add("toast-venta-exitosa");
         document.getElementById("mainPanel").classList.add("ok");
         setTimeout(() => document.getElementById("mainPanel").classList.remove("ok"), 700);
-        clearCarrito(); limpiarCarritoDraft(); _limpiarDescuentoVenta(); renderCarrito();
+        clearCarrito(); _carritoId = ""; limpiarCarritoDraft(); _limpiarDescuentoVenta(); renderCarrito();
         document.getElementById("clienteVenta").value = "";
         document.getElementById("clienteVentaId").value = "";
         document.getElementById("clienteCreditoVenta").textContent = "";

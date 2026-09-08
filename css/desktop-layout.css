@@ -586,9 +586,8 @@ body.desktop {
    INVENTARIO: evitar overflow horizontal
    ═══════════════════════════════════════════════ */
 .desktop .inventario-grid {
-  overflow-x: hidden;
-  grid-template-columns: 1fr 1fr; /* 2 columnas en desktop */
-  gap: 16px;
+  display: block;
+  overflow: visible;
 }
 
 .desktop .inventario-card {

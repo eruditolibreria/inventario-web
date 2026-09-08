@@ -1,6 +1,6 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-const LOCAL = false; // usar true solo para desarrollo local
+const LOCAL = true; // usar true solo para desarrollo local
 
 export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
@@ -26,6 +26,7 @@ export const BASE_URL_CUENTAS       = `${HOST}/cuentas`;
 export const BASE_URL_DEVOLUCIONES  = `${HOST}/devoluciones`;
 export const BASE_URL_COMPROBANTES  = `${HOST}/comprobantes`;
 export const BASE_URL_CLIENTES      = `${HOST}/clientes`;
+export const BASE_URL_PROVEEDORES   = `${HOST}/proveedores`;
 export const BASE_URL_ARQUEO        = `${HOST}/arqueo`;
 
 export const COMPROBANTE_ANCHO_DEFAULT = "57";

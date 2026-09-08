@@ -117,4 +117,32 @@ export async function ultimaCompraProducto(producto, sucursal) {
     return data && data.length ? data[0] : null;
 }
 
+/** Registra un ajuste de stock mediante la operación transaccional del servidor. */
+export async function ajustarInventario({ inventarioId, tipo, cantidad, motivo, observacion, idempotencyKey }) {
+    _ensureAuth();
+    const { data, error } = await client.rpc("ajustar_inventario", {
+        p_inventario_id: inventarioId,
+        p_tipo: tipo,
+        p_cantidad: cantidad,
+        p_motivo: motivo,
+        p_observacion: observacion || null,
+        p_idempotency_key: idempotencyKey || null
+    });
+    if (error) throw error;
+    return data;
+}
+
+/** Consulta el kardex permitido para un producto, más reciente primero. */
+export async function listarMovimientosInventario(inventarioId, limite = 30) {
+    _ensureAuth();
+    const { data, error } = await client
+        .from("movimientos_inventario_autorizados")
+        .select("id,tipo,cantidad,stock_anterior,stock_nuevo,motivo,observacion,usuario,creado_en")
+        .eq("inventario_id", inventarioId)
+        .order("creado_en", { ascending: false })
+        .limit(limite);
+    if (error) throw error;
+    return data || [];
+}
+
 export { client };
