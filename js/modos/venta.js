@@ -26,6 +26,7 @@ import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs, debounce, hoy, horaActual } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
+import { can } from '../authorization.js';
 import { construirAC } from '../inventario.js';
 import { listarProductos, buscarProductoPorNombre } from '../db.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
@@ -54,6 +55,8 @@ let _clienteVentaTimer = null;
 let _escanerVentaMovilActivo = false;
 let _cobroEnCurso = false;
 let _carritoId = "";
+let _cotizacionesReqSeq = 0;
+let _cotizacionEnVenta = null;
 
 // Para administradores la sucursal seleccionada en ventas tiene prioridad.
 // En otros roles el selector ya queda bloqueado en la sucursal de la sesion.
@@ -104,6 +107,29 @@ function _limpiarDescuentoVenta() {
     if (valor) valor.value = "";
     if (motivo) motivo.value = "";
     if (tipo) tipo.value = "PORCENTAJE";
+}
+
+function _limpiarCotizacionEnVenta() {
+    _cotizacionEnVenta = null;
+    ["tipoDescuentoVenta", "valorDescuentoVenta", "motivoDescuentoVenta"].forEach(id => {
+        const control = document.getElementById(id);
+        if (control) control.disabled = false;
+    });
+}
+
+function _aplicarDescuentoCotizado(cotizacion) {
+    const tipo = document.getElementById("tipoDescuentoVenta");
+    const valor = document.getElementById("valorDescuentoVenta");
+    const motivo = document.getElementById("motivoDescuentoVenta");
+    if (tipo) { tipo.value = cotizacion.descuentoTipo || "PORCENTAJE"; tipo.disabled = true; }
+    if (valor) { valor.value = Number(cotizacion.descuentoValor || 0) > 0 ? String(cotizacion.descuentoValor) : ""; valor.disabled = true; }
+    if (motivo) { motivo.value = cotizacion.descuentoMotivo || ""; motivo.disabled = true; }
+}
+
+function _carritoCotizadoBloqueado() {
+    if (!_cotizacionEnVenta) return false;
+    mostrarMsg("Esta venta usa el precio cotizado. Recalcula la cotización antes de modificar sus productos.", "err");
+    return true;
 }
 
 function _nuevaClaveIdempotencia() {
@@ -171,9 +197,262 @@ export async function vaciarCarrito() {
     }
     clearCarrito();
     _carritoId = "";
+    const eraCotizacion = Boolean(_cotizacionEnVenta);
+    _limpiarCotizacionEnVenta();
+    if (eraCotizacion) _limpiarDescuentoVenta();
     limpiarCarritoDraft();
     renderCarrito();
     return true;
+}
+
+function _sincronizarSucursalCotizacion() {
+    const selector = document.getElementById("sucursalCotizacion");
+    const selectorVenta = document.getElementById("sucursalVenta");
+    if (!selector || !selectorVenta || !selectorVenta.options.length) return;
+    const seleccionada = selector.value;
+    const opciones = Array.from(selectorVenta.options).map(opcion => new Option(opcion.textContent || "", opcion.value));
+    selector.replaceChildren(...opciones);
+    if (selector.options[0]?.value === "") selector.options[0].textContent = "Todas las sucursales";
+    if (Array.from(selector.options).some(opcion => opcion.value === seleccionada)) selector.value = seleccionada;
+    selector.disabled = selectorVenta.disabled;
+}
+
+function _crearTarjetaCotizacion(cotizacion) {
+    const card = document.createElement("div");
+    card.className = "caja-card";
+    card.style.margin = "0 0 16px 0";
+    card.style.display = "flex";
+    card.style.alignItems = "center";
+    card.style.justifyContent = "space-between";
+    card.style.gap = "10px";
+
+    const detalle = document.createElement("div");
+    detalle.style.flex = "1";
+    detalle.style.minWidth = "0";
+    const titulo = document.createElement("div");
+    titulo.style.fontWeight = "600";
+    titulo.style.color = "var(--text)";
+    titulo.style.fontSize = "13px";
+    titulo.textContent = `${cotizacion.codigo || cotizacion.numero || "—"} · ${cotizacion.cliente || "MOSTRADOR"}`;
+    const total = Number(cotizacion.total);
+    const info = document.createElement("div");
+    info.style.fontSize = "11px";
+    info.style.color = "var(--muted)";
+    info.style.marginTop = "2px";
+    info.textContent = [
+        cotizacion.fecha || "",
+        cotizacion.sucursal || "",
+        "Estado: " + (cotizacion.estado || "ABIERTA"),
+        "Válida hasta: " + (cotizacion.vigenciaHasta || "—"),
+        formatearBs(Number.isFinite(total) ? total : 0)
+    ].filter(Boolean).join(" · ");
+    detalle.append(titulo, info);
+
+    const acciones = document.createElement("div");
+    acciones.style.display = "flex";
+    acciones.style.gap = "6px";
+    acciones.style.flexWrap = "wrap";
+    acciones.style.justifyContent = "flex-end";
+    if (can("ventas.crear") && cotizacion.estado === "ABIERTA") {
+        const vender = document.createElement("button");
+        vender.type = "button";
+        vender.className = "btn btn-blue btn-sm";
+        vender.textContent = "Vender";
+        vender.addEventListener("click", function() {
+            cargarCotizacionParaVenta(String(cotizacion.id), cotizacion.codigo || cotizacion.numero || "");
+        });
+        acciones.appendChild(vender);
+    }
+    if (can("cotizaciones.crear") && cotizacion.estado === "ABIERTA") {
+        const recalcular = document.createElement("button");
+        recalcular.type = "button";
+        recalcular.className = "btn btn-ghost btn-sm";
+        recalcular.textContent = "↻ Recalcular";
+        recalcular.addEventListener("click", function() {
+            recalcularCotizacion(String(cotizacion.id), cotizacion.codigo || cotizacion.numero || "");
+        });
+        acciones.appendChild(recalcular);
+    }
+    const imprimir = document.createElement("button");
+    imprimir.type = "button";
+    imprimir.className = "btn btn-ghost btn-sm";
+    imprimir.textContent = "🖨️ Imprimir";
+    imprimir.addEventListener("click", function() {
+        window.imprimirCotizacionGuardada?.(String(cotizacion.id));
+    });
+    acciones.appendChild(imprimir);
+    if (can("cotizaciones.cancelar") && cotizacion.estado === "ABIERTA") {
+        const cancelar = document.createElement("button");
+        cancelar.type = "button";
+        cancelar.className = "btn btn-danger btn-sm";
+        cancelar.textContent = "Cancelar";
+        cancelar.addEventListener("click", function() {
+            cancelarCotizacion(String(cotizacion.id), cotizacion.codigo || cotizacion.numero || "");
+        });
+        acciones.appendChild(cancelar);
+    }
+    card.append(detalle, acciones);
+    return card;
+}
+
+function _mostrarEstadoCotizaciones(contenedor, mensaje, clase) {
+    const estado = document.createElement("div");
+    estado.className = clase || "empty-state";
+    estado.textContent = mensaje;
+    contenedor.replaceChildren(estado);
+}
+
+export async function listarCotizaciones() {
+    if (!store.sessionToken) return;
+    const lista = document.getElementById("listaCotizaciones");
+    if (!lista) return;
+    const loader = document.getElementById("loaderCotizaciones");
+    const sucursal = document.getElementById("sucursalCotizacion")?.value || undefined;
+    const estado = document.getElementById("estadoCotizacion")?.value || "ABIERTA";
+    const busqueda = document.getElementById("buscarCotizacion")?.value.trim() || undefined;
+    const seq = ++_cotizacionesReqSeq;
+    if (loader) loader.style.display = "block";
+    lista.replaceChildren();
+    try {
+        const data = await api({
+            ACCION: "LISTAR_COTIZACIONES", SUCURSAL: sucursal, ESTADO: estado,
+            BUSQUEDA: busqueda, LIMITE: 50, TOKEN: store.sessionToken
+        });
+        if (seq !== _cotizacionesReqSeq) return;
+        if (!manejarRespuesta(data) || !data.ok) {
+            _mostrarEstadoCotizaciones(lista, data?.error || "No se pudieron cargar las cotizaciones", "empty-state");
+            return;
+        }
+        const cotizaciones = Array.isArray(data.cotizaciones) ? data.cotizaciones : [];
+        if (!cotizaciones.length) {
+            _mostrarEstadoCotizaciones(lista, "Sin cotizaciones encontradas");
+            return;
+        }
+        const tarjetas = cotizaciones.map(_crearTarjetaCotizacion);
+        lista.replaceChildren(...tarjetas);
+    } catch (_) {
+        _mostrarEstadoCotizaciones(lista, "Error de conexión", "empty-state");
+    } finally {
+        if (seq === _cotizacionesReqSeq && loader) loader.style.display = "none";
+    }
+}
+
+const _buscarCotizacionesDebounced = debounce(function() {
+    listarCotizaciones();
+}, 250);
+
+export function buscarCotizaciones() {
+    _buscarCotizacionesDebounced();
+}
+
+export function cambiarSucursalCotizacion() {
+    listarCotizaciones();
+}
+
+export function cambiarEstadoCotizacion() {
+    listarCotizaciones();
+}
+
+export function toggleHistorialCotizaciones() {
+    const contenedor = document.getElementById("contenedorHistorialCotizaciones");
+    if (!contenedor) return;
+    const cerrado = contenedor.classList.contains("oculto");
+    contenedor.classList.toggle("oculto");
+    if (cerrado) {
+        _sincronizarSucursalCotizacion();
+        listarCotizaciones();
+    }
+}
+
+export async function cancelarCotizacion(id, codigo) {
+    if (!can("cotizaciones.cancelar") || !id) return;
+    const motivo = prompt(`Motivo de cancelación de la cotización ${codigo}:`);
+    if (motivo === null) return;
+    if (motivo.trim().length < 3) { mostrarMsg("El motivo debe tener al menos 3 caracteres", "err"); return; }
+    if (!confirm(`¿Cancelar definitivamente la cotización ${codigo}?`)) return;
+    try {
+        const data = await api({ ACCION: "CANCELAR_COTIZACION", ID: id, MOTIVO: motivo.trim(), TOKEN: store.sessionToken });
+        if (!manejarRespuesta(data)) return;
+        if (!data.ok) { mostrarMsg(data.error || "No se pudo cancelar la cotización", "err"); return; }
+        if (_cotizacionEnVenta?.id === id) await vaciarCarrito();
+        mostrarMsg("Cotización cancelada correctamente", "ok");
+        listarCotizaciones();
+    } catch (_) {
+        mostrarMsg("Error de conexión", "err");
+    }
+}
+
+export async function cargarCotizacionParaVenta(id, codigo, omitirConfirmacion = false) {
+    if (!can("ventas.crear") || !id) return;
+    try {
+        const data = await api({ ACCION: "OBTENER_COTIZACION", ID: id, TOKEN: store.sessionToken });
+        if (!manejarRespuesta(data) || !data.ok || !data.cotizacion) {
+            mostrarMsg(data?.error || "No se pudo obtener la cotización", "err");
+            return;
+        }
+        const cotizacion = data.cotizacion;
+        if (cotizacion.estado !== "ABIERTA") { mostrarMsg("La cotización no está disponible para vender", "err"); listarCotizaciones(); return; }
+        const items = Array.isArray(cotizacion.items) ? cotizacion.items : [];
+        if (!items.length) { mostrarMsg("La cotización no tiene productos", "err"); return; }
+        const selectorSucursal = document.getElementById("sucursalVenta");
+        if (!selectorSucursal || !Array.from(selectorSucursal.options).some(opcion => opcion.value === cotizacion.sucursal)) {
+            mostrarMsg("No tienes la sucursal de la cotización disponible", "err");
+            return;
+        }
+        if (!omitirConfirmacion && !confirm(`Cargar ${codigo || "esta cotización"} para cobrar con sus precios cotizados?`)) return;
+        if (!(await vaciarCarrito())) return;
+        selectorSucursal.value = cotizacion.sucursal;
+        try {
+            for (const item of items) {
+                await _ajustarReserva({ producto: item.producto, sucursal: cotizacion.sucursal }, Number(item.cantidad));
+            }
+        } catch (error) {
+            if (_carritoId) {
+                try { await api({ ACCION: "LIBERAR_RESERVAS_CARRITO", CARRITO_ID: _carritoId, TOKEN: store.sessionToken }); } catch (_) {}
+            }
+            _carritoId = "";
+            mostrarMsg(_mensajeReserva(error.message), "err");
+            return;
+        }
+        setCarrito(items.map(item => ({
+            producto: item.producto,
+            precio: Number(item.precioUnitario),
+            cantidad: Number(item.cantidad),
+            total: Number(item.precioUnitario) * Number(item.cantidad),
+            imagen: "",
+            sucursal: cotizacion.sucursal
+        })));
+        _cotizacionEnVenta = { id: cotizacion.id, codigo: cotizacion.codigo || cotizacion.numero || "" };
+        const cliente = document.getElementById("clienteVenta");
+        const clienteId = document.getElementById("clienteVentaId");
+        const clienteCredito = document.getElementById("clienteCreditoVenta");
+        if (cliente) cliente.value = cotizacion.cliente || "";
+        if (clienteId) clienteId.value = cotizacion.clienteId || "";
+        if (clienteCredito) clienteCredito.textContent = "";
+        _clienteVentaSeleccionado = cotizacion.clienteId ? { id: cotizacion.clienteId, nombre: cotizacion.cliente } : null;
+        _aplicarDescuentoCotizado(cotizacion);
+        renderCarrito();
+        _actualizarResumenVenta();
+        _actualizarVisibilidadEfectivo();
+        mostrarMsg(`Cotización ${cotizacion.codigo || cotizacion.numero} cargada: se respetarán sus precios al cobrar`, "ok");
+    } catch (_) {
+        mostrarMsg("Error de conexión", "err");
+    }
+}
+
+export async function recalcularCotizacion(id, codigo) {
+    if (!can("cotizaciones.crear") || !id) return;
+    if (!confirm(`¿Recalcular los precios actuales de ${codigo || "esta cotización"}? Esta acción actualizará el documento.`)) return;
+    try {
+        const data = await api({ ACCION: "RECALCULAR_COTIZACION", ID: id, TOKEN: store.sessionToken });
+        if (!manejarRespuesta(data)) return;
+        if (!data.ok || !data.cotizacion) { mostrarMsg(data.error || "No se pudieron recalcular los precios", "err"); listarCotizaciones(); return; }
+        mostrarMsg("Precios de cotización recalculados", "ok");
+        if (_cotizacionEnVenta?.id === id) await cargarCotizacionParaVenta(id, codigo, true);
+        listarCotizaciones();
+    } catch (_) {
+        mostrarMsg("Error de conexión", "err");
+    }
 }
 
 export function initVenta(callbacks) {
@@ -314,6 +593,7 @@ export function buscarClienteVenta() {
 
 // Agrega producto al carrito por objeto producto (usado por escaner)
 async function agregarPorProducto(prod, sucursal) {
+    if (_carritoCotizadoBloqueado()) return;
     const item = { producto: prod.producto, sucursal };
     try {
         await _ajustarReserva(item, 1);
@@ -545,6 +825,7 @@ export function buscarProductoVenta() {
 
 // Agrega un producto al carrito de venta con validaciones de stock
 export async function agregarCarrito() {
+    if (_carritoCotizadoBloqueado()) return;
     const pr = document.getElementById("productoVenta").value.trim()
       , ca = Number(document.getElementById("cantidadVenta").value)
       , su = document.getElementById("sucursalVenta").value;
@@ -767,6 +1048,7 @@ export function actualizarCambioVenta() {
 
 // Elimina un item del carrito con animacion swipe y toast de deshacer
                   export async function eliminarItem(i) {
+                  if (_carritoCotizadoBloqueado()) return;
                   const carrito = [...store.carrito];
     const item = carrito[i];
     if (!item) return;
@@ -823,6 +1105,7 @@ export function actualizarCambioVenta() {
 
 // Aumenta la cantidad de un item del carrito en 1 (con validacion de stock)
             async function incrementarCantidad(i) {
+                if (_carritoCotizadoBloqueado()) return;
                 const carrito = [...store.carrito]
                   , item = carrito[i];
                 if (!item) return;
@@ -881,10 +1164,12 @@ export async function cobrar() {
 
     const loader = document.getElementById("loaderVenta");
     const btn = document.getElementById("btnCobrar");
+    const btnCotizar = document.getElementById("btnCotizar");
     const contenidoBoton = btn.innerHTML;
     _cobroEnCurso = true;
     loader.style.display = "block";
     btn.disabled = true;
+    if (btnCotizar) btnCotizar.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESANDO...';
     try {
         const items = store.carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad }));
@@ -897,7 +1182,8 @@ export async function cobrar() {
             DESCUENTO_TIPO: descuento.monto ? descuento.tipo : undefined,
             DESCUENTO_VALOR: descuento.monto ? descuento.valor : undefined,
             DESCUENTO_MOTIVO: document.getElementById("motivoDescuentoVenta")?.value.trim() || undefined,
-            IDEMPOTENCY_KEY: key, CARRITO_ID: _idCarrito(), TOKEN: store.sessionToken
+            IDEMPOTENCY_KEY: key, CARRITO_ID: _idCarrito(),
+            COTIZACION_ID: _cotizacionEnVenta?.id, TOKEN: store.sessionToken
         });
         if (!manejarRespuesta(data)) return;
         if (!data.ok) { mostrarMsg("Error: " + (data.error || "No se pudo registrar la venta"), "err"); return; }
@@ -918,7 +1204,7 @@ export async function cobrar() {
         toast.classList.add("toast-venta-exitosa");
         document.getElementById("mainPanel").classList.add("ok");
         setTimeout(() => document.getElementById("mainPanel").classList.remove("ok"), 700);
-        clearCarrito(); _carritoId = ""; limpiarCarritoDraft(); _limpiarDescuentoVenta(); renderCarrito();
+        clearCarrito(); _carritoId = ""; limpiarCarritoDraft(); _limpiarCotizacionEnVenta(); _limpiarDescuentoVenta(); renderCarrito();
         document.getElementById("clienteVenta").value = "";
         document.getElementById("clienteVentaId").value = "";
         document.getElementById("clienteCreditoVenta").textContent = "";
@@ -936,6 +1222,80 @@ export async function cobrar() {
     } finally {
         loader.style.display = "none";
         btn.disabled = false;
+        if (btnCotizar) btnCotizar.disabled = false;
+        btn.innerHTML = contenidoBoton;
+        _cobroEnCurso = false;
+    }
+}
+
+// Crea una cotización sin registrar un cobro ni descontar inventario.
+export async function cotizar() {
+    if (_cobroEnCurso) return;
+    if (_cotizacionEnVenta) { mostrarMsg("Esta cotización ya está lista para cobrar. Recalcula sus precios antes de crear otra.", "err"); return; }
+    if (!can("cotizaciones.crear")) { mostrarMsg("No tienes permiso para crear cotizaciones", "err"); return; }
+    if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }
+    if (!store.carrito.length) { mostrarMsg("El carrito está vacío", "err"); return; }
+    const sinPrecio = store.carrito.filter(it => !_precioValido(it));
+    if (sinPrecio.length) { mostrarMsg("⚠ Producto(s) sin precio: " + sinPrecio.map(i => i.producto).join(", "), "err"); return; }
+    const sucursales = [...new Set(store.carrito.map(item => String(item.sucursal || "").trim()).filter(Boolean))];
+    if (sucursales.length > 1) { mostrarMsg("El carrito contiene productos de distintas sucursales", "err"); return; }
+
+    const sucursal = sucursales[0] || sucursalVentaActual();
+    const clienteInput = document.getElementById("clienteVenta");
+    const clienteId = document.getElementById("clienteVentaId")?.value || null;
+    const cliente = clienteInput?.value.trim() || undefined;
+    const descuento = _calcularDescuentoVenta();
+    if (!sucursal) { mostrarMsg("Selecciona una sucursal", "err"); return; }
+    if (!descuento.valido || descuento.monto > descuento.subtotal) { mostrarMsg("El descuento no es válido", "err"); return; }
+
+    const loader = document.getElementById("loaderVenta");
+    const btn = document.getElementById("btnCotizar");
+    const btnCobrar = document.getElementById("btnCobrar");
+    const contenidoBoton = btn.innerHTML;
+    _cobroEnCurso = true;
+    loader.style.display = "block";
+    btn.disabled = true;
+    if (btnCobrar) btnCobrar.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> COTIZANDO...';
+    try {
+        const items = store.carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad }));
+        const data = await api({
+            ACCION: "CREAR_COTIZACION", CARRITO: JSON.stringify(items), SUCURSAL: sucursal,
+            CLIENTE_ID: clienteId, CLIENTE: cliente,
+            DESCUENTO_TIPO: descuento.monto ? descuento.tipo : undefined,
+            DESCUENTO_VALOR: descuento.monto ? descuento.valor : undefined,
+            DESCUENTO_MOTIVO: document.getElementById("motivoDescuentoVenta")?.value.trim() || undefined,
+            IDEMPOTENCY_KEY: _nuevaClaveIdempotencia(), CARRITO_ID: _idCarrito(), TOKEN: store.sessionToken
+        });
+        if (!manejarRespuesta(data)) return;
+        if (!data.ok || !data.cotizacion) { mostrarMsg("Error: " + (data.error || "No se pudo crear la cotización"), "err"); return; }
+
+        // El backend libera la reserva asociada al CARRITO_ID al crear la cotización.
+        clearCarrito();
+        _carritoId = "";
+        limpiarCarritoDraft();
+        _limpiarDescuentoVenta();
+        renderCarrito();
+        if (clienteInput) clienteInput.value = "";
+        const clienteIdInput = document.getElementById("clienteVentaId");
+        if (clienteIdInput) clienteIdInput.value = "";
+        const clienteCredito = document.getElementById("clienteCreditoVenta");
+        if (clienteCredito) clienteCredito.textContent = "";
+        _clienteVentaSeleccionado = null;
+
+        const cotizacion = data.cotizacion;
+        const referencia = cotizacion.codigo || cotizacion.numero;
+        const total = Number(cotizacion.total ?? Math.max(0, descuento.subtotal - descuento.monto));
+        const toast = mostrarToast(`✅ COTIZACIÓN CREADA · Bs ${total.toFixed(2)}${referencia ? " · " + referencia : ""}`, "VER COTIZACIÓN", () => window.imprimirCotizacion?.(cotizacion), 6500);
+        toast.classList.add("toast-venta-exitosa");
+        window.imprimirCotizacion?.(cotizacion);
+        document.getElementById(document.body.classList.contains("desktop") ? "escanerVenta" : "productoVenta")?.focus();
+    } catch (_) {
+        mostrarMsg("Error de conexión", "err");
+    } finally {
+        loader.style.display = "none";
+        btn.disabled = false;
+        if (btnCobrar) btnCobrar.disabled = false;
         btn.innerHTML = contenidoBoton;
         _cobroEnCurso = false;
     }
@@ -946,6 +1306,15 @@ if (typeof window !== "undefined") {
     window.actualizarCambioVenta = actualizarCambioVenta;
     window.actualizarMixtoVenta = actualizarMixtoVenta;
     window.actualizarDescuentoVenta = actualizarDescuentoVenta;
+    window.cotizar = cotizar;
+    window.listarCotizaciones = listarCotizaciones;
+    window.buscarCotizaciones = buscarCotizaciones;
+    window.cambiarSucursalCotizacion = cambiarSucursalCotizacion;
+    window.cambiarEstadoCotizacion = cambiarEstadoCotizacion;
+    window.toggleHistorialCotizaciones = toggleHistorialCotizaciones;
+    window.cancelarCotizacion = cancelarCotizacion;
+    window.cargarCotizacionParaVenta = cargarCotizacionParaVenta;
+    window.recalcularCotizacion = recalcularCotizacion;
 }
 
 // Realtime: si cambia el precio de un producto que esta en el carrito, actualiza la fila

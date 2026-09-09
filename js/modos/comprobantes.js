@@ -164,6 +164,12 @@ function _fmtBs(v) {
     return "Bs " + Number(v || 0).toFixed(2);
 }
 
+function _escHtml(v) {
+    return String(v ?? "").replace(/[&<>\"']/g, function (c) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+}
+
 function _crearTicketHtml(c) {
     const ancho = _anchoTicket;
     const items = (c.items || []).map(function (i) {
@@ -180,19 +186,19 @@ function _crearTicketHtml(c) {
     h += '<div class="t-head">';
     h += '<img src="/logo.png" alt="" class="t-logo" onerror="this.style.display=\'none\'">';
     h += '<div class="t-nombre">LIBRERIA ERUDITOS</div>';
-    h += '<div class="t-sucursal">' + (c.sucursalVisible || c.sucursal || "") + '</div>';
+    h += '<div class="t-sucursal">' + _escHtml(c.sucursalVisible || c.sucursal || "") + '</div>';
     if (c.numero !== undefined && c.numero !== null) h += '<div class="t-num">N° ' + c.numero + '</div>';
     h += '</div>';
     h += '<div class="t-linea"></div>';
-    h += '<div class="t-meta">' + (c.fecha || "") + ' ' + (c.hora || "") + '</div>';
-    h += '<div class="t-meta">Cliente: ' + cliente + '</div>';
-    if (c.usuario) h += '<div class="t-meta">Vendedor: ' + c.usuario + '</div>';
-    h += '<div class="t-meta">Pago: ' + (c.metodoPago || "") + '</div>';
+    h += '<div class="t-meta">' + _escHtml(c.fecha || "") + ' ' + _escHtml(c.hora || "") + '</div>';
+    h += '<div class="t-meta">Cliente: ' + _escHtml(cliente) + '</div>';
+    if (c.usuario) h += '<div class="t-meta">Vendedor: ' + _escHtml(c.usuario) + '</div>';
+    h += '<div class="t-meta">Pago: ' + _escHtml(c.metodoPago || "") + '</div>';
     h += '<div class="t-linea"></div>';
     h += '<div class="t-items">';
     items.forEach(function (it) {
         h += '<div class="t-item">';
-        h += '<div class="t-producto">' + it.producto + '</div>';
+        h += '<div class="t-producto">' + _escHtml(it.producto) + '</div>';
         h += '<div class="t-item-det"><span>' + it.cantidad + ' x ' + _fmtBs(it.precio) + '</span><strong>' + _fmtBs(it.cantidad * it.precio) + '</strong></div>';
         h += '</div>';
     });
@@ -212,6 +218,44 @@ function _crearTicketHtml(c) {
     h += '<div class="t-linea"></div>';
     h += '<div class="t-pie">¡Gracias por su compra!</div>';
     h += '</div>';
+    return h;
+}
+
+function _crearCotizacionHtml(c) {
+    const ancho = _anchoTicket;
+    const items = (c.items || []).map(function (i) {
+        return { producto: i.producto, cantidad: Number(i.cantidad || 0), precio: Number(i.precio || i.precioUnitario || 0) };
+    });
+    const subtotal = Number(c.subtotal || 0);
+    const descuento = Number(c.descuento ?? c.descuentoMonto ?? 0);
+    const total = Number(c.total || subtotal - descuento);
+    const cliente = c.cliente || c.clienteNombre || "MOSTRADOR";
+    const numero = c.codigo || (c.numero !== undefined && c.numero !== null ? c.numero : "—");
+
+    let h = '<div class="ticket ' + (ancho === "57" ? "ancho-57" : "ancho-80") + '">';
+    h += '<div class="t-head">';
+    h += '<img src="/logo.png" alt="" class="t-logo" onerror="this.style.display=\'none\'">';
+    h += '<div class="t-nombre">LIBRERÍA ERUDITOS</div>';
+    h += '<div class="t-sucursal">' + _escHtml(c.sucursalVisible || c.sucursal || "") + '</div>';
+    h += '<div class="t-num">COTIZACIÓN N° ' + _escHtml(numero) + '</div>';
+    h += '</div><div class="t-linea"></div>';
+    h += '<div class="t-meta">Fecha: ' + _escHtml(c.fecha || "") + ' ' + _escHtml(c.hora || "") + '</div>';
+    if (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) h += '<div class="t-meta">Válida hasta: ' + _escHtml(c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) + '</div>';
+    h += '<div class="t-meta">Cliente: ' + _escHtml(cliente) + '</div>';
+    if (c.usuario) h += '<div class="t-meta">Vendedor: ' + _escHtml(c.usuario) + '</div>';
+    h += '<div class="t-linea"></div><div class="t-items">';
+    items.forEach(function (it) {
+        h += '<div class="t-item"><div class="t-producto">' + _escHtml(it.producto) + '</div>';
+        h += '<div class="t-item-det"><span>' + it.cantidad + ' x ' + _fmtBs(it.precio) + '</span><strong>' + _fmtBs(it.cantidad * it.precio) + '</strong></div></div>';
+    });
+    h += '</div><div class="t-linea"></div>';
+    if (descuento > 0) {
+        h += '<div class="t-fila"><span>Subtotal</span><span>' + _fmtBs(subtotal) + '</span></div>';
+        h += '<div class="t-fila"><span>Descuento</span><span>− ' + _fmtBs(descuento) + '</span></div>';
+    }
+    h += '<div class="t-fila t-total"><span>TOTAL</span><span>' + _fmtBs(total) + '</span></div>';
+    if (c.observaciones) h += '<div class="t-linea"></div><div class="t-meta">Nota: ' + _escHtml(c.observaciones) + '</div>';
+    h += '<div class="t-linea"></div><div class="t-pie">Este documento no constituye una venta.</div></div>';
     return h;
 }
 
@@ -326,16 +370,20 @@ function _mostrarVistaPrevia(html, comp) {
 }
 
 function _textoComprobante(c) {
+    const esCotizacion = c.tipoDocumento === "COTIZACION";
+    const titulo = esCotizacion ? "Cotización" : "Comprobante de venta";
     const items = (c.items || []).map(function (item) {
-        return `${item.cantidad} x ${item.producto} = ${_fmtBs(Number(item.cantidad || 0) * Number(item.precio || 0))}`;
+        const precio = Number(item.precio ?? item.precioUnitario ?? 0);
+        return `${item.cantidad} x ${item.producto} = ${_fmtBs(Number(item.cantidad || 0) * precio)}`;
     });
     return [
-        "Comprobante de venta",
-        c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "",
+        titulo,
+        c.codigo || (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : ""),
         `${c.fecha || ""} ${c.hora || ""}`.trim(),
         "Sucursal: " + (c.sucursalVisible || c.sucursal || ""),
         "Cliente: " + (c.cliente || "MOSTRADOR"),
         items.join("\n"),
+        esCotizacion && (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) ? "Válida hasta: " + (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) : "",
         "TOTAL: " + _fmtBs(c.totalRedondeado ?? c.total)
     ].filter(Boolean).join("\n");
 }
@@ -370,14 +418,16 @@ export async function compartirVistaPreviaComprobante() {
     const c = _previewComprobante;
     if (!c) return;
     const texto = _textoComprobante(c);
-    const titulo = "Comprobante " + (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "de venta");
+    const esCotizacion = c.tipoDocumento === "COTIZACION";
+    const codigo = c.codigo || (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "");
+    const titulo = (esCotizacion ? "Cotización " : "Comprobante ") + codigo;
     try {
         if (_previewPng && typeof File !== "undefined" && navigator.share) {
-            const nombre = "comprobante-" + (c.numero || "venta") + ".png";
+            const nombre = (esCotizacion ? "cotizacion-" : "comprobante-") + (c.codigo || c.numero || (esCotizacion ? "nueva" : "venta")) + ".png";
             const archivo = new File([_previewPng], nombre, { type: "image/png" });
             const puedeArchivo = !navigator.canShare || navigator.canShare({ files: [archivo] });
             if (puedeArchivo) {
-                await navigator.share({ title: titulo, text: "Comprobante de venta", files: [archivo] });
+                await navigator.share({ title: titulo, text: esCotizacion ? "Cotización" : "Comprobante de venta", files: [archivo] });
                 return;
             }
         }
@@ -419,6 +469,42 @@ export function imprimirComprobante(comp) {
         : "@page { size: 80mm auto; margin: 2mm; }";
     st.textContent = pageCss;
     const html = _crearTicketHtml(c);
+    if (_esMovil() && _mostrarVistaPrevia(html, c)) return;
+    pa.className = "ticket-mode";
+    pa.innerHTML = html;
+    setTimeout(function () {
+        const limpiar = function () {
+            pa.innerHTML = "";
+            pa.className = "";
+        };
+        window.addEventListener("afterprint", limpiar, { once: true });
+        window.print();
+    }, 200);
+}
+
+export async function imprimirCotizacionGuardada(id) {
+    try {
+        const data = await api({ ACCION: "OBTENER_COTIZACION", ID: id, TOKEN: store.sessionToken });
+        if (!manejarRespuesta(data)) return;
+        if (data.ok && data.cotizacion) imprimirCotizacion(data.cotizacion);
+    } catch (_) { mostrarMsg("Error de conexión", "err"); }
+}
+
+export function imprimirCotizacion(cotizacion) {
+    if (!cotizacion) { mostrarMsg("No hay cotización disponible", "err"); return; }
+    const pa = document.getElementById("printArea");
+    if (!pa) return;
+    const c = { ...cotizacion, tipoDocumento: "COTIZACION" };
+    let st = document.getElementById("ticketPageStyle");
+    if (!st) {
+        st = document.createElement("style");
+        st.id = "ticketPageStyle";
+        document.head.appendChild(st);
+    }
+    st.textContent = _anchoTicket === "57"
+        ? "@page { size: 57mm auto; margin: 2mm; }"
+        : "@page { size: 80mm auto; margin: 2mm; }";
+    const html = _crearCotizacionHtml(c);
     if (_esMovil() && _mostrarVistaPrevia(html, c)) return;
     pa.className = "ticket-mode";
     pa.innerHTML = html;

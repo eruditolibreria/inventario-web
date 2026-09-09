@@ -95,7 +95,7 @@ import { initComprobantes, imprimirComprobante, listarComprobantes,
          buscarComprobante, imprimirComprobanteGuardado,
          cambiarAnchoComprobante, cambiarPaginaComp, cambiarSucursalComprobante, toggleHistorialComprobantes,
          cerrarVistaPreviaComprobante, imprimirVistaPreviaComprobante,
-         compartirVistaPreviaComprobante }
+         compartirVistaPreviaComprobante, imprimirCotizacion, imprimirCotizacionGuardada }
   from './modos/comprobantes.js';
 import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
          cargarInventarioAdmin, cargarUsuarios,
@@ -338,6 +338,8 @@ async function inicializarApp() {
     window.imprimirReporteFlujo = imprimirReporteFlujo;
     window.imprimirReporteCobrar = imprimirReporteCobrar;
     window.imprimirComprobante = imprimirComprobante;
+    window.imprimirCotizacion = imprimirCotizacion;
+    window.imprimirCotizacionGuardada = imprimirCotizacionGuardada;
     window.listarComprobantes = listarComprobantes;
     window.buscarComprobante = buscarComprobante;
     window.imprimirComprobanteGuardado = imprimirComprobanteGuardado;

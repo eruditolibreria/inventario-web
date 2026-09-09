@@ -411,8 +411,10 @@
                                         <div id="avisoMixtoVenta" class="cambio-venta" style="grid-column:1 / -1;font-size:13px"></div>
                                     </div>
                                     <div class="venta-acciones">
+                                        <button class="btn btn-blue venta-cobrar-btn" id="btnCotizar" onclick="cotizar()"><i class="fa-solid fa-file-lines"></i> COTIZAR</button>
                                         <button class="btn btn-orange venta-cobrar-btn" id="btnCobrar" onclick="cobrar()"><i class="fa-solid fa-cash-register"></i> COBRAR</button>
                                         <button class="btn btn-ghost btn-sm no-print venta-historial-btn" onclick="toggleHistorialComprobantes()">🖨️ Historial de comprobantes</button>
+                                        <button class="btn btn-ghost btn-sm no-print venta-historial-btn" onclick="toggleHistorialCotizaciones()">📄 Historial de cotizaciones</button>
                                     </div>
                                     <div class="loader" id="loaderVenta"></div>
                                     <button class="btn btn-ghost btn-sm no-print" id="btnComprobante" style="display:none;margin-top:8px" onclick="imprimirComprobante()"><i class="fa-solid fa-file-pdf"></i> Comprobante</button>
@@ -441,6 +443,29 @@
                                                 <span id="paginComprobantes-info" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
                                                 <button class="btn-ghost btn-sm btn" onclick="cambiarPaginaComp(1)">Siguiente →</button>
                                             </div>
+                                        </div>
+                                        <div id="contenedorHistorialCotizaciones" class="oculto">
+                                            <div class="row-2 mb-12">
+                                                <div class="field-group" style="margin:0">
+                                                    <label class="field-label">Sucursal</label>
+                                                    <select id="sucursalCotizacion" onchange="cambiarSucursalCotizacion()"><option value="">Todas las sucursales</option></select>
+                                                </div>
+                                                <div class="field-group" style="margin:0">
+                                                    <label class="field-label">Estado</label>
+                                                    <select id="estadoCotizacion" onchange="cambiarEstadoCotizacion()">
+                                                        <option value="ABIERTA">Abiertas</option>
+                                                        <option value="TODAS">Todas</option>
+                                                        <option value="CANCELADA">Canceladas</option>
+                                                        <option value="VENCIDA">Vencidas</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="field-group" style="margin:0 0 12px">
+                                                <label class="field-label">Buscar cotización</label>
+                                                <input id="buscarCotizacion" placeholder="Ej.: COT-000123 o cliente" autocomplete="off" oninput="buscarCotizaciones()">
+                                            </div>
+                                            <div class="loader" id="loaderCotizaciones" style="display:none;margin:10px auto"></div>
+                                            <div id="listaCotizaciones"></div>
                                         </div>
                                 </div>
                             </div>
