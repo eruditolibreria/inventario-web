@@ -1075,13 +1075,13 @@ export async function cargarSucursalesEnDropdowns() {
         const sucursales = data.datos || [];
         _sucursalesCache = sucursales;
         if (sucursales.length === 0) return sucursales;
-        const selects = document.querySelectorAll("select[id$='Sucursal']:not(#sucursalActivaGlobal), select[id*='Sucursal']:not(#sucursalActivaGlobal):not(#nuevoUsuarioSucursales), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto");
+        const selects = document.querySelectorAll("select[id$='Sucursal']:not(#sucursalActivaGlobal), select[id*='Sucursal']:not(#sucursalActivaGlobal):not(#nuevoUsuarioSucursales), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto, select#transfOrigen, select#transfDestino, select#filtroTransfOrigen, select#filtroTransfDestino");
         selects.forEach(function(sel) {
             if (sel.disabled) return;
             const actual = sel.value;
             while (sel.options.length > 0) sel.remove(0);
-            const esFiltroInventario = sel.id === "filtroInvSucursal";
-            sel.add(new Option(esFiltroInventario ? "Todas las sucursales" : "🏪 Seleccionar sucursal", ""));
+            const esFiltroSucursal = ["filtroInvSucursal", "filtroTransfOrigen", "filtroTransfDestino"].includes(sel.id);
+            sel.add(new Option(esFiltroSucursal ? "Todas las sucursales" : "🏪 Seleccionar sucursal", ""));
             sucursales.forEach(function(s) {
                 if (s.estado !== "ACTIVO") return;
                 sel.add(new Option(nombreSucursal(s), s.nombre));

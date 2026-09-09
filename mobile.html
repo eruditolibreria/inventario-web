@@ -403,8 +403,8 @@
                         </div>
                         <div class="field-group mt-8">
                             <label class="field-label">Proveedor</label>
-                            <input id="proveedorCompra" list="proveedoresCompraOpciones" placeholder="Selecciona o escribe un proveedor">
-                            <datalist id="proveedoresCompraOpciones"></datalist>
+                            <input id="proveedorCompra" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="listaProveedoresCompra" placeholder="Selecciona o escribe un proveedor">
+                            <div id="listaProveedoresCompra" class="autocomplete" role="listbox"></div>
                         </div>
                         <div class="row-2">
                             <div class="field-group" style="margin:0">
@@ -948,16 +948,12 @@
                                     <label class="field-label">Sucursal origen</label>
                                     <select id="transfOrigen">
                                         <option value="">🏪 Seleccionar</option>
-                                        <option value="ERUDITOS">ERUDITOS</option>
-                                        <option value="CENTRAL">CENTRAL</option>
                                     </select>
                                 </div>
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Sucursal destino</label>
                                     <select id="transfDestino">
                                         <option value="">🏪 Seleccionar</option>
-                                        <option value="ERUDITOS">ERUDITOS</option>
-                                        <option value="CENTRAL">CENTRAL</option>
                                     </select>
                                 </div>
                             </div>
@@ -967,9 +963,13 @@
                                 <span class="suc-pill" id="transfArrowDestino">—</span>
                             </div>
                             <div class="field-group mt-8">
-                                <label class="field-label">Cantidad a transferir</label>
-                                <input id="transfCantidad" type="number" min="1" placeholder="0">
+                                <label class="field-label">Cantidad</label>
+                                <div class="transf-agregar-producto">
+                                    <input id="transfCantidad" type="number" min="1" placeholder="0">
+                                    <button type="button" class="btn btn-ghost" id="btnAgregarProductoTransf">＋ Agregar</button>
+                                </div>
                             </div>
+                            <div id="listaProductosTransf" class="transf-lista-productos" aria-live="polite"></div>
                             <div class="field-group">
                                 <label class="field-label">Motivo (opcional)</label>
                                 <input id="transfMotivo" placeholder="Ej: Reposición, exceso de stock...">
@@ -979,7 +979,7 @@
                                 <textarea id="transfNotas" placeholder="Observaciones adicionales..." style="min-height:50px"></textarea>
                             </div>
                             <div class="loader" id="loaderTransf"></div>
-                            <button class="btn btn-teal" onclick="registrarTransferencia()">🔄 Transferir</button>
+                            <button class="btn btn-teal" id="btnRegistrarTransferencia" onclick="registrarTransferencia()">🔄 Transferir</button>
                         </div>
                         <div id="transf-HISTORIAL" class="oculto">
                             <div class="row-2 mb-12">
@@ -987,16 +987,12 @@
                                     <label class="field-label">Origen</label>
                                     <select id="filtroTransfOrigen">
                                         <option value="">Todas</option>
-                                        <option value="ERUDITOS">ERUDITOS</option>
-                                        <option value="CENTRAL">CENTRAL</option>
                                     </select>
                                 </div>
                                 <div class="field-group" style="margin:0">
                                     <label class="field-label">Destino</label>
                                     <select id="filtroTransfDestino">
                                         <option value="">Todas</option>
-                                        <option value="ERUDITOS">ERUDITOS</option>
-                                        <option value="CENTRAL">CENTRAL</option>
                                     </select>
                                 </div>
                             </div>

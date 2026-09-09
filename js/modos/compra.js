@@ -35,6 +35,7 @@ let _verificarEstadoCaja = null;
 
 export function initCompra(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
+    configurarAutocompletadoProveedorCompra();
     if (store.sessionToken) cargarProveedoresCompra();
 }
 
@@ -45,6 +46,9 @@ export function initCompra(callbacks) {
             }
 
 let _proveedorFiltroTimer = null;
+let _proveedorBusquedaVersion = 0;
+let _proveedoresCompra = [];
+let _indiceProveedorActivo = -1;
 
 function escaparProveedor(valor) {
     return String(valor ?? "").replace(/[&<>"']/g, caracter => ({
@@ -57,10 +61,79 @@ export async function cargarProveedoresCompra() {
     try {
         const data = await api({ ACCION: "LISTAR_PROVEEDORES", SOLO_ACTIVOS: true, TOKEN: store.sessionToken });
         if (!data.ok) return;
-        const opciones = document.getElementById("proveedoresCompraOpciones");
-        if (opciones) opciones.innerHTML = (data.datos || [])
-            .map(proveedor => `<option value="${escaparProveedor(proveedor.nombre)}"></option>`).join("");
+        _proveedoresCompra = data.datos || [];
+        const input = document.getElementById("proveedorCompra");
+        if (input && document.activeElement === input) mostrarSugerenciasProveedorCompra(input.value);
     } catch (_) {}
+}
+
+function configurarAutocompletadoProveedorCompra() {
+    const input = document.getElementById("proveedorCompra");
+    if (!input || input.dataset.autocompletadoProveedor === "true") return;
+    input.dataset.autocompletadoProveedor = "true";
+    input.addEventListener("focus", () => mostrarSugerenciasProveedorCompra(input.value));
+    input.addEventListener("input", () => mostrarSugerenciasProveedorCompra(input.value));
+    input.addEventListener("blur", () => setTimeout(ocultarSugerenciasProveedorCompra, 120));
+    input.addEventListener("keydown", evento => {
+        const opciones = Array.from(document.querySelectorAll("#listaProveedoresCompra [data-proveedor-nombre]"));
+        if (evento.key === "Escape") {
+            ocultarSugerenciasProveedorCompra();
+            return;
+        }
+        if (!opciones.length || !["ArrowDown", "ArrowUp", "Enter"].includes(evento.key)) return;
+        if (evento.key === "Enter" && _indiceProveedorActivo >= 0) {
+            evento.preventDefault();
+            seleccionarProveedorCompra(opciones[_indiceProveedorActivo].dataset.proveedorNombre);
+            return;
+        }
+        if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+            evento.preventDefault();
+            const salto = evento.key === "ArrowDown" ? 1 : -1;
+            _indiceProveedorActivo = (_indiceProveedorActivo + salto + opciones.length) % opciones.length;
+            opciones.forEach((opcion, indice) => opcion.classList.toggle("active", indice === _indiceProveedorActivo));
+            input.setAttribute("aria-activedescendant", opciones[_indiceProveedorActivo].id);
+        }
+    });
+}
+
+function mostrarSugerenciasProveedorCompra(texto = "") {
+    const input = document.getElementById("proveedorCompra");
+    const lista = document.getElementById("listaProveedoresCompra");
+    if (!input || !lista) return;
+    const busqueda = normBusqueda(texto);
+    const proveedores = _proveedoresCompra.filter(proveedor =>
+        [proveedor.nombre, proveedor.personaContacto, proveedor.telefono, proveedor.direccion]
+            .some(valor => normBusqueda(valor).includes(busqueda))
+    ).slice(0, 8);
+    _indiceProveedorActivo = -1;
+    lista.innerHTML = proveedores.map((proveedor, indice) =>
+        `<div id="proveedor-compra-opcion-${indice}" class="ac-item" role="option" data-proveedor-nombre="${escaparProveedor(proveedor.nombre)}"><strong>${escaparProveedor(proveedor.nombre)}</strong><small>${escaparProveedor(proveedor.personaContacto || "Sin contacto")} · ${escaparProveedor(proveedor.telefono || "Sin celular")}</small></div>`
+    ).join("");
+    lista.querySelectorAll("[data-proveedor-nombre]").forEach(opcion => {
+        opcion.addEventListener("mousedown", evento => {
+            evento.preventDefault();
+            seleccionarProveedorCompra(opcion.dataset.proveedorNombre);
+        });
+    });
+    lista.classList.toggle("show", proveedores.length > 0);
+    input.setAttribute("aria-expanded", String(proveedores.length > 0));
+}
+
+function ocultarSugerenciasProveedorCompra() {
+    const input = document.getElementById("proveedorCompra");
+    const lista = document.getElementById("listaProveedoresCompra");
+    if (lista) lista.classList.remove("show");
+    if (input) {
+        input.setAttribute("aria-expanded", "false");
+        input.removeAttribute("aria-activedescendant");
+    }
+    _indiceProveedorActivo = -1;
+}
+
+function seleccionarProveedorCompra(nombre) {
+    const input = document.getElementById("proveedorCompra");
+    if (input) input.value = nombre || "";
+    ocultarSugerenciasProveedorCompra();
 }
 
 export async function abrirProveedores() {
@@ -69,7 +142,10 @@ export async function abrirProveedores() {
         return;
     }
     document.getElementById("proveedoresOverlay").style.display = "flex";
-    await cargarListaProveedores();
+    clearTimeout(_proveedorFiltroTimer);
+    const buscador = document.getElementById("proveedoresBusqueda");
+    if (buscador) buscador.value = "";
+    await cargarListaProveedores("");
 }
 
 export function cerrarProveedores(evento) {
@@ -80,27 +156,36 @@ export function cerrarProveedores(evento) {
 
 export function buscarProveedores() {
     clearTimeout(_proveedorFiltroTimer);
+    const version = ++_proveedorBusquedaVersion;
+    const busqueda = document.getElementById("proveedoresBusqueda").value;
     _proveedorFiltroTimer = setTimeout(() => {
-        cargarListaProveedores(document.getElementById("proveedoresBusqueda").value);
+        cargarListaProveedores(busqueda, version);
     }, 250);
 }
 
-async function cargarListaProveedores(busqueda = "") {
+function renderizarListaProveedores() {
     const contenido = document.getElementById("proveedoresContenido");
-    contenido.innerHTML = "<div style=\"padding:14px;color:var(--text-light)\">Cargando proveedores…</div>";
+    if (document.getElementById("proveedoresBusqueda")) return;
+    contenido.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px"><input id="proveedoresBusqueda" type="search" placeholder="Buscar por nombre, NIT o teléfono" style="flex:1;min-width:0"><button id="btnNuevoProveedor" class="btn btn-primary" type="button" style="width:auto;min-width:0;padding:6px 10px">+ Nuevo</button></div><div id="proveedoresResultados" style="max-height:52vh;overflow:auto"></div>`;
+    document.getElementById("proveedoresBusqueda").addEventListener("input", buscarProveedores);
+    document.getElementById("btnNuevoProveedor").addEventListener("click", abrirFormularioProveedor);
+}
+
+async function cargarListaProveedores(busqueda = "", version = ++_proveedorBusquedaVersion) {
+    renderizarListaProveedores();
+    const resultados = document.getElementById("proveedoresResultados");
+    resultados.innerHTML = "<div style=\"padding:14px;color:var(--text-light)\">Cargando proveedores…</div>";
     try {
         const data = await api({ ACCION: "LISTAR_PROVEEDORES", BUSQUEDA: busqueda, TOKEN: store.sessionToken });
+        if (version !== _proveedorBusquedaVersion) return;
         if (!data.ok) throw new Error(data.error || "No se pudo cargar proveedores.");
         const proveedores = data.datos || [];
-        contenido.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px"><input id="proveedoresBusqueda" type="search" placeholder="Buscar por nombre, NIT o teléfono" value="${escaparProveedor(busqueda)}" style="flex:1;min-width:0"><button id="btnNuevoProveedor" class="btn btn-primary" type="button" style="width:auto;min-width:0;padding:6px 10px">+ Nuevo</button></div>
-            <div style="max-height:52vh;overflow:auto">${proveedores.length ? proveedores.map(proveedor => `<button class="btn btn-ghost proveedor-lista-item" type="button" data-proveedor-id="${escaparProveedor(proveedor.id)}" style="width:100%;text-align:left;margin-bottom:7px;padding:11px"><strong>${escaparProveedor(proveedor.nombre)}</strong><span style="display:block;font-size:12px;color:var(--text-light);margin-top:3px">${escaparProveedor(proveedor.nit || "Sin NIT")} · ${escaparProveedor(proveedor.telefono || "Sin teléfono")}</span></button>`).join("") : "<div style=\"padding:14px;color:var(--text-light)\">No hay proveedores registrados.</div>"}</div>`;
-        document.getElementById("proveedoresBusqueda").addEventListener("input", buscarProveedores);
-        document.getElementById("btnNuevoProveedor").addEventListener("click", abrirFormularioProveedor);
-        contenido.querySelectorAll("[data-proveedor-id]").forEach(boton => {
+        resultados.innerHTML = proveedores.length ? proveedores.map(proveedor => `<button class="btn btn-ghost proveedor-lista-item" type="button" data-proveedor-id="${escaparProveedor(proveedor.id)}" style="width:100%;text-align:left;margin-bottom:7px;padding:11px"><strong>${escaparProveedor(proveedor.nombre)}</strong><span style="display:block;font-size:12px;color:var(--text-light);margin-top:3px">Contacto: ${escaparProveedor(proveedor.personaContacto || "—")} · Celular: ${escaparProveedor(proveedor.telefono || "—")}</span><span style="display:block;font-size:12px;color:var(--text-light);margin-top:3px">Dirección: ${escaparProveedor(proveedor.direccion || "—")}</span></button>`).join("") : "<div style=\"padding:14px;color:var(--text-light)\">No hay proveedores registrados.</div>";
+        resultados.querySelectorAll("[data-proveedor-id]").forEach(boton => {
             boton.addEventListener("click", () => verProveedor(boton.dataset.proveedorId));
         });
     } catch (error) {
-        contenido.innerHTML = `<div style="padding:14px;color:var(--danger)">${escaparProveedor(error.message || "No se pudo cargar proveedores.")}</div>`;
+        if (version === _proveedorBusquedaVersion) resultados.innerHTML = `<div style="padding:14px;color:var(--danger)">${escaparProveedor(error.message || "No se pudo cargar proveedores.")}</div>`;
     }
 }
 
@@ -109,6 +194,8 @@ export function abrirFormularioProveedor() {
         mostrarMsg("Sin permiso para registrar proveedores", "err");
         return;
     }
+    clearTimeout(_proveedorFiltroTimer);
+    ++_proveedorBusquedaVersion;
     document.getElementById("proveedoresOverlay").style.display = "flex";
     const contenido = document.getElementById("proveedoresContenido");
     contenido.innerHTML = `<div class="field-group" style="margin-bottom:10px"><label class="field-label">Nombre comercial</label><input id="proveedorNombre" autocomplete="organization" placeholder="Ej: Distribuidora Andina"></div>
@@ -154,6 +241,8 @@ export async function guardarProveedor() {
 }
 
 async function verProveedor(idProveedor) {
+    clearTimeout(_proveedorFiltroTimer);
+    ++_proveedorBusquedaVersion;
     const contenido = document.getElementById("proveedoresContenido");
     contenido.innerHTML = "<div style=\"padding:14px;color:var(--text-light)\">Cargando ficha…</div>";
     try {
@@ -162,7 +251,7 @@ async function verProveedor(idProveedor) {
         const proveedor = data.proveedor;
         const compras = data.compras || [], productos = data.productos || [];
         contenido.innerHTML = `<button id="btnVolverListaProveedores" class="btn btn-ghost" type="button" style="width:auto;min-width:0;padding:4px 9px;margin-bottom:12px">← Volver</button>
-            <div style="padding-bottom:12px;border-bottom:1px solid var(--border)"><strong style="font-size:18px">${escaparProveedor(proveedor.nombre)}</strong><div style="font-size:13px;color:var(--text-light);margin-top:6px">NIT: ${escaparProveedor(proveedor.nit || "—")} · Contacto: ${escaparProveedor(proveedor.personaContacto || "—")}</div><div style="font-size:13px;color:var(--text-light);margin-top:3px">Teléfono: ${escaparProveedor(proveedor.telefono || "—")} · Dirección: ${escaparProveedor(proveedor.direccion || "—")}</div></div>
+            <div style="padding-bottom:12px;border-bottom:1px solid var(--border)"><strong style="font-size:18px">${escaparProveedor(proveedor.nombre)}</strong><div style="font-size:13px;color:var(--text-light);margin-top:6px">NIT: ${escaparProveedor(proveedor.nit || "—")} · Contacto: ${escaparProveedor(proveedor.personaContacto || "—")}</div><div style="font-size:13px;color:var(--text-light);margin-top:3px">Celular: ${escaparProveedor(proveedor.telefono || "—")} · Dirección: ${escaparProveedor(proveedor.direccion || "—")}</div></div>
             <div style="margin-top:14px"><strong>Productos actuales (${productos.length})</strong>${productos.length ? `<div style="margin-top:6px;font-size:13px">${productos.map(producto => `<div style="padding:6px 0;border-bottom:1px solid var(--border)">${escaparProveedor(producto.producto)} · ${escaparProveedor(producto.sucursal)} · Stock: ${Number(producto.stock)}</div>`).join("")}</div>` : "<div style=\"margin-top:6px;font-size:13px;color:var(--text-light)\">Sin productos asociados.</div>"}</div>
             <div style="margin-top:16px"><strong>Compras registradas (${compras.length})</strong>${compras.length ? `<div style="margin-top:6px;font-size:13px">${compras.map(compra => `<div style="padding:6px 0;border-bottom:1px solid var(--border)">${escaparProveedor(compra.fecha)} · ${escaparProveedor(compra.producto)} · ${Number(compra.unidades)} unid. · Bs ${Number(compra.total).toFixed(2)}</div>`).join("")}</div>` : "<div style=\"margin-top:6px;font-size:13px;color:var(--text-light)\">Sin compras asociadas.</div>"}</div>`;
         document.getElementById("btnVolverListaProveedores").addEventListener("click", abrirProveedores);
