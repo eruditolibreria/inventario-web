@@ -83,6 +83,35 @@ export async function listarProductos({ query = "", sucursal = null, pagina = 0,
     return { datos: (data || []).map(_mapProducto), total: count || 0 };
 }
 
+/** Lista las categorías únicas visibles en el inventario autorizado. */
+export async function listarCategoriasInventario() {
+    _ensureAuth();
+    const categorias = new Map();
+    const limite = 1000;
+    let desde = 0;
+
+    while (true) {
+        const { data, error } = await client
+            .from("inventario_autorizado")
+            .select("categoria")
+            .not("categoria", "is", null)
+            .order("categoria")
+            .range(desde, desde + limite - 1);
+        if (error) throw error;
+
+        const pagina = data || [];
+        pagina.forEach(({ categoria }) => {
+            const nombre = String(categoria || "").trim();
+            if (nombre) categorias.set(nombre.toLocaleUpperCase("es"), nombre);
+        });
+        if (pagina.length < limite) break;
+        desde += pagina.length;
+    }
+
+    return Array.from(categorias.values())
+        .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+}
+
 /** Busca un producto exacto por nombre (y sucursal opcional) */
 export async function buscarProductoPorNombre(producto, sucursal) {
     _ensureAuth();

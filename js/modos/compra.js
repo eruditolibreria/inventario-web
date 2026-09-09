@@ -26,9 +26,14 @@ import { api } from '../api.js';
 import { mostrarMsg, hoy, normBusqueda, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { construirAC } from '../inventario.js';
-import { listarProductos, buscarProductoPorCodigo, ultimaCompraProducto } from '../db.js';
+import { listarProductos, listarCategoriasInventario, buscarProductoPorCodigo, ultimaCompraProducto } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
+
+let _categoriasCompra = [];
+let _categoriasCompraCargadas = false;
+let _cargaCategoriasCompra = null;
+let _indiceCategoriaActivo = -1;
 
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _verificarEstadoCaja = null;
@@ -36,7 +41,156 @@ let _verificarEstadoCaja = null;
 export function initCompra(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
     configurarAutocompletadoProveedorCompra();
-    if (store.sessionToken) cargarProveedoresCompra();
+    configurarAutocompletadoCategoriaCompra();
+    if (store.sessionToken) {
+        cargarProveedoresCompra();
+        cargarCategoriasCompra();
+    }
+}
+
+function cargarCategoriasCompra(forzar = false) {
+    if (!store.sessionToken || !can("inventario.ver")) return Promise.resolve([]);
+    if (!forzar && _categoriasCompraCargadas) return Promise.resolve(_categoriasCompra);
+    if (_cargaCategoriasCompra) return _cargaCategoriasCompra;
+
+    _cargaCategoriasCompra = listarCategoriasInventario()
+        .then(categorias => {
+            _categoriasCompra = categorias;
+            _categoriasCompraCargadas = true;
+            return categorias;
+        })
+        .catch(() => _categoriasCompra)
+        .finally(() => { _cargaCategoriasCompra = null; });
+    return _cargaCategoriasCompra;
+}
+
+function configurarAutocompletadoCategoriaCompra() {
+    const input = document.getElementById("categoriaCompra");
+    const boton = document.getElementById("btnCategoriasCompra");
+    if (!input || input.dataset.autocompletadoCategoria === "true") return;
+    input.dataset.autocompletadoCategoria = "true";
+    input.addEventListener("focus", () => { cargarCategoriasCompra(); });
+    input.addEventListener("input", () => {
+        ocultarListaCategoriasCompra();
+        if (!input.value.trim()) {
+            ocultarSugerenciasCategoriaCompra();
+            return;
+        }
+        mostrarSugerenciasCategoriaCompra(input.value);
+    });
+    input.addEventListener("blur", () => setTimeout(ocultarSugerenciasCategoriaCompra, 120));
+    input.addEventListener("keydown", evento => {
+        const lista = document.getElementById("listaSugerenciasCategoriasCompra");
+        const opciones = lista ? Array.from(lista.querySelectorAll("[data-categoria-nombre]")) : [];
+        if (evento.key === "Escape") {
+            ocultarSugerenciasCategoriaCompra();
+            return;
+        }
+        if (!opciones.length || !["ArrowDown", "ArrowUp", "Enter"].includes(evento.key)) return;
+        if (evento.key === "Enter" && _indiceCategoriaActivo >= 0) {
+            evento.preventDefault();
+            seleccionarCategoriaCompra(opciones[_indiceCategoriaActivo].dataset.categoriaNombre);
+            return;
+        }
+        if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+            evento.preventDefault();
+            const salto = evento.key === "ArrowDown" ? 1 : -1;
+            _indiceCategoriaActivo = (_indiceCategoriaActivo + salto + opciones.length) % opciones.length;
+            opciones.forEach((opcion, indice) => {
+                const activa = indice === _indiceCategoriaActivo;
+                opcion.classList.toggle("active", activa);
+                opcion.setAttribute("aria-selected", String(activa));
+            });
+            input.setAttribute("aria-activedescendant", opciones[_indiceCategoriaActivo].id);
+        }
+    });
+    if (!boton) return;
+    boton.addEventListener("click", async evento => {
+        evento.stopPropagation();
+        const lista = document.getElementById("listaCategoriasCompra");
+        ocultarSugerenciasCategoriaCompra();
+        if (lista?.classList.contains("show")) {
+            ocultarListaCategoriasCompra();
+            return;
+        }
+        await cargarCategoriasCompra();
+        mostrarListaCategoriasCompra();
+    });
+}
+
+function mostrarSugerenciasCategoriaCompra(texto = "") {
+    const input = document.getElementById("categoriaCompra");
+    const lista = document.getElementById("listaSugerenciasCategoriasCompra");
+    if (!input || !lista) return;
+    const busqueda = normBusqueda(texto);
+    if (!busqueda) {
+        ocultarSugerenciasCategoriaCompra();
+        return;
+    }
+    const categorias = _categoriasCompra
+        .filter(categoria => normBusqueda(categoria).includes(busqueda))
+        .slice(0, 8);
+
+    ocultarListaCategoriasCompra();
+    _indiceCategoriaActivo = -1;
+    renderizarListaCategoriasCompra(lista, categorias);
+    input.setAttribute("aria-expanded", String(categorias.length > 0));
+}
+
+function mostrarListaCategoriasCompra() {
+    const boton = document.getElementById("btnCategoriasCompra");
+    const lista = document.getElementById("listaCategoriasCompra");
+    if (!boton || !lista) return;
+    renderizarListaCategoriasCompra(lista, _categoriasCompra);
+    boton.setAttribute("aria-expanded", String(_categoriasCompra.length > 0));
+}
+
+function renderizarListaCategoriasCompra(lista, categorias) {
+    lista.innerHTML = "";
+    categorias.forEach((categoria, indice) => {
+        const opcion = document.createElement("div");
+        opcion.id = lista.id + "-opcion-" + indice;
+        opcion.className = "ac-item";
+        opcion.setAttribute("role", "option");
+        opcion.setAttribute("aria-selected", "false");
+        opcion.dataset.categoriaNombre = categoria;
+        const nombre = document.createElement("strong");
+        nombre.textContent = categoria;
+        opcion.appendChild(nombre);
+        opcion.addEventListener("mousedown", evento => {
+            evento.preventDefault();
+            seleccionarCategoriaCompra(categoria);
+        });
+        lista.appendChild(opcion);
+    });
+    lista.classList.toggle("show", categorias.length > 0);
+}
+
+function ocultarSugerenciasCategoriaCompra() {
+    const input = document.getElementById("categoriaCompra");
+    const lista = document.getElementById("listaSugerenciasCategoriasCompra");
+    _indiceCategoriaActivo = -1;
+    if (lista) lista.classList.remove("show");
+    if (input) {
+        input.setAttribute("aria-expanded", "false");
+        input.removeAttribute("aria-activedescendant");
+    }
+}
+
+function ocultarListaCategoriasCompra() {
+    const boton = document.getElementById("btnCategoriasCompra");
+    const lista = document.getElementById("listaCategoriasCompra");
+    if (lista) lista.classList.remove("show");
+    if (boton) boton.setAttribute("aria-expanded", "false");
+}
+
+function seleccionarCategoriaCompra(categoria) {
+    const input = document.getElementById("categoriaCompra");
+    if (!input) return;
+    input.value = categoria || "";
+    ocultarSugerenciasCategoriaCompra();
+    ocultarListaCategoriasCompra();
+    input.focus();
 }
 
 
@@ -352,6 +506,7 @@ export function buscarProductoCompra() {
                     }
                     if (data.ok) {
                         mostrarMsg(mp === "CREDITO" ? "📝 Compra a crédito registrada" : "✅ Compra registrada", "ok");
+                        cargarCategoriasCompra(true);
                         document.querySelectorAll("#seccion-COMPRA input").forEach(i => i.value = "");
                         document.getElementById("categoriaCompra").value = "";
                         document.getElementById("metodoPagoCompra").value = "EFECTIVO";

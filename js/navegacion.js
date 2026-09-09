@@ -510,7 +510,7 @@ window.addEventListener('resize', function() {
 
 // ── Cerrar autocompletes al hacer clic fuera ───────────────
 document.addEventListener("click", function(e) {
-    if (!e.target.closest(".autocomplete") && !e.target.closest("input")) {
+    if (!e.target.closest(".autocomplete") && !e.target.closest("input") && !e.target.closest(".compra-categoria-control")) {
         document.querySelectorAll(".autocomplete").forEach(a => a.classList.remove("show"));
     }
 });

@@ -416,7 +416,12 @@
                         </div>
                         <div class="field-group">
                             <label class="field-label">Categoría</label>
-                            <input id="categoriaCompra" placeholder="Ej: Cartulinas, bolígrafos...">
+                            <div class="compra-categoria-control">
+                                <input id="categoriaCompra" placeholder="Ej: Cartulinas, bolígrafos..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="listaSugerenciasCategoriasCompra">
+                                <button id="btnCategoriasCompra" class="btn btn-ghost" type="button" aria-label="Ver todas las categorías" aria-expanded="false" aria-controls="listaCategoriasCompra" title="Ver todas las categorías"><i class="fa-solid fa-list"></i></button>
+                            </div>
+                            <div id="listaSugerenciasCategoriasCompra" class="autocomplete" role="listbox" aria-label="Sugerencias de categorías"></div>
+                            <div id="listaCategoriasCompra" class="autocomplete" role="listbox" aria-label="Categorías existentes"></div>
                         </div>
                         <div class="row-2">
                             <div class="field-group" style="margin:0">
