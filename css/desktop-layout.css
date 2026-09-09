@@ -440,6 +440,10 @@ body.desktop {
   margin-top: 16px;
 }
 
+.venta-metodo-cliente {
+  align-items: start;
+}
+
 .venta-acciones .venta-cobrar-btn {
   width: auto;
   font-size: 17px;

@@ -1070,6 +1070,151 @@
 
         #printArea { display: none; }
 
+            /* ── Cotizaciones ───────────────────────────────────────── */
+            .venta-acciones-mobile {
+                display: flex;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .venta-acciones-mobile #btnCobrar {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+            .venta-acciones-mobile #btnCotizar {
+                flex: 0 0 auto;
+                width: max-content;
+                padding-inline: 12px;
+                white-space: nowrap;
+            }
+            .efectivo-recibido-control {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 116px;
+                gap: 8px;
+            }
+            .efectivo-recibido-control select { min-width: 0; }
+            .cotizacion-card {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(196px, 208px);
+                align-items: center;
+                gap: 12px;
+                cursor: pointer;
+            }
+            .cotizacion-card-info { min-width: 0; }
+            .cotizacion-card-titulo {
+                color: var(--text);
+                font-size: 13px;
+                font-weight: 600;
+                overflow-wrap: anywhere;
+            }
+            .cotizacion-card-meta {
+                margin-top: 2px;
+                color: var(--muted);
+                font-size: 11px;
+                overflow-wrap: anywhere;
+            }
+            .cotizacion-card-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+            }
+            .cotizacion-card-actions .btn {
+                width: 100%;
+                min-width: 0;
+                padding-inline: 8px;
+                white-space: nowrap;
+            }
+            .cotizacion-detalle-card { max-width: 620px; }
+            .cotizacion-detalle-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 16px;
+                color: var(--text);
+                font-size: 18px;
+            }
+            .cotizacion-detalle-resumen {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+            .cotizacion-detalle-dato {
+                min-width: 0;
+                padding: 10px;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                background: var(--surface2);
+            }
+            .cotizacion-detalle-dato span {
+                display: block;
+                margin-bottom: 4px;
+                color: var(--muted);
+                font-size: 10px;
+                letter-spacing: .5px;
+                text-transform: uppercase;
+            }
+            .cotizacion-detalle-dato strong {
+                display: block;
+                color: var(--text);
+                font-size: 12px;
+                overflow-wrap: anywhere;
+            }
+            .cotizacion-detalle-subtitulo {
+                margin-bottom: 8px;
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: .7px;
+                text-transform: uppercase;
+            }
+            .cotizacion-detalle-productos {
+                display: grid;
+                gap: 8px;
+            }
+            .cotizacion-detalle-producto {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 8px 12px;
+                align-items: center;
+                padding: 10px;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                background: var(--surface2);
+            }
+            .cotizacion-detalle-producto strong,
+            .cotizacion-detalle-producto small {
+                display: block;
+                overflow-wrap: anywhere;
+            }
+            .cotizacion-detalle-producto small {
+                margin-top: 3px;
+                color: var(--muted);
+                font-size: 11px;
+            }
+            .cotizacion-detalle-producto-total {
+                color: var(--text);
+                font-family: var(--mono);
+                font-size: 12px;
+                font-weight: 700;
+                text-align: right;
+                white-space: nowrap;
+            }
+            .cotizacion-detalle-estado {
+                padding: 14px;
+                border: 1px dashed var(--border);
+                border-radius: 10px;
+                color: var(--muted);
+                font-size: 13px;
+                text-align: center;
+            }
+            @media (max-width: 380px) {
+                .cotizacion-card { grid-template-columns: minmax(0, 1fr) 196px; gap: 8px; }
+                .cotizacion-card-actions .btn { font-size: 11px; padding-inline: 6px; }
+                .cotizacion-detalle-resumen { grid-template-columns: 1fr; }
+                .efectivo-recibido-control { grid-template-columns: 1fr; }
+            }
+
             /* ── Detalle de producto (overlay al hacer clic en búsqueda) ── */
             .producto-detalle-overlay {
                 position: fixed;

@@ -56,6 +56,7 @@ let _escanerVentaMovilActivo = false;
 let _cobroEnCurso = false;
 let _carritoId = "";
 let _cotizacionesReqSeq = 0;
+let _cotizacionDetalleReqSeq = 0;
 let _cotizacionEnVenta = null;
 
 // Para administradores la sucursal seleccionada en ventas tiene prioridad.
@@ -217,28 +218,138 @@ function _sincronizarSucursalCotizacion() {
     selector.disabled = selectorVenta.disabled;
 }
 
+function _valorDetalleCotizacion(valor, alternativo = "—") {
+    const texto = String(valor ?? "").trim();
+    return texto || alternativo;
+}
+
+function _crearDatoDetalleCotizacion(etiqueta, valor) {
+    const dato = document.createElement("div");
+    dato.className = "cotizacion-detalle-dato";
+    const nombre = document.createElement("span");
+    nombre.textContent = etiqueta;
+    const contenido = document.createElement("strong");
+    contenido.textContent = _valorDetalleCotizacion(valor);
+    dato.append(nombre, contenido);
+    return dato;
+}
+
+function _mostrarDetalleCotizacion(cotizacion, cargando = false, error = "") {
+    const titulo = document.getElementById("cotizacionDetalleTitulo");
+    const contenido = document.getElementById("cotizacionDetalleContenido");
+    if (!titulo || !contenido) return;
+
+    const referencia = _valorDetalleCotizacion(cotizacion?.codigo || cotizacion?.numero, "");
+    titulo.textContent = referencia ? `Cotización ${referencia}` : "Detalle de cotización";
+
+    const resumen = document.createElement("div");
+    resumen.className = "cotizacion-detalle-resumen";
+    resumen.append(
+        _crearDatoDetalleCotizacion("Cliente", cotizacion?.cliente || "MOSTRADOR"),
+        _crearDatoDetalleCotizacion("Sucursal", cotizacion?.sucursal),
+        _crearDatoDetalleCotizacion("Vence", cotizacion?.vigenciaHasta || cotizacion?.vigencia_hasta)
+    );
+
+    const subtitulo = document.createElement("div");
+    subtitulo.className = "cotizacion-detalle-subtitulo";
+    subtitulo.textContent = "Productos cotizados";
+
+    const productos = document.createElement("div");
+    productos.className = "cotizacion-detalle-productos";
+    if (cargando) {
+        const estado = document.createElement("div");
+        estado.className = "cotizacion-detalle-estado";
+        estado.textContent = "Cargando productos…";
+        productos.appendChild(estado);
+    } else if (error) {
+        const estado = document.createElement("div");
+        estado.className = "cotizacion-detalle-estado";
+        estado.textContent = error;
+        productos.appendChild(estado);
+    } else {
+        const items = Array.isArray(cotizacion?.items) ? cotizacion.items : [];
+        if (!items.length) {
+            const estado = document.createElement("div");
+            estado.className = "cotizacion-detalle-estado";
+            estado.textContent = "Esta cotización no tiene productos.";
+            productos.appendChild(estado);
+        } else {
+            items.forEach(item => {
+                const cantidad = Number(item.cantidad || 0);
+                const precio = Number(item.precioUnitario ?? item.precio ?? 0);
+                const subtotal = Number(item.total ?? cantidad * precio);
+                const fila = document.createElement("div");
+                fila.className = "cotizacion-detalle-producto";
+                const descripcion = document.createElement("div");
+                const nombre = document.createElement("strong");
+                nombre.textContent = _valorDetalleCotizacion(item.producto || item.nombre || item.nombreProducto, "Producto sin nombre");
+                const detalle = document.createElement("small");
+                detalle.textContent = `${cantidad} × ${formatearBs(Number.isFinite(precio) ? precio : 0)}`;
+                descripcion.append(nombre, detalle);
+                const importe = document.createElement("div");
+                importe.className = "cotizacion-detalle-producto-total";
+                importe.textContent = formatearBs(Number.isFinite(subtotal) ? subtotal : 0);
+                fila.append(descripcion, importe);
+                productos.appendChild(fila);
+            });
+        }
+    }
+    contenido.replaceChildren(resumen, subtitulo, productos);
+}
+
+export async function abrirDetalleCotizacion(cotizacion) {
+    const overlay = document.getElementById("cotizacionDetalleOverlay");
+    if (!overlay || !cotizacion) return;
+    const solicitud = ++_cotizacionDetalleReqSeq;
+    overlay.style.display = "flex";
+    _mostrarDetalleCotizacion(cotizacion, true);
+    try {
+        const data = await api({ ACCION: "OBTENER_COTIZACION", ID: cotizacion.id, TOKEN: store.sessionToken });
+        if (solicitud !== _cotizacionDetalleReqSeq || overlay.style.display === "none") return;
+        if (!manejarRespuesta(data) || !data.ok || !data.cotizacion) {
+            _mostrarDetalleCotizacion(cotizacion, false, data?.error || "No se pudieron cargar los productos.");
+            return;
+        }
+        _mostrarDetalleCotizacion(data.cotizacion);
+    } catch (_) {
+        if (solicitud === _cotizacionDetalleReqSeq && overlay.style.display !== "none") {
+            _mostrarDetalleCotizacion(cotizacion, false, "No se pudieron cargar los productos.");
+        }
+    }
+}
+
+export function cerrarDetalleCotizacion(event) {
+    const overlay = document.getElementById("cotizacionDetalleOverlay");
+    if (!overlay || (event && event.target !== overlay)) return;
+    _cotizacionDetalleReqSeq++;
+    overlay.style.display = "none";
+}
+
 function _crearTarjetaCotizacion(cotizacion) {
     const card = document.createElement("div");
-    card.className = "caja-card";
+    card.className = "caja-card cotizacion-card";
     card.style.margin = "0 0 16px 0";
-    card.style.display = "flex";
-    card.style.alignItems = "center";
-    card.style.justifyContent = "space-between";
-    card.style.gap = "10px";
+    card.tabIndex = 0;
+    card.setAttribute("role", "group");
+    card.setAttribute("aria-label", `Ver detalle de ${cotizacion.codigo || cotizacion.numero || "cotización"}`);
+    card.addEventListener("click", function() {
+        abrirDetalleCotizacion(cotizacion);
+    });
+    card.addEventListener("keydown", function(event) {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            abrirDetalleCotizacion(cotizacion);
+        }
+    });
 
     const detalle = document.createElement("div");
-    detalle.style.flex = "1";
-    detalle.style.minWidth = "0";
+    detalle.className = "cotizacion-card-info";
     const titulo = document.createElement("div");
-    titulo.style.fontWeight = "600";
-    titulo.style.color = "var(--text)";
-    titulo.style.fontSize = "13px";
+    titulo.className = "cotizacion-card-titulo";
     titulo.textContent = `${cotizacion.codigo || cotizacion.numero || "—"} · ${cotizacion.cliente || "MOSTRADOR"}`;
     const total = Number(cotizacion.total);
     const info = document.createElement("div");
-    info.style.fontSize = "11px";
-    info.style.color = "var(--muted)";
-    info.style.marginTop = "2px";
+    info.className = "cotizacion-card-meta";
     info.textContent = [
         cotizacion.fecha || "",
         cotizacion.sucursal || "",
@@ -249,10 +360,13 @@ function _crearTarjetaCotizacion(cotizacion) {
     detalle.append(titulo, info);
 
     const acciones = document.createElement("div");
-    acciones.style.display = "flex";
-    acciones.style.gap = "6px";
-    acciones.style.flexWrap = "wrap";
-    acciones.style.justifyContent = "flex-end";
+    acciones.className = "cotizacion-card-actions";
+    acciones.addEventListener("click", function(event) {
+        event.stopPropagation();
+    });
+    acciones.addEventListener("keydown", function(event) {
+        event.stopPropagation();
+    });
     if (can("ventas.crear") && cotizacion.estado === "ABIERTA") {
         const vender = document.createElement("button");
         vender.type = "button";
@@ -940,8 +1054,10 @@ function _actualizarVisibilidadEfectivo() {
         contEf.classList.toggle("oculto", !esEfectivo);
         if (!esEfectivo) {
             const input = document.getElementById("efectivoRecibidoVenta");
+            const corte = document.getElementById("corteEfectivoVenta");
             const out = document.getElementById("cambioVenta");
             if (input) input.value = "";
+            if (corte) corte.value = "";
             if (out) {
                 out.textContent = "—";
                 out.classList.remove("cambio-positivo", "cambio-negativo");
@@ -1044,6 +1160,15 @@ export function actualizarCambioVenta() {
         out.classList.add("cambio-negativo");
         out.classList.remove("cambio-positivo");
     }
+}
+
+export function seleccionarCorteEfectivo(selector) {
+    const monto = selector?.value;
+    const input = document.getElementById("efectivoRecibidoVenta");
+    if (!monto || !input) return;
+    input.value = monto;
+    selector.value = "";
+    actualizarCambioVenta();
 }
 
 // Elimina un item del carrito con animacion swipe y toast de deshacer
@@ -1153,8 +1278,11 @@ export async function cobrar() {
     if (metodoPago === "CREDITO" && !clienteId) { mostrarMsg("Debe seleccionar un cliente para crédito", "err"); return; }
     if (metodoPago === "CREDITO" && !fechaVencimiento) { mostrarMsg("Selecciona la fecha de vencimiento", "err"); return; }
     if (metodoPago === "EFECTIVO") {
-        const recibido = Number(document.getElementById("efectivoRecibidoVenta")?.value || 0);
-        if (!Number.isFinite(recibido) || recibido < descuento.total) { mostrarMsg("Monto recibido insuficiente", "err"); return; }
+        const efectivoRecibido = document.getElementById("efectivoRecibidoVenta")?.value.trim() || "";
+        if (efectivoRecibido) {
+            const recibido = Number(efectivoRecibido);
+            if (!Number.isFinite(recibido) || recibido < descuento.total) { mostrarMsg("Monto recibido insuficiente", "err"); return; }
+        }
     }
     if (metodoPago === "MIXTO") {
         if (!Number.isFinite(mEfMixto) || mEfMixto < 0 || !Number.isFinite(mTrMixto) || mTrMixto < 0 || Math.abs(mEfMixto + mTrMixto - descuento.total) > 0.01) {
@@ -1209,7 +1337,7 @@ export async function cobrar() {
         document.getElementById("clienteVentaId").value = "";
         document.getElementById("clienteCreditoVenta").textContent = "";
         _clienteVentaSeleccionado = null;
-        ["efectivoRecibidoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+        ["efectivoRecibidoVenta", "corteEfectivoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
         const cambio = document.getElementById("cambioVenta"), avisoMixto = document.getElementById("avisoMixtoVenta");
         if (cambio) { cambio.textContent = "—"; cambio.classList.remove("cambio-positivo", "cambio-negativo"); }
         if (avisoMixto) { avisoMixto.textContent = ""; avisoMixto.classList.remove("cambio-positivo", "cambio-negativo"); }
@@ -1304,6 +1432,7 @@ export async function cotizar() {
 if (typeof window !== "undefined") {
     window._actualizarVisibilidadEfectivo = _actualizarVisibilidadEfectivo;
     window.actualizarCambioVenta = actualizarCambioVenta;
+    window.seleccionarCorteEfectivo = seleccionarCorteEfectivo;
     window.actualizarMixtoVenta = actualizarMixtoVenta;
     window.actualizarDescuentoVenta = actualizarDescuentoVenta;
     window.cotizar = cotizar;
@@ -1315,6 +1444,8 @@ if (typeof window !== "undefined") {
     window.cancelarCotizacion = cancelarCotizacion;
     window.cargarCotizacionParaVenta = cargarCotizacionParaVenta;
     window.recalcularCotizacion = recalcularCotizacion;
+    window.abrirDetalleCotizacion = abrirDetalleCotizacion;
+    window.cerrarDetalleCotizacion = cerrarDetalleCotizacion;
 }
 
 // Realtime: si cambia el precio de un producto que esta en el carrito, actualiza la fila

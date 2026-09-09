@@ -367,7 +367,7 @@
                                         <br>
                                         <span id="totalVenta">Bs 0.00</span>
                                     </div>
-                                    <div class="venta-acciones">
+                                    <div class="venta-acciones venta-metodo-cliente">
                                         <div class="field-group" style="margin:0">
                                             <label class="field-label">Método de pago</label>
                                             <select id="metodoPagoVenta">
@@ -392,7 +392,17 @@
                                     <div id="campoEfectivoVenta" class="row-2 mb-12 oculto">
                                         <div class="field-group" style="margin:0">
                                             <label class="field-label">Efectivo recibido</label>
-                                            <input id="efectivoRecibidoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00" oninput="actualizarCambioVenta()">
+                                            <div class="efectivo-recibido-control">
+                                                <input id="efectivoRecibidoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00 (opcional)" oninput="actualizarCambioVenta()">
+                                                <select id="corteEfectivoVenta" onchange="seleccionarCorteEfectivo(this)">
+                                                    <option value="">Cortes rápidos</option>
+                                                    <option value="10">Bs 10</option>
+                                                    <option value="20">Bs 20</option>
+                                                    <option value="50">Bs 50</option>
+                                                    <option value="100">Bs 100</option>
+                                                    <option value="200">Bs 200</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         <div class="field-group" style="margin:0">
                                             <label class="field-label">Cambio</label>
@@ -2007,6 +2017,16 @@
         <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Movimientos</div>
         <div id="cajaDetalleMovimientos" style="max-height:40vh;overflow-y:auto;font-size:11px"></div>
     </div>
+</div>
+
+<div id="cotizacionDetalleOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarDetalleCotizacion(event)">
+    <section class="producto-detalle-card cotizacion-detalle-card" role="dialog" aria-modal="true" aria-labelledby="cotizacionDetalleTitulo" onclick="event.stopPropagation()">
+        <div class="cotizacion-detalle-header">
+            <strong id="cotizacionDetalleTitulo">Detalle de cotización</strong>
+            <button class="btn-icon" type="button" onclick="cerrarDetalleCotizacion()" aria-label="Cerrar">✕</button>
+        </div>
+        <div id="cotizacionDetalleContenido"></div>
+    </section>
 </div>
 
 <div id="arqueoDetalleOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarDetalleArqueo(event)">
