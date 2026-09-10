@@ -1,6 +1,6 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-const LOCAL = false; // usar true solo para desarrollo local
+const LOCAL = true; // usar true solo para desarrollo local
 
 export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
@@ -28,6 +28,7 @@ export const BASE_URL_COMPROBANTES  = `${HOST}/comprobantes`;
 export const BASE_URL_CLIENTES      = `${HOST}/clientes`;
 export const BASE_URL_PROVEEDORES   = `${HOST}/proveedores`;
 export const BASE_URL_ARQUEO        = `${HOST}/arqueo`;
+export const BASE_URL_AUDITORIA     = `${HOST}/auditoria`;
 
 export const COMPROBANTE_ANCHO_DEFAULT = "57";
 
@@ -36,5 +37,5 @@ export const DEVOL_LIMITE = 20
   , CARRITO_CHUNK_SIZE = 10;
 export const CARRITO_KEY = "eruditos_carrito_draft";
 
-export const TODOS_MODOS = ["VENTA", "CLIENTES", "COMPRA", "GASTO", "CAJA", "ARQUEO", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
-export const ORDEN_MODOS = ["VENTA","CLIENTES","COMPRA","GASTO","CAJA","ARQUEO","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];
+export const TODOS_MODOS = ["VENTA", "CLIENTES", "COMPRA", "GASTO", "CAJA", "ARQUEO", "AUDITORIA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
+export const ORDEN_MODOS = ["VENTA","CLIENTES","COMPRA","GASTO","CAJA","ARQUEO","AUDITORIA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];

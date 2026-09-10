@@ -49,6 +49,8 @@ import { verificarEstadoCaja, abrirCaja, registrarAporteRetiro,
 import { initArqueo, cargarArqueo, iniciarArqueo, cerrarArqueo,
          listarArqueos, verDetalleArqueo, cerrarDetalleArqueo }
   from './modos/arqueo.js';
+import { initAuditoria, cargarAuditoria, cambiarPaginaAuditoria, verDetalleAuditoria, cerrarDetalleAuditoria }
+  from './modos/auditoria.js';
 import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra, abrirEscanerCompra,
          cargarProveedoresCompra, abrirProveedores, cerrarProveedores, abrirFormularioProveedor, guardarProveedor }
   from './modos/compra.js';
@@ -71,8 +73,8 @@ import { initLaminas, buscarLaminas, ejecutarBusquedaLaminas,
          renderLaminaCard, cambiarEstadoLamina, agregarLamina,
          initLaminasMode }
   from './modos/laminas.js';
-import { initServicios, calcTotalServ, agregarServicio,
-         cargarResumenServicios, eliminarServicio }
+import { initServicios, calcTotalServ, agregarServicio, togglePagoServicio,
+         buscarClienteServicio, cargarResumenServicios, eliminarServicio }
   from './modos/servicios.js';
 import { initTransferencias, buscarProductoTransf, actualizarInfoTransf,
          registrarTransferencia, listarTransferencias, cambiarPaginaTransf,
@@ -283,6 +285,10 @@ async function inicializarApp() {
     window.listarArqueos = listarArqueos;
     window.verDetalleArqueo = verDetalleArqueo;
     window.cerrarDetalleArqueo = cerrarDetalleArqueo;
+    window.cargarAuditoria = cargarAuditoria;
+    window.cambiarPaginaAuditoria = cambiarPaginaAuditoria;
+    window.verDetalleAuditoria = verDetalleAuditoria;
+    window.cerrarDetalleAuditoria = cerrarDetalleAuditoria;
     window.listarCuentasCobrar = listarCuentasCobrar;
     window.abrirFormAbonoCobrar = abrirFormAbonoCobrar;
     window.cancelarAbonoCobrar = cancelarAbonoCobrar;
@@ -306,6 +312,8 @@ async function inicializarApp() {
     window.agregarLamina = agregarLamina;
     window.calcTotalServ = calcTotalServ;
     window.agregarServicio = agregarServicio;
+    window.togglePagoServicio = togglePagoServicio;
+    window.buscarClienteServicio = buscarClienteServicio;
     window.eliminarServicio = eliminarServicio;
     window.buscarProductoTransf = buscarProductoTransf;
     window.actualizarInfoTransf = actualizarInfoTransf;
@@ -421,6 +429,7 @@ async function inicializarApp() {
         cargarClientesModulo,
         listarCuentasCobrar,
         cargarArqueo,
+        cargarAuditoria,
     });
 
     // Inyectar dependencias en inventario
@@ -439,6 +448,7 @@ async function inicializarApp() {
     initCompra({ verificarEstadoCaja: verif });
     initGasto({ verificarEstadoCaja: verif });
     initArqueo({ verificarEstadoCaja: verif });
+    initAuditoria();
     initClientes();
     initCuentasCobrar({ verificarEstadoCaja: verif });
     initCuentasPagar({ verificarEstadoCaja: verif });
@@ -451,7 +461,7 @@ async function inicializarApp() {
     initAdminMode();
     initLaminasMode();
 
-    ["costoCompra", "precioVentaCompra", "inventarioEditPrecioVenta", "devolPrecio", "efectivoRecibidoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta"]
+    ["costoCompra", "precioVentaCompra", "inventarioEditPrecioVenta", "devolPrecio", "efectivoRecibidoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta", "srvMontoEfectivo", "srvMontoTransferencia"]
         .forEach(id => limitarDecimalesInput(document.getElementById(id)));
 
     const metodoPago = document.getElementById("metodoPagoVenta");
@@ -496,6 +506,7 @@ async function inicializarApp() {
             clearSession();
         }
     }
+    togglePagoServicio();
 
     if (sesionValidada) {
         const rol = store.sessionRol || "VENDEDOR";

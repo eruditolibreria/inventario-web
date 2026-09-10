@@ -37,6 +37,7 @@ let _setReporteFinanciero = null;
 let _cargarClientesModulo = null;
 let _listarCuentasCobrar = null;
 let _cargarArqueo = null;
+let _cargarAuditoria = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -51,6 +52,7 @@ export function initNavegacion(callbacks) {
     if (callbacks.cargarClientesModulo) _cargarClientesModulo = callbacks.cargarClientesModulo;
     if (callbacks.listarCuentasCobrar) _listarCuentasCobrar = callbacks.listarCuentasCobrar;
     if (callbacks.cargarArqueo) _cargarArqueo = callbacks.cargarArqueo;
+    if (callbacks.cargarAuditoria) _cargarAuditoria = callbacks.cargarAuditoria;
     _bindTabClicks();
 }
 
@@ -246,6 +248,8 @@ export function setModo(modo, direccion, velocidad) {
         if (_verificarEstadoCaja) _verificarEstadoCaja();
     if (modo === "ARQUEO" && store.sessionToken)
         if (_cargarArqueo) _cargarArqueo();
+    if (modo === "AUDITORIA" && store.sessionToken)
+        if (_cargarAuditoria) _cargarAuditoria(1);
     if (modo === "DEVOLUCIONES")
         setSubModoDevol("REGISTRAR");
     if (modo === "REPORTES") {

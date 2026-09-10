@@ -7,6 +7,7 @@ export const PERMISOS_POR_MODO = Object.freeze({
     GASTO: ['gastos.ver', 'gastos.crear'],
     CAJA: ['caja.ver', 'caja.abrir', 'caja.ingresar', 'caja.retirar'],
     ARQUEO: ['arqueo.ver', 'arqueo.crear', 'arqueo.cerrar'],
+    AUDITORIA: ['auditoria.ver'],
     CUENTAS: ['cuentas_cobrar.ver', 'cuentas_pagar.ver'],
     DEVOLUCIONES: ['devoluciones.ver', 'devoluciones.crear'],
     TRANSFERENCIAS: ['transferencias.ver', 'transferencias.crear'],

@@ -1080,7 +1080,7 @@ export async function cargarSucursalesEnDropdowns() {
             if (sel.disabled) return;
             const actual = sel.value;
             while (sel.options.length > 0) sel.remove(0);
-            const esFiltroSucursal = ["filtroInvSucursal", "filtroTransfOrigen", "filtroTransfDestino"].includes(sel.id);
+            const esFiltroSucursal = ["filtroInvSucursal", "filtroTransfOrigen", "filtroTransfDestino", "auditoriaSucursal"].includes(sel.id);
             sel.add(new Option(esFiltroSucursal ? "Todas las sucursales" : "🏪 Seleccionar sucursal", ""));
             sucursales.forEach(function(s) {
                 if (s.estado !== "ACTIVO") return;

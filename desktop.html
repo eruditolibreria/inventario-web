@@ -237,6 +237,10 @@
                     <span class="sidebar-icon"><i class="fa-solid fa-users"></i></span>
                     <span>Usuarios</span>
                 </div>
+                <div class="sidebar-item" id="sidebar-tab-AUDITORIA" data-modo="AUDITORIA" onclick="document.getElementById('tab-AUDITORIA').click()">
+                    <span class="sidebar-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+                    <span>Auditoría</span>
+                </div>
 
                 <div class="desktop-sidebar-footer">
                     <span class="version-dot"></span>
@@ -268,6 +272,9 @@
                             </div>
                             <div class="mode-tab" id="tab-ARQUEO" aria-label="Arqueo">
                                 <span class="tab-icon"><i class="fa-solid fa-scale-balanced"></i></span>Arqueo
+                            </div>
+                            <div class="mode-tab" id="tab-AUDITORIA" aria-label="Auditoría">
+                                <span class="tab-icon"><i class="fa-solid fa-clipboard-list"></i></span>Auditoría
                             </div>
                             <div class="mode-tab" id="tab-CUENTAS" aria-label="Cuentas">
                                 <span class="tab-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>Cuentas
@@ -734,6 +741,20 @@
                             <input id="arqueoBusqueda" class="mt-8" placeholder="Buscar por usuario o caja">
                             <button class="btn btn-ghost mt-8" onclick="listarArqueos()">Cargar historial</button>
                             <div id="tablaArqueos"></div>
+                        </div>
+
+                        <!-- AUDITORIA -->
+                        <div id="seccion-AUDITORIA" class="oculto">
+                            <div class="section-label">Auditoría del sistema</div>
+                            <div class="arqueo-intro">Consulta de solo lectura de las acciones registradas en el sistema.</div>
+                            <div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Desde</label><input id="auditoriaFechaDesde" type="date"></div><div class="field-group" style="margin:0"><label class="field-label">Hasta</label><input id="auditoriaFechaHasta" type="date"></div></div>
+                            <div class="row-2 mt-8"><div class="field-group" style="margin:0"><label class="field-label">Sucursal</label><select id="auditoriaSucursal"><option value="">Todas las sucursales</option></select></div><div class="field-group" style="margin:0"><label class="field-label">Módulo</label><select id="auditoriaModulo"><option value="">Todos los módulos</option><option value="USUARIOS">Usuarios</option><option value="INVENTARIO">Inventario</option><option value="CAJA">Caja</option><option value="ARQUEO">Arqueo</option><option value="VENTAS">Ventas</option><option value="DEVOLUCIONES">Devoluciones</option><option value="TRANSFERENCIAS">Transferencias</option><option value="SERVICIOS">Servicios</option><option value="SISTEMA">Sistema</option></select></div></div>
+                            <div class="row-2 mt-8"><select id="auditoriaUsuario"><option value="">Todos los usuarios</option></select><select id="auditoriaResultado"><option value="">Todos los resultados</option><option value="OK">Correctos</option><option value="FALLÓ">Fallidos</option></select></div>
+                            <input id="auditoriaBusqueda" class="mt-8" placeholder="Buscar en acción, usuario o detalle">
+                            <button class="btn btn-primary mt-8" onclick="cargarAuditoria(1)"><i class="fa-solid fa-magnifying-glass"></i> Consultar auditoría</button>
+                            <div class="loader" id="loaderAuditoria"></div>
+                            <div id="tablaAuditoria"></div>
+                            <div id="paginacionAuditoria" class="mt-8"></div>
                         </div>
 
                         <!-- CUENTAS -->
@@ -1514,12 +1535,37 @@
                                     <option value="CENTRAL">CENTRAL</option>
                                 </select>
                             </div>
-                            <div class="field-group srv-sucursal-select">
-                                <label class="field-label">Método de pago</label>
-                                <select id="srvMetodoPago">
-                                    <option value="EFECTIVO">💵 Efectivo</option>
-                                    <option value="TRANSFERENCIA">🏦 Transferencia</option>
-                                </select>
+                            <div class="row-2 mb-12">
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Método de pago</label>
+                                    <select id="srvMetodoPago" onchange="togglePagoServicio()">
+                                        <option value="EFECTIVO">💵 Efectivo</option>
+                                        <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                                        <option value="MIXTO">💳 Mixto (Efectivo + Transferencia)</option>
+                                        <option value="CREDITO">📝 Crédito</option>
+                                    </select>
+                                </div>
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Cliente</label>
+                                    <input type="hidden" id="srvClienteId">
+                                    <input id="srvCliente" placeholder="Buscar cliente registrado" autocomplete="off" oninput="buscarClienteServicio()">
+                                    <div class="autocomplete" id="listaClienteServicio"></div>
+                                    <small id="srvClienteCredito" class="cliente-credito-info"></small>
+                                </div>
+                            </div>
+                            <div id="campoCreditoServicio" class="field-group mb-12 oculto">
+                                <label class="field-label">Vencimiento del crédito</label>
+                                <input id="srvFechaVencimiento" type="date">
+                            </div>
+                            <div id="campoMixtoServicio" class="row-2 mb-12 oculto">
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Monto efectivo</label>
+                                    <input id="srvMontoEfectivo" type="number" min="0" step="0.01" placeholder="Bs 0.00">
+                                </div>
+                                <div class="field-group" style="margin:0">
+                                    <label class="field-label">Monto transferencia</label>
+                                    <input id="srvMontoTransferencia" type="number" min="0" step="0.01" placeholder="Bs 0.00">
+                                </div>
                             </div>
                             <div class="sub-tabs">
                                 <div class="sub-tab active" id="subtab-srv-COPIAS">🖨️ Copias/Imp.</div>
@@ -2039,6 +2085,13 @@
         <div class="arqueo-modal-head"><strong>Detalle del arqueo</strong><button class="btn-icon" onclick="cerrarDetalleArqueo()">✕</button></div>
         <div id="arqueoDetalleContenido"></div>
     </div>
+</div>
+
+<div id="auditoriaDetalleOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarDetalleAuditoria(event)">
+    <section class="producto-detalle-card auditoria-detalle-card" role="dialog" aria-modal="true" aria-labelledby="auditoriaDetalleTitulo" onclick="event.stopPropagation()">
+        <div class="arqueo-modal-head"><strong id="auditoriaDetalleTitulo">Detalle del evento</strong><button class="btn-icon" type="button" onclick="cerrarDetalleAuditoria()" aria-label="Cerrar">✕</button></div>
+        <div id="auditoriaDetalleContenido"></div>
+    </section>
 </div>
 
 <div id="printArea"></div>
