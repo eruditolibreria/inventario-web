@@ -4,6 +4,85 @@ import { api } from '../api.js';
 import { mostrarMsg, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 
+const TABLAS_REPORTES_MOVIL = {
+    tablaRepMas: { principal: 'Producto' },
+    tablaRepMenos: { principal: 'Producto' },
+    tablaAlertas: { principal: 'Producto', estado: 'Estado' },
+    tablaRotacion: { principal: 'Producto', estado: 'Rotacion' },
+    tablaValorizacion: { principal: 'Categoria' },
+    tablaMovimientos: { principal: 'Producto', estado: 'Tipo' },
+    tablaVentasPeriodo: { principal: 'Periodo', estado: 'Tipo' },
+    tablaUtilidad: { principal: 'Producto' },
+    tablaFlujo: { principal: 'Periodo', estado: 'Tipo' },
+    tablaArqueosRep: { principal: 'Fecha', estado: 'Resultado' },
+    tablaCobrarRep: { principal: 'Cliente' },
+};
+
+let observadorReportesMovil = null;
+
+function escaparHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[caracter]);
+}
+
+function textoCelda(celda) {
+    return String(celda?.textContent || '').replace(/\s+/g, ' ').trim() || '—';
+}
+
+function claseEstadoReporte(valor) {
+    const estado = String(valor || '').toUpperCase();
+    if (/AGOTADO|BAJO|SALIDA|PENDIENTE|FALTANTE|ANULAD|NUNCA/.test(estado)) return 'advertencia';
+    if (/OK|ACTIVO|ENTRADA|CUADRA|PAGAD|CERRAD/.test(estado)) return 'ok';
+    return 'neutro';
+}
+
+function adaptarTablaReporteMovil(contenedor, configuracion) {
+    const tabla = contenedor.querySelector('table');
+    if (!tabla) return;
+
+    tabla.classList.add('reporte-tabla-escritorio');
+    contenedor.querySelector('.reporte-lista-movil')?.remove();
+    const encabezados = [...tabla.querySelectorAll('thead th')].map(encabezado => textoCelda(encabezado));
+    const indicePrincipal = Math.max(0, encabezados.indexOf(configuracion.principal));
+    const indiceEstado = encabezados.indexOf(configuracion.estado);
+    const filas = [...tabla.querySelectorAll('tbody tr')];
+    const lista = document.createElement('div');
+    lista.className = 'reporte-lista-movil';
+
+    lista.innerHTML = filas.map(fila => {
+        const valores = [...fila.querySelectorAll('td')].map(textoCelda);
+        const principal = valores[indicePrincipal] || '—';
+        const estado = indiceEstado >= 0 ? valores[indiceEstado] : '';
+        const datos = encabezados.map((etiqueta, indice) => ({ etiqueta, valor: valores[indice] || '—' }))
+            .filter((_, indice) => indice !== indicePrincipal && indice !== indiceEstado)
+            .map(dato => `<div><span>${escaparHtml(dato.etiqueta)}</span><strong>${escaparHtml(dato.valor)}</strong></div>`)
+            .join('');
+        const insignia = estado ? `<span class="reporte-estado ${claseEstadoReporte(estado)}">${escaparHtml(estado)}</span>` : '';
+        return `<article class="reporte-tarjeta-movil"><div class="reporte-tarjeta-cabecera"><strong>${escaparHtml(principal)}</strong>${insignia}</div><div class="reporte-tarjeta-datos">${datos}</div></article>`;
+    }).join('');
+    contenedor.appendChild(lista);
+}
+
+function observarTablasReportesMovil() {
+    if (observadorReportesMovil) return;
+    observadorReportesMovil = new MutationObserver((mutaciones) => {
+        mutaciones.forEach(mutacion => {
+            const contenedor = mutacion.target;
+            const configuracion = TABLAS_REPORTES_MOVIL[contenedor.id];
+            if (configuracion && contenedor.querySelector('table') && !contenedor.querySelector('.reporte-lista-movil')) {
+                adaptarTablaReporteMovil(contenedor, configuracion);
+            }
+        });
+    });
+    Object.entries(TABLAS_REPORTES_MOVIL).forEach(([id, configuracion]) => {
+        const contenedor = document.getElementById(id);
+        if (!contenedor) return;
+        observadorReportesMovil.observe(contenedor, { childList: true });
+        if (contenedor.querySelector('table')) adaptarTablaReporteMovil(contenedor, configuracion);
+    });
+}
+
 // ── HELPERS ──────────────────────────────────────────────────
 export function _formatearBs(v) { return 'Bs ' + Number(v || 0).toFixed(2); }
 
@@ -297,7 +376,7 @@ export async function cargarArqueosReporte() {
 // ══ CUENTAS POR COBRAR REPORTE ════════════════════════════════
 export async function cargarCuentasCobrarReporte() {
     if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }
-    var loader = document.getElementById("loaderCobrar"), tabla = document.getElementById("tablaCobrar"), tdiv = document.getElementById("totalesCobrar");
+    var loader = document.getElementById("loaderCobrarRep"), tabla = document.getElementById("tablaCobrarRep"), tdiv = document.getElementById("totalesCobrar");
     loader.style.display = "block"; tabla.innerHTML = ""; tdiv.style.display = "none";
     try {
         var data = await api({ ACCION: "CUENTAS_COBRAR_REPORTE", SUCURSAL: document.getElementById("cobrarSucursal").value, CLIENTE: document.getElementById("cobrarCliente").value.trim(), TOKEN: store.sessionToken });
@@ -424,4 +503,4 @@ export function imprimirReporteMenosVendidos() {
 }
 
 // ── Init: main.js llamará initReportes() en fase 5 ──────────
-export function initReportes() {}
+export function initReportes() { observarTablasReportesMovil(); }
