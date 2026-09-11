@@ -1233,6 +1233,12 @@
                 .efectivo-recibido-control { grid-template-columns: 1fr; }
             }
 
+            @media (max-width: 600px) {
+                .efectivo-recibido-control {
+                    grid-template-columns: 1fr;
+                }
+            }
+
             /* ── Detalle de producto (overlay al hacer clic en búsqueda) ── */
             .producto-detalle-overlay {
                 position: fixed;

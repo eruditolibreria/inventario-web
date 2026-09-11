@@ -7,6 +7,7 @@ const SESSION_KEY = "eruditos_session";
 // ========== ESTADO INTERNO (no exportado directamente) ==========
 const _state = {
     sessionToken: null,
+    sessionUsuarioId: null,
     sessionUser: null,
     sessionRol: null,
     sessionSucursal: null,
@@ -33,6 +34,7 @@ const _state = {
 // ========== STORE PUBLICO (solo lectura via getters) ==========
 export const store = {
     get sessionToken() { return _state.sessionToken; },
+    get sessionUsuarioId() { return _state.sessionUsuarioId; },
     get sessionUser() { return _state.sessionUser; },
     get sessionRol() { return _state.sessionRol; },
     get sessionSucursal() { return _state.sessionSucursal; },
@@ -58,6 +60,7 @@ export const store = {
 /** Actualiza los datos de sesion tras login exitoso */
 export function setSession(token, user, rol, sucursal, contexto = {}) {
     _state.sessionToken = token;
+    _state.sessionUsuarioId = contexto.usuarioId || null;
     _state.sessionUser = user;
     _state.sessionRol = rol;
     _state.sessionSucursal = sucursal || null;
@@ -81,6 +84,7 @@ function _persistSession() {
     try {
         localStorage.setItem(SESSION_KEY, JSON.stringify({
             token: _state.sessionToken,
+            usuarioId: _state.sessionUsuarioId,
             usuario: _state.sessionUser,
             rol: _state.sessionRol || "VENDEDOR",
             sucursal: _state.sessionSucursal || null,
@@ -158,6 +162,7 @@ export function setDevolTransaccionSeleccionada(tx) {
 /** Limpia los datos de sesion (logout) */
 export function clearSession() {
     _state.sessionToken = null;
+    _state.sessionUsuarioId = null;
     _state.sessionUser = null;
     _state.sessionRol = null;
     _state.sessionSucursal = null;

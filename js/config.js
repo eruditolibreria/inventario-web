@@ -37,5 +37,11 @@ export const DEVOL_LIMITE = 20
   , CARRITO_CHUNK_SIZE = 10;
 export const CARRITO_KEY = "eruditos_carrito_draft";
 
+/** Clave de borrador aislada por el identificador interno del usuario. */
+export function claveCarritoDraft(usuarioId) {
+  const id = String(usuarioId || "").trim();
+  return id ? `${CARRITO_KEY}:${encodeURIComponent(id)}` : null;
+}
+
 export const TODOS_MODOS = ["VENTA", "CLIENTES", "COMPRA", "GASTO", "CAJA", "ARQUEO", "AUDITORIA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
 export const ORDEN_MODOS = ["VENTA","CLIENTES","COMPRA","GASTO","CAJA","ARQUEO","AUDITORIA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];

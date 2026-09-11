@@ -271,7 +271,7 @@
                                 <label class="field-label">Descuento</label>
                                 <div style="display:flex;gap:8px">
                                     <select id="tipoDescuentoVenta" onchange="actualizarDescuentoVenta()" style="max-width:130px"><option value="PORCENTAJE">%</option><option value="MONTO">Bs</option></select>
-                                    <input id="valorDescuentoVenta" type="number" min="0" step="0.01" placeholder="0.00" oninput="actualizarDescuentoVenta()">
+                                    <input id="valorDescuentoVenta" type="number" min="0" step="0.10" placeholder="0.00" oninput="actualizarDescuentoVenta()">
                                 </div>
                             </div>
                             <div class="field-group" style="margin:0">
@@ -311,7 +311,7 @@
                             <div class="field-group" style="margin:0">
                                 <label class="field-label">Efectivo recibido</label>
                                 <div class="efectivo-recibido-control">
-                                    <input id="efectivoRecibidoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00 (opcional)" oninput="actualizarCambioVenta()">
+                                    <input id="efectivoRecibidoVenta" type="number" min="0" step="1.00" placeholder="Bs 0.00 (opcional)" oninput="actualizarCambioVenta()">
                                     <select id="corteEfectivoVenta" onchange="seleccionarCorteEfectivo(this)">
                                         <option value="">Cortes rápidos</option>
                                         <option value="10">Bs 10</option>
@@ -330,7 +330,7 @@
                         <div id="campoMixtoVenta" class="row-2 mb-12 oculto">
                             <div class="field-group" style="margin:0">
                                 <label class="field-label">Monto efectivo</label>
-                                <input id="montoEfectivoMixtoVenta" type="number" min="0" step="0.01" placeholder="Bs 0.00" oninput="actualizarMixtoVenta(this)">
+                                <input id="montoEfectivoMixtoVenta" type="number" min="0" step="0.10" placeholder="Bs 0.00" oninput="actualizarMixtoVenta(this)">
                             </div>
                             <div class="field-group" style="margin:0">
                                 <label class="field-label">Monto transferencia</label>

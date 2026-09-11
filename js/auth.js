@@ -4,7 +4,7 @@
  * Gestion de autenticacion: loginSubmit, cerrarSesion, mostrarMensajeLogin.
  *
  * Dependencias directas (ya modulos):
- *   - config.js  (CARRITO_KEY)
+ *   - config.js  (CARRITO_KEY, claveCarritoDraft)
  *   - store.js   (store, setSession, setTokens, clearSession, setInventario, clearCarrito)
  *   - api.js     (api)
  *   - utils.js   (hoy, mostrarToast)
@@ -14,6 +14,8 @@
  *   - cargarInventario()
  *   - verificarEstadoCaja()
  *   - restaurarCarritoDraft(draft)
+ *   - vaciarCarrito()
+ *   - limpiarCarritoDraft()
  *   - toggleClienteVenta()
  *   - toggleClienteCompra()
  *   - toggleAcreedorGasto()
@@ -23,7 +25,7 @@
  *   initAuth({ aplicarRol, cargarInventario, verificarEstadoCaja, ... });
  */
 
-import { CARRITO_KEY } from './config.js';
+import { CARRITO_KEY, claveCarritoDraft } from './config.js';
 import { store, setSession, setTokens, clearSession, clearCarrito } from './store.js';
 import { api } from './api.js';
 import { hoy, mostrarToast } from './utils.js';
@@ -80,6 +82,8 @@ let _cargarComprobantes = null;
 let _toggleClienteCompra = null;
 let _toggleAcreedorGasto = null;
 let _restaurarCarritoDraft = null;
+let _vaciarCarrito = null;
+let _limpiarCarritoDraft = null;
 
 /**
  * Registra las dependencias que auth necesita y que seran provistas
@@ -96,19 +100,27 @@ export function initAuth(callbacks) {
     if (callbacks.toggleClienteCompra) _toggleClienteCompra = callbacks.toggleClienteCompra;
     if (callbacks.toggleAcreedorGasto) _toggleAcreedorGasto = callbacks.toggleAcreedorGasto;
     if (callbacks.restaurarCarritoDraft) _restaurarCarritoDraft = callbacks.restaurarCarritoDraft;
+    if (callbacks.vaciarCarrito) _vaciarCarrito = callbacks.vaciarCarrito;
+    if (callbacks.limpiarCarritoDraft) _limpiarCarritoDraft = callbacks.limpiarCarritoDraft;
 }
 
 export function restaurarCarritoGuardado() {
     if (!_restaurarCarritoDraft) return;
     try {
-        const raw = localStorage.getItem(CARRITO_KEY);
+        // Los borradores previos no tenían propietario y no es seguro migrarlos.
+        localStorage.removeItem(CARRITO_KEY);
+        const usuarioId = String(store.sessionUsuarioId || "").trim();
+        const clave = claveCarritoDraft(usuarioId);
+        if (!clave) return;
+        const raw = localStorage.getItem(clave);
         if (raw) {
             const draft = JSON.parse(raw);
             if (draft.carrito?.length &&
+                String(draft.usuarioId || "") === usuarioId &&
                 (Date.now() - draft.ts) < 8 * 60 * 60 * 1000) {
                 _restaurarCarritoDraft(draft);
             } else {
-                localStorage.removeItem(CARRITO_KEY);
+                localStorage.removeItem(clave);
             }
         }
     } catch(e) {}
@@ -199,15 +211,22 @@ export function mostrarMensajeLogin(t, tipo) {
 }
 
 
-export function cerrarSesion() {
+export async function cerrarSesion() {
     if (!confirm("¿Cerrar sesión?")) return;
+
+    // Las reservas deben liberarse mientras el token del propietario sigue vigente.
+    if (_vaciarCarrito && store.carrito.length) {
+        const liberado = await _vaciarCarrito();
+        if (!liberado && store.carrito.length) return;
+    }
     if (store.sessionToken) {
-        api({
+        await api({
             ACCION: "LOGOUT",
             TOKEN: store.sessionToken
         }).catch(() => {});
     }
     // Limpiar estado
+    if (_limpiarCarritoDraft) _limpiarCarritoDraft();
     clearSession();
     try { localStorage.removeItem("eruditos_modo"); } catch (_) {}
     clearCarrito();

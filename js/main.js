@@ -5,7 +5,7 @@
 
 // Módulos base
 import { BASE_URL_ERUDITOS, DEVOL_LIMITE, TRANSF_LIMITE, CARRITO_CHUNK_SIZE,
-         CARRITO_KEY, TODOS_MODOS, ORDEN_MODOS }
+         TODOS_MODOS, ORDEN_MODOS }
   from './config.js';
 import { store, setSession, setTokens, setToken, setCarrito,
          setModoActual, setDevolPagina, setTransfPagina, setMovPagina,
@@ -416,6 +416,8 @@ async function inicializarApp() {
         toggleClienteCompra,
         toggleAcreedorGasto,
         restaurarCarritoDraft,
+        vaciarCarrito,
+        limpiarCarritoDraft,
         initRealtime,
     });
 

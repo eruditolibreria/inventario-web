@@ -21,7 +21,7 @@
  *   initVenta({ verificarEstadoCaja });
  */
 
-import { CARRITO_KEY } from '../config.js';
+import { CARRITO_KEY, claveCarritoDraft } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
 import { enviarCobroSeguro } from '../cobro.js';
@@ -35,11 +35,14 @@ import { listarComprobantes } from './comprobantes.js';
 
 function _guardarCarritoDraft() {
     try {
+        const clave = claveCarritoDraft(store.sessionUsuarioId);
+        if (!clave) return;
         if (!store.carrito.length) {
-            localStorage.removeItem(CARRITO_KEY);
+            localStorage.removeItem(clave);
             return;
         }
-        localStorage.setItem(CARRITO_KEY, JSON.stringify({
+        localStorage.setItem(clave, JSON.stringify({
+            usuarioId: store.sessionUsuarioId,
             carrito: store.carrito,
             sucursal: document.getElementById("sucursalVenta")?.value || "",
             carritoId: _idCarrito(),
@@ -1046,7 +1049,11 @@ async function _agregarCarrito() {
 
 // Elimina el borrador del carrito del localStorage
             export function limpiarCarritoDraft() {
-                try { localStorage.removeItem(CARRITO_KEY); } catch(e) {}
+                try {
+                    const clave = claveCarritoDraft(store.sessionUsuarioId);
+                    if (clave) localStorage.removeItem(clave);
+                    localStorage.removeItem(CARRITO_KEY);
+                } catch(e) {}
             }
 
 // Renderiza la tabla del carrito, miniaturas y actualiza el total
