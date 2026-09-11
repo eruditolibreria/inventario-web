@@ -24,11 +24,12 @@
 import { CARRITO_KEY } from '../config.js';
 import { store, setCarrito, clearCarrito, setUltimaVenta } from '../store.js';
 import { api } from '../api.js';
+import { enviarCobroSeguro } from '../cobro.js';
 import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs, debounce, hoy, horaActual } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { can } from '../authorization.js';
 import { construirAC } from '../inventario.js';
-import { listarProductos, buscarProductoPorNombre } from '../db.js';
+import { buscarSugerenciasVenta, buscarProductoPorNombre } from '../db.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
 import { listarComprobantes } from './comprobantes.js';
 
@@ -153,6 +154,24 @@ function _mensajeReserva(error) {
     return "No se pudo actualizar la reserva de stock";
 }
 
+let _cambioCarritoEnCurso = false;
+
+async function _ejecutarCambioCarrito(cambio) {
+    if (_cambioCarritoEnCurso || _cobroEnCurso) {
+        mostrarMsg("Espera a que termine la operación del carrito", "err");
+        return false;
+    }
+    _cambioCarritoEnCurso = true;
+    const panel = document.getElementById("carritoBody");
+    panel?.setAttribute("aria-busy", "true");
+    try {
+        return await cambio();
+    } finally {
+        _cambioCarritoEnCurso = false;
+        panel?.removeAttribute("aria-busy");
+    }
+}
+
 async function _ajustarReserva(item, delta) {
     const data = await api({
         ACCION: "RESERVAR_STOCK",
@@ -167,6 +186,10 @@ async function _ajustarReserva(item, delta) {
 }
 
 export async function restaurarReservasCarrito(carritoId) {
+    return _ejecutarCambioCarrito(() => _restaurarReservasCarrito(carritoId));
+}
+
+async function _restaurarReservasCarrito(carritoId) {
     if (carritoId) {
         _carritoId = String(carritoId);
         return true;
@@ -186,6 +209,10 @@ export async function restaurarReservasCarrito(carritoId) {
 }
 
 export async function vaciarCarrito() {
+    return _ejecutarCambioCarrito(() => _vaciarCarrito());
+}
+
+async function _vaciarCarrito() {
     const carritoId = _carritoId;
     if (carritoId && store.sessionToken) {
         try {
@@ -497,6 +524,10 @@ export async function cancelarCotizacion(id, codigo) {
 }
 
 export async function cargarCotizacionParaVenta(id, codigo, omitirConfirmacion = false) {
+    return _ejecutarCambioCarrito(() => _cargarCotizacionParaVenta(id, codigo, omitirConfirmacion));
+}
+
+async function _cargarCotizacionParaVenta(id, codigo, omitirConfirmacion = false) {
     if (!can("ventas.crear") || !id) return;
     try {
         const data = await api({ ACCION: "OBTENER_COTIZACION", ID: id, TOKEN: store.sessionToken });
@@ -514,7 +545,7 @@ export async function cargarCotizacionParaVenta(id, codigo, omitirConfirmacion =
             return;
         }
         if (!omitirConfirmacion && !confirm(`Cargar ${codigo || "esta cotización"} para cobrar con sus precios cotizados?`)) return;
-        if (!(await vaciarCarrito())) return;
+        if (!(await _vaciarCarrito())) return;
         selectorSucursal.value = cotizacion.sucursal;
         try {
             for (const item of items) {
@@ -572,6 +603,7 @@ export async function recalcularCotizacion(id, codigo) {
 export function initVenta(callbacks) {
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
     initEscanerVenta();
+    document.getElementById("sucursalVenta")?.addEventListener("change", buscarProductoVenta);
 }
 
 // Escaner USB en desktop: captura keydown global, detecta la rafaga rapida del lector
@@ -707,6 +739,10 @@ export function buscarClienteVenta() {
 
 // Agrega producto al carrito por objeto producto (usado por escaner)
 async function agregarPorProducto(prod, sucursal) {
+    return _ejecutarCambioCarrito(() => _agregarPorProducto(prod, sucursal));
+}
+
+async function _agregarPorProducto(prod, sucursal) {
     if (_carritoCotizadoBloqueado()) return;
     const item = { producto: prod.producto, sucursal };
     try {
@@ -903,14 +939,20 @@ function initScannerInput() {
 // (paginado server-side con debounce de 300ms; RLS aplica)
 let _productoSeleccionadoVenta = null;
 let _ventaAcSeq = 0;
+let _ventaAcController = null;
 
-const _ventaAcBuscar = debounce(async function(t, su) {
+const _ventaAcBuscar = debounce(async function(t, su, seq) {
+    if (seq !== _ventaAcSeq) return;
     const l = document.getElementById("listaVenta");
-    const seq = ++_ventaAcSeq;
+    const controller = new AbortController();
+    _ventaAcController = controller;
     try {
-        const { datos } = await listarProductos({ query: t, sucursal: su, limite: 8 });
-        if (seq !== _ventaAcSeq) return;
+        const datos = await buscarSugerenciasVenta({ query: t, sucursal: su, signal: controller.signal });
+        if (seq !== _ventaAcSeq || controller.signal.aborted ||
+            document.getElementById("sucursalVenta").value !== su ||
+            normBusqueda(document.getElementById("productoVenta").value) !== t) return;
         construirAC(l, datos, p => {
+            if (seq !== _ventaAcSeq || document.getElementById("sucursalVenta").value !== su) return;
             _productoSeleccionadoVenta = p;
             document.getElementById("productoVenta").value = p.producto;
             const info = document.getElementById("infoProductoVenta");
@@ -921,6 +963,9 @@ const _ventaAcBuscar = debounce(async function(t, su) {
 }, 300);
 
 export function buscarProductoVenta() {
+    const seq = ++_ventaAcSeq;
+    _ventaAcController?.abort();
+    _productoSeleccionadoVenta = null;
     const su = document.getElementById("sucursalVenta").value;
     const t = normBusqueda(document.getElementById("productoVenta").value)
       , l = document.getElementById("listaVenta")
@@ -934,11 +979,16 @@ export function buscarProductoVenta() {
         l.classList.remove("show");
         return
     }
-    _ventaAcBuscar(t, su)
+    l.classList.remove("show");
+    _ventaAcBuscar(t, su, seq)
 }
 
 // Agrega un producto al carrito de venta con validaciones de stock
 export async function agregarCarrito() {
+    return _ejecutarCambioCarrito(() => _agregarCarrito());
+}
+
+async function _agregarCarrito() {
     if (_carritoCotizadoBloqueado()) return;
     const pr = document.getElementById("productoVenta").value.trim()
       , ca = Number(document.getElementById("cantidadVenta").value)
@@ -952,7 +1002,7 @@ export async function agregarCarrito() {
         return
     }
     let p = null;
-    if (_productoSeleccionadoVenta && _productoSeleccionadoVenta.producto === pr) {
+    if (_productoSeleccionadoVenta && _productoSeleccionadoVenta.producto === pr && _productoSeleccionadoVenta.sucursal === su) {
         p = _productoSeleccionadoVenta;
     } else {
         try { p = await buscarProductoPorNombre(pr, su); } catch (_) {}
@@ -1003,14 +1053,14 @@ export async function agregarCarrito() {
             export function renderCarrito() {
                 const tb = document.getElementById("carritoBody")
                   , minis = document.getElementById("carritoMiniaturas");
-                tb.innerHTML = "";
+                const filas = [];
                 minis.innerHTML = "";
     const carrito = store.carrito;
     carrito.forEach( (it, i) => {
         const precioOK = _precioValido(it);
         const precioCelda = precioOK ? formatearBs(it.precio) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
         const totalCelda = precioOK ? formatearBs(it.total) : '<span style="color:var(--red);font-weight:700">⚠ sin precio</span>';
-        tb.innerHTML += `<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>${precioCelda}</td><td>${totalCelda}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`;
+        filas.push(`<tr><td class="col-prod">${it.producto}</td><td><div class="qty-cell"><button class="btn-plus" data-accion="sumar" data-index="${i}" title="Aumentar cantidad">+</button><span>${it.cantidad}</span></div></td><td>${precioCelda}</td><td>${totalCelda}</td><td><button class="btn-del" data-accion="eliminar" data-index="${i}">✕</button></td></tr>`);
         if (it.imagen) {
             const mini = document.createElement("div");
             mini.className = "miniatura";
@@ -1023,6 +1073,7 @@ export async function agregarCarrito() {
             minis.appendChild(mini)
         }
     });
+    tb.innerHTML = filas.join("");
     // Vincular eventos a los botones de eliminar generados dinamicamente
     tb.querySelectorAll('[data-accion="eliminar"]').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1171,8 +1222,12 @@ export function seleccionarCorteEfectivo(selector) {
     actualizarCambioVenta();
 }
 
-// Elimina un item del carrito con animacion swipe y toast de deshacer
+// Elimina un item del carrito con confirmación de reserva y opción de deshacer
                   export async function eliminarItem(i) {
+    return _ejecutarCambioCarrito(() => _eliminarItem(i));
+}
+
+async function _eliminarItem(i) {
                   if (_carritoCotizadoBloqueado()) return;
                   const carrito = [...store.carrito];
     const item = carrito[i];
@@ -1193,55 +1248,50 @@ export function seleccionarCorteEfectivo(selector) {
     const itemEliminado = { ...carrito[i] };
     const indexEliminado = i;
 
-    // Animacion swipe
-    const filas = document.querySelectorAll("#carritoBody tr");
-    if (filas[i]) {
-        filas[i].classList.add("swipe-out");
-        setTimeout(() => {
-            const c = [...store.carrito];
-            c.splice(indexEliminado, 1);
-            setCarrito(c);
-            renderCarrito();
-        }, 200);
-    } else {
-        carrito.splice(i, 1);
-        setCarrito(carrito);
-        renderCarrito();
-    }
+    carrito.splice(i, 1);
+    setCarrito(carrito);
+    renderCarrito();
+    const carritoEliminadoId = _carritoId;
+    let deshecho = false;
 
     mostrarToast(
         `🗑️ "${itemEliminado.producto}" eliminado`,
         "Deshacer",
-        async () => {
+        () => _ejecutarCambioCarrito(async () => {
+            if (deshecho || _carritoCotizadoBloqueado() || _carritoId !== carritoEliminadoId) return;
             try {
                 await _ajustarReserva(itemEliminado, 1);
+                deshecho = true;
             } catch (error) {
                 mostrarMsg(_mensajeReserva(error.message), "err");
                 return;
             }
             const c = [...store.carrito];
-            c.splice(indexEliminado, 0, itemEliminado);
+            const existente = c.find(it => it.producto === itemEliminado.producto && it.sucursal === itemEliminado.sucursal);
+            if (existente) {
+                existente.cantidad += 1;
+                existente.total = existente.precio * existente.cantidad;
+            } else {
+                c.splice(indexEliminado, 0, itemEliminado);
+            }
             setCarrito(c);
             renderCarrito();
             mostrarMsg("↩ Producto restaurado al carrito", "ok");
-        }
+        })
     );
                 }
 
 // Aumenta la cantidad de un item del carrito en 1 (con validacion de stock)
             async function incrementarCantidad(i) {
+    return _ejecutarCambioCarrito(() => _incrementarCantidad(i));
+}
+
+async function _incrementarCantidad(i) {
                 if (_carritoCotizadoBloqueado()) return;
                 const carrito = [...store.carrito]
                   , item = carrito[i];
                 if (!item) return;
-                const su = sucursalVentaActual()
-                  , nueva = item.cantidad + 1;
-                let p = null;
-                try { p = await buscarProductoPorNombre(item.producto, su); } catch (_) {}
-                if (p && p.stock < nueva) {
-                    mostrarMsg("Stock insuficiente (disponible: " + p.stock + ")", "err");
-                    return;
-                }
+                const nueva = item.cantidad + 1;
                 try {
                     await _ajustarReserva(item, 1);
                 } catch (error) {
@@ -1258,6 +1308,10 @@ export function seleccionarCorteEfectivo(selector) {
 // Procesa la venta POS. El backend calcula importes y protege reintentos.
 export async function cobrar() {
     if (_cobroEnCurso) return;
+    if (_cambioCarritoEnCurso) {
+        mostrarMsg("Espera a que termine la reserva del carrito", "err");
+        return;
+    }
     if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }
     if (!store.carrito.length) { mostrarMsg("El carrito está vacío", "err"); return; }
     const sinPrecio = store.carrito.filter(it => !_precioValido(it));
@@ -1302,7 +1356,7 @@ export async function cobrar() {
     try {
         const items = store.carrito.map(i => ({ producto: i.producto, cantidad: i.cantidad }));
         const key = _nuevaClaveIdempotencia();
-        const data = await api({
+        const data = await enviarCobroSeguro({
             ACCION: "VENTA_POS", CARRITO: JSON.stringify(items), SUCURSAL: sucursal,
             METODO_PAGO: metodoPago, CLIENTE_ID: clienteId, FECHA_VENCIMIENTO: fechaVencimiento,
             MONTO_EFECTIVO: metodoPago === "MIXTO" ? mEfMixto : undefined,
@@ -1312,7 +1366,7 @@ export async function cobrar() {
             DESCUENTO_MOTIVO: document.getElementById("motivoDescuentoVenta")?.value.trim() || undefined,
             IDEMPOTENCY_KEY: key, CARRITO_ID: _idCarrito(),
             COTIZACION_ID: _cotizacionEnVenta?.id, TOKEN: store.sessionToken
-        });
+        }, store.sessionUser, api);
         if (!manejarRespuesta(data)) return;
         if (!data.ok) { mostrarMsg("Error: " + (data.error || "No se pudo registrar la venta"), "err"); return; }
 
@@ -1345,8 +1399,8 @@ export async function cobrar() {
         listarComprobantes();
         if (_verificarEstadoCaja) _verificarEstadoCaja();
         document.getElementById(document.body.classList.contains("desktop") ? "escanerVenta" : "productoVenta")?.focus();
-    } catch (_) {
-        mostrarMsg("Error de conexión", "err");
+    } catch (error) {
+        mostrarMsg(error.message || "No se recibió confirmación. Pulsa Cobrar de nuevo sin cambiar la venta.", "err");
     } finally {
         loader.style.display = "none";
         btn.disabled = false;
@@ -1359,6 +1413,10 @@ export async function cobrar() {
 // Crea una cotización sin registrar un cobro ni descontar inventario.
 export async function cotizar() {
     if (_cobroEnCurso) return;
+    if (_cambioCarritoEnCurso) {
+        mostrarMsg("Espera a que termine la reserva del carrito", "err");
+        return;
+    }
     if (_cotizacionEnVenta) { mostrarMsg("Esta cotización ya está lista para cobrar. Recalcula sus precios antes de crear otra.", "err"); return; }
     if (!can("cotizaciones.crear")) { mostrarMsg("No tienes permiso para crear cotizaciones", "err"); return; }
     if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return; }

@@ -125,33 +125,53 @@ function resolverBaseUrl(accion) {
     return RUTAS[accion] || BASE_URL_ERUDITOS;
 }
 
-async function api(params) {
-    const tokenAntesDeRefrescar = store.sessionToken;
+let _renovacion = null;
+
+export async function renovarSesionSiNecesario() {
+    const token = store.sessionToken;
+    const refreshToken = store.sessionRefreshToken;
     const ahora = Math.floor(Date.now() / 1000);
-    if (store.sessionRefreshToken && store.sessionExpiresAt && (store.sessionExpiresAt - ahora) < 180) {
+    if (!token || !refreshToken || !store.sessionExpiresAt || store.sessionExpiresAt - ahora >= 180) return;
+    if (_renovacion?.token === token && _renovacion.refreshToken === refreshToken) return _renovacion.promise;
+    const pendiente = { token, refreshToken, promise: null };
+    pendiente.promise = (async () => {
         try {
             const r = await fetch(resolverBaseUrl("REFRESH_TOKEN"), {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-                },
-                body: JSON.stringify({
-                    ACCION: "REFRESH_TOKEN",
-                    REFRESH_TOKEN: store.sessionRefreshToken
-                })
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_ANON_KEY },
+                body: JSON.stringify({ ACCION: "REFRESH_TOKEN", REFRESH_TOKEN: refreshToken })
             });
             const rd = await r.json();
-            if (rd.ok) {
+            if (r.ok && rd.ok && rd.token && rd.refreshToken &&
+                store.sessionToken === token && store.sessionRefreshToken === refreshToken) {
                 setSession(rd.token, rd.usuario, rd.rol, rd.sucursal, rd);
                 setTokens(rd.refreshToken, rd.expiresAt);
             }
-        } catch (_) {}
+        } catch (_) {
+            // Conserva el comportamiento actual ante un fallo transitorio de red.
+        } finally {
+            if (_renovacion === pendiente) _renovacion = null;
+        }
+    })();
+    _renovacion = pendiente;
+    return pendiente.promise;
+}
+
+async function api(params) {
+    const tokenAntesDeRefrescar = store.sessionToken;
+    const usuarioAntes = store.sessionUser;
+    const publica = params.ACCION === "LOGIN" || params.ACCION === "REFRESH_TOKEN";
+    if (!publica && params.ACCION !== "LOGOUT") {
+        await renovarSesionSiNecesario();
+        if (tokenAntesDeRefrescar && (!store.sessionToken || store.sessionUser !== usuarioAntes)) {
+            return { ok: false, error: "NO_AUTORIZADO" };
+        }
     }
     const body = Object.fromEntries(Object.entries(params).filter( ([_,v]) => v !== undefined && v !== null && v !== ""));
     const tokenSolicitud = params.TOKEN && params.TOKEN !== tokenAntesDeRefrescar
         ? params.TOKEN
         : (store.sessionToken || params.TOKEN);
+    if (body.TOKEN) body.TOKEN = tokenSolicitud;
     const res = await fetch(resolverBaseUrl(params.ACCION), {
         method: "POST",
         headers: {

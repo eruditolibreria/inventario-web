@@ -5,16 +5,23 @@
  * (auth_rol / auth_sucursal en la base de datos).
  *
  * El token de sesion viene de store.sessionToken (JWT de Supabase Auth).
- * Se sincroniza de forma perezosa antes de cada consulta o suscripcion.
+ * Cada solicitud espera la renovación compartida y usa el token vigente.
  */
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { store } from './store.js';
+import { renovarSesionSiNecesario } from './api.js';
 
 const _sb = window.supabase;
 if (!_sb || !_sb.createClient) throw new Error("supabase-js no esta cargado");
 
 const client = _sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    accessToken: async () => {
+        const usuario = store.sessionUser;
+        await renovarSesionSiNecesario();
+        if (store.sessionUser !== usuario) throw new Error("SESION_CAMBIADA");
+        return store.sessionToken || null;
+    },
     auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -22,25 +29,13 @@ const client = _sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
 });
 
-let _lastToken = null;
-
-function _ensureAuth() {
-    const t = store.sessionToken;
-    if (t && t !== _lastToken) {
-        client.auth.setSession({ access_token: t, refresh_token: store.sessionRefreshToken || t });
-        _lastToken = t;
-    }
-}
-
 /** Consulta directa a una tabla (RLS aplica automaticamente) */
 export function from(table) {
-    _ensureAuth();
     return client.from(table);
 }
 
 /** Canal Realtime (postgres_changes) */
 export function channel(name) {
-    _ensureAuth();
     return client.channel(name);
 }
 
@@ -71,7 +66,6 @@ function _mapProducto(r) {
  * @returns {Promise<{datos: Array, total: number}>}
  */
 export async function listarProductos({ query = "", sucursal = null, pagina = 0, limite = 20 } = {}) {
-    _ensureAuth();
     const q = query.replace(/[%_]/g, ch => "\\" + ch);
     const desde = pagina * limite;
     const hasta = desde + limite - 1;
@@ -83,9 +77,23 @@ export async function listarProductos({ query = "", sucursal = null, pagina = 0,
     return { datos: (data || []).map(_mapProducto), total: count || 0 };
 }
 
+/** Sugerencias POS: sin conteo ni columnas administrativas. */
+export async function buscarSugerenciasVenta({ query, sucursal, signal }) {
+    const q = query.replace(/[%_]/g, ch => "\\" + ch);
+    let qb = client.from("inventario_autorizado")
+        .select("id,producto,precio_venta,sucursal,stock,imagen")
+        .eq("sucursal", sucursal)
+        .ilike("producto", "%" + q + "%")
+        .order("producto")
+        .limit(8);
+    if (signal) qb = qb.abortSignal(signal);
+    const { data, error } = await qb;
+    if (error) throw error;
+    return (data || []).map(_mapProducto);
+}
+
 /** Lista las categorías únicas visibles en el inventario autorizado. */
 export async function listarCategoriasInventario() {
-    _ensureAuth();
     const categorias = new Map();
     const limite = 1000;
     let desde = 0;
@@ -114,7 +122,6 @@ export async function listarCategoriasInventario() {
 
 /** Busca un producto exacto por nombre (y sucursal opcional) */
 export async function buscarProductoPorNombre(producto, sucursal) {
-    _ensureAuth();
     let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS).eq("producto", producto);
     if (sucursal) qb = qb.eq("sucursal", sucursal);
     const { data, error } = await qb.limit(1);
@@ -124,7 +131,6 @@ export async function buscarProductoPorNombre(producto, sucursal) {
 
 /** Busca un producto por codigo de barras (case-insensitive) */
 export async function buscarProductoPorCodigo(codigo, sucursal) {
-    _ensureAuth();
     let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS).ilike("codigo_barras", codigo);
     if (sucursal) qb = qb.eq("sucursal", sucursal);
     const { data, error } = await qb.limit(1);
@@ -134,7 +140,6 @@ export async function buscarProductoPorCodigo(codigo, sucursal) {
 
 /** Devuelve los datos de la ultima compra registrada del producto (misma sucursal) */
 export async function ultimaCompraProducto(producto, sucursal) {
-    _ensureAuth();
     let qb = client.from("compras")
         .select("costo_paquete,cant_paquete,unid_paquete,proveedor")
         .eq("producto", producto)
@@ -148,7 +153,6 @@ export async function ultimaCompraProducto(producto, sucursal) {
 
 /** Registra un ajuste de stock mediante la operación transaccional del servidor. */
 export async function ajustarInventario({ inventarioId, tipo, cantidad, motivo, observacion, idempotencyKey }) {
-    _ensureAuth();
     const { data, error } = await client.rpc("ajustar_inventario", {
         p_inventario_id: inventarioId,
         p_tipo: tipo,
@@ -163,7 +167,6 @@ export async function ajustarInventario({ inventarioId, tipo, cantidad, motivo, 
 
 /** Consulta el kardex permitido para un producto, más reciente primero. */
 export async function listarMovimientosInventario(inventarioId, limite = 30) {
-    _ensureAuth();
     const { data, error } = await client
         .from("movimientos_inventario_autorizados")
         .select("id,tipo,cantidad,stock_anterior,stock_nuevo,motivo,observacion,usuario,creado_en")
