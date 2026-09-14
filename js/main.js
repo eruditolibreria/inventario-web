@@ -35,11 +35,12 @@ import { initNavegacion, setModo, aplicarRol, actualizarIndicador,
 import { initInventario, iniciarIntervalos,
          detenerIntervalos, construirAC, ejecutarBusquedaDetalle as busquedaDetalleInv }
   from './inventario.js';
+import { cargarSucursalesEnDropdowns } from './sucursales.js';
 
 // Modos
 import { initVenta, buscarProductoVenta, agregarCarrito, cobrar,
          renderCarrito as renderCarritoVenta, eliminarItem,
-         toggleClienteVenta, cargarClientes, buscarClienteVenta,
+         toggleClienteVenta, buscarClienteVenta,
          limpiarCarritoDraft, abrirEscanerVenta, cerrarEscanerVenta,
          revisarOrdenEscaner, restaurarReservasCarrito, vaciarCarrito }
   from './modos/venta.js';
@@ -49,8 +50,6 @@ import { verificarEstadoCaja, abrirCaja, registrarAporteRetiro,
 import { initArqueo, cargarArqueo, iniciarArqueo, cerrarArqueo,
          listarArqueos, verDetalleArqueo, cerrarDetalleArqueo }
   from './modos/arqueo.js';
-import { initAuditoria, cargarAuditoria, cambiarPaginaAuditoria, verDetalleAuditoria, cerrarDetalleAuditoria }
-  from './modos/auditoria.js';
 import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra, abrirEscanerCompra,
          cargarProveedoresCompra, abrirProveedores, cerrarProveedores, abrirFormularioProveedor, guardarProveedor }
   from './modos/compra.js';
@@ -80,39 +79,98 @@ import { initTransferencias, buscarProductoTransf, actualizarInfoTransf,
          registrarTransferencia, listarTransferencias, cambiarPaginaTransf,
          abrirEscanerTransferencia }
   from './modos/transferencias.js';
-import { initReportes, _formatearBs as frmBs, obtenerFiltrosReporte,
-         renderTablaReporte, cargarMasVendidos, cargarMenosVendidos,
-         setReporteStock, setReporteFinanciero, cargarStockAlertas,
-         cargarRotacionInventario, cargarValorizacionInventario,
-         cargarHistorialMovimientos, cambiarPaginaMov,
-         cargarVentasPeriodo, cargarUtilidadBruta,
-         cargarFlujoCajaReporte, cargarArqueosReporte, cargarCuentasCobrarReporte,
-         imprimirReporte, imprimirReporteAlertas, imprimirReporteRotacion,
-         imprimirReporteValorizacion, imprimirReporteMovimientos,
-         imprimirReporteVentas, imprimirReporteUtilidad,
-         imprimirReporteFlujo, imprimirReporteCobrar,
-         imprimirReporteMasVendidos, imprimirReporteMenosVendidos }
-  from './modos/reportes.js';
-import { initComprobantes, imprimirComprobante, listarComprobantes,
+import { imprimirComprobante, listarComprobantes,
          buscarComprobante, imprimirComprobanteGuardado,
          cambiarAnchoComprobante, cambiarPaginaComp, cambiarSucursalComprobante, toggleHistorialComprobantes,
          cerrarVistaPreviaComprobante, imprimirVistaPreviaComprobante,
          compartirVistaPreviaComprobante, imprimirCotizacion, imprimirCotizacionGuardada }
   from './modos/comprobantes.js';
-import { initAdmin, buscarProductoDetalle, ejecutarBusquedaDetalle,
-         cargarInventarioAdmin, cargarUsuarios,
-         crearUsuario, confirmarCambioRol, toggleEstadoUsuario,
-         initAdminMode, abrirEditarProducto, cerrarEditarProducto,
-         guardarEdicionProducto, abrirAjusteInventario, cerrarAjusteInventario,
-         confirmarAjusteInventario, abrirHistorialInventario, cerrarHistorialInventario,
-         abrirZoomImagen, cerrarZoomImagen,
-         crearSucursal, cargarSucursalesEnDropdowns,
-         abrirDetalleSucursal, cerrarDetalleSucursal, editarSucursal, guardarSucursal,
-         abrirCambiarSucursal, cerrarCambiarSucursal, confirmarCambiarSucursal,
-         abrirEscanerInventarioEdit, cambiarPaginaInv, filtrarInventario }
-  from './modos/admin.js';
 import { detenerEscanerCamara } from './escaner.js';
 import { initRealtime } from './realtime.js';
+
+// Módulos que no deben retrasar la primera pantalla de venta.
+let adminModuloPromise = null;
+let reportesModuloPromise = null;
+let auditoriaModuloPromise = null;
+let adminInicializado = false;
+let reportesInicializado = false;
+let auditoriaInicializada = false;
+
+function precargarAdmin() {
+    if (!adminModuloPromise) {
+        adminModuloPromise = import('./modos/admin.js').catch(error => {
+            adminModuloPromise = null;
+            throw error;
+        });
+    }
+    return adminModuloPromise;
+}
+
+async function obtenerAdmin() {
+    const modulo = await precargarAdmin();
+    if (!adminInicializado) {
+        modulo.initAdmin({ verificarEstadoCaja });
+        modulo.initAdminMode();
+        adminInicializado = true;
+    }
+    return modulo;
+}
+
+function ejecutarAdmin(nombre) {
+    return async (...args) => (await obtenerAdmin())[nombre](...args);
+}
+
+function precargarReportes() {
+    if (!reportesModuloPromise) {
+        reportesModuloPromise = import('./modos/reportes.js').catch(error => {
+            reportesModuloPromise = null;
+            throw error;
+        });
+    }
+    return reportesModuloPromise;
+}
+
+async function obtenerReportes() {
+    const modulo = await precargarReportes();
+    if (!reportesInicializado) {
+        modulo.initReportes();
+        reportesInicializado = true;
+    }
+    return modulo;
+}
+
+function ejecutarReportes(nombre) {
+    return async (...args) => (await obtenerReportes())[nombre](...args);
+}
+
+function precargarAuditoria() {
+    if (!auditoriaModuloPromise) {
+        auditoriaModuloPromise = import('./modos/auditoria.js').catch(error => {
+            auditoriaModuloPromise = null;
+            throw error;
+        });
+    }
+    return auditoriaModuloPromise;
+}
+
+async function obtenerAuditoria() {
+    const modulo = await precargarAuditoria();
+    if (!auditoriaInicializada) {
+        modulo.initAuditoria();
+        auditoriaInicializada = true;
+    }
+    return modulo;
+}
+
+function ejecutarAuditoria(nombre) {
+    return async (...args) => (await obtenerAuditoria())[nombre](...args);
+}
+
+function precargarModo(modo) {
+    if (modo === "REPORTES") void precargarReportes();
+    if (modo === "AUDITORIA") void precargarAuditoria();
+    if (modo === "INVENTARIO" || modo === "USUARIOS") void precargarAdmin();
+}
 
 // ═══════════════════════════════════════════════════════════════
 // RESTAURAR SESIÓN DESDE localStorage
@@ -252,10 +310,10 @@ async function inicializarApp() {
     window.cerrarSesion = cerrarSesion;
     window.loginSubmit = loginSubmit;
     window.verificarEstadoCaja = verificarEstadoCaja;
-    window.cargarUsuarios = cargarUsuarios;
-    window.cargarInventarioAdmin = cargarInventarioAdmin;
-    window.cambiarPaginaInv = cambiarPaginaInv;
-    window.filtrarInventario = filtrarInventario;
+    window.cargarUsuarios = ejecutarAdmin("cargarUsuarios");
+    window.cargarInventarioAdmin = ejecutarAdmin("cargarInventarioAdmin");
+    window.cambiarPaginaInv = ejecutarAdmin("cambiarPaginaInv");
+    window.filtrarInventario = ejecutarAdmin("filtrarInventario");
     window.cargarResumenServicios = cargarResumenServicios;
     window.buscarProductoVenta = buscarProductoVenta;
     window.agregarCarrito = agregarCarrito;
@@ -285,10 +343,10 @@ async function inicializarApp() {
     window.listarArqueos = listarArqueos;
     window.verDetalleArqueo = verDetalleArqueo;
     window.cerrarDetalleArqueo = cerrarDetalleArqueo;
-    window.cargarAuditoria = cargarAuditoria;
-    window.cambiarPaginaAuditoria = cambiarPaginaAuditoria;
-    window.verDetalleAuditoria = verDetalleAuditoria;
-    window.cerrarDetalleAuditoria = cerrarDetalleAuditoria;
+    window.cargarAuditoria = ejecutarAuditoria("cargarAuditoria");
+    window.cambiarPaginaAuditoria = ejecutarAuditoria("cambiarPaginaAuditoria");
+    window.verDetalleAuditoria = ejecutarAuditoria("verDetalleAuditoria");
+    window.cerrarDetalleAuditoria = ejecutarAuditoria("cerrarDetalleAuditoria");
     window.listarCuentasCobrar = listarCuentasCobrar;
     window.abrirFormAbonoCobrar = abrirFormAbonoCobrar;
     window.cancelarAbonoCobrar = cancelarAbonoCobrar;
@@ -321,30 +379,30 @@ async function inicializarApp() {
     window.listarTransferencias = listarTransferencias;
     window.cambiarPaginaTransf = cambiarPaginaTransf;
     window.abrirEscanerTransferencia = abrirEscanerTransferencia;
-    window.cargarMasVendidos = cargarMasVendidos;
-    window.cargarMenosVendidos = cargarMenosVendidos;
-    window.setReporteStock = setReporteStock;
-    window.setReporteFinanciero = setReporteFinanciero;
-    window.cargarStockAlertas = cargarStockAlertas;
-    window.cargarRotacionInventario = cargarRotacionInventario;
-    window.cargarValorizacionInventario = cargarValorizacionInventario;
-    window.cargarHistorialMovimientos = cargarHistorialMovimientos;
-    window.cambiarPaginaMov = cambiarPaginaMov;
-    window.cargarVentasPeriodo = cargarVentasPeriodo;
-    window.cargarUtilidadBruta = cargarUtilidadBruta;
-    window.cargarFlujoCajaReporte = cargarFlujoCajaReporte;
-    window.cargarArqueosReporte = cargarArqueosReporte;
-    window.cargarCuentasCobrarReporte = cargarCuentasCobrarReporte;
-    window.imprimirReporteMasVendidos = imprimirReporteMasVendidos;
-    window.imprimirReporteMenosVendidos = imprimirReporteMenosVendidos;
-    window.imprimirReporteAlertas = imprimirReporteAlertas;
-    window.imprimirReporteRotacion = imprimirReporteRotacion;
-    window.imprimirReporteValorizacion = imprimirReporteValorizacion;
-    window.imprimirReporteMovimientos = imprimirReporteMovimientos;
-    window.imprimirReporteVentas = imprimirReporteVentas;
-    window.imprimirReporteUtilidad = imprimirReporteUtilidad;
-    window.imprimirReporteFlujo = imprimirReporteFlujo;
-    window.imprimirReporteCobrar = imprimirReporteCobrar;
+    window.cargarMasVendidos = ejecutarReportes("cargarMasVendidos");
+    window.cargarMenosVendidos = ejecutarReportes("cargarMenosVendidos");
+    window.setReporteStock = ejecutarReportes("setReporteStock");
+    window.setReporteFinanciero = ejecutarReportes("setReporteFinanciero");
+    window.cargarStockAlertas = ejecutarReportes("cargarStockAlertas");
+    window.cargarRotacionInventario = ejecutarReportes("cargarRotacionInventario");
+    window.cargarValorizacionInventario = ejecutarReportes("cargarValorizacionInventario");
+    window.cargarHistorialMovimientos = ejecutarReportes("cargarHistorialMovimientos");
+    window.cambiarPaginaMov = ejecutarReportes("cambiarPaginaMov");
+    window.cargarVentasPeriodo = ejecutarReportes("cargarVentasPeriodo");
+    window.cargarUtilidadBruta = ejecutarReportes("cargarUtilidadBruta");
+    window.cargarFlujoCajaReporte = ejecutarReportes("cargarFlujoCajaReporte");
+    window.cargarArqueosReporte = ejecutarReportes("cargarArqueosReporte");
+    window.cargarCuentasCobrarReporte = ejecutarReportes("cargarCuentasCobrarReporte");
+    window.imprimirReporteMasVendidos = ejecutarReportes("imprimirReporteMasVendidos");
+    window.imprimirReporteMenosVendidos = ejecutarReportes("imprimirReporteMenosVendidos");
+    window.imprimirReporteAlertas = ejecutarReportes("imprimirReporteAlertas");
+    window.imprimirReporteRotacion = ejecutarReportes("imprimirReporteRotacion");
+    window.imprimirReporteValorizacion = ejecutarReportes("imprimirReporteValorizacion");
+    window.imprimirReporteMovimientos = ejecutarReportes("imprimirReporteMovimientos");
+    window.imprimirReporteVentas = ejecutarReportes("imprimirReporteVentas");
+    window.imprimirReporteUtilidad = ejecutarReportes("imprimirReporteUtilidad");
+    window.imprimirReporteFlujo = ejecutarReportes("imprimirReporteFlujo");
+    window.imprimirReporteCobrar = ejecutarReportes("imprimirReporteCobrar");
     window.imprimirComprobante = imprimirComprobante;
     window.imprimirCotizacion = imprimirCotizacion;
     window.imprimirCotizacionGuardada = imprimirCotizacionGuardada;
@@ -358,36 +416,36 @@ async function inicializarApp() {
     window.cerrarVistaPreviaComprobante = cerrarVistaPreviaComprobante;
     window.imprimirVistaPreviaComprobante = imprimirVistaPreviaComprobante;
     window.compartirVistaPreviaComprobante = compartirVistaPreviaComprobante;
-    window.buscarProductoDetalle = buscarProductoDetalle;
-    window.ejecutarBusquedaDetalle = ejecutarBusquedaDetalle;
-    window.crearUsuario = crearUsuario;
-    window.crearSucursal = crearSucursal;
-    window.abrirDetalleSucursal = abrirDetalleSucursal;
-    window.cerrarDetalleSucursal = cerrarDetalleSucursal;
-    window.editarSucursal = editarSucursal;
-    window.guardarSucursal = guardarSucursal;
+    window.buscarProductoDetalle = ejecutarAdmin("buscarProductoDetalle");
+    window.ejecutarBusquedaDetalle = ejecutarAdmin("ejecutarBusquedaDetalle");
+    window.crearUsuario = ejecutarAdmin("crearUsuario");
+    window.crearSucursal = ejecutarAdmin("crearSucursal");
+    window.abrirDetalleSucursal = ejecutarAdmin("abrirDetalleSucursal");
+    window.cerrarDetalleSucursal = ejecutarAdmin("cerrarDetalleSucursal");
+    window.editarSucursal = ejecutarAdmin("editarSucursal");
+    window.guardarSucursal = ejecutarAdmin("guardarSucursal");
     window.abrirEscanerVenta = abrirEscanerVenta;
     window.cerrarEscanerVenta = cerrarEscanerVenta;
     window.revisarOrdenEscaner = revisarOrdenEscaner;
     window.abrirEscanerDevol = abrirEscanerDevol;
     window.abrirEscanerCompra = abrirEscanerCompra;
     window.detenerEscanerCamara = detenerEscanerCamara;
-    window.abrirCambiarSucursal = abrirCambiarSucursal;
-    window.cerrarCambiarSucursal = cerrarCambiarSucursal;
-    window.confirmarCambiarSucursal = confirmarCambiarSucursal;
-    window.abrirEscanerInventarioEdit = abrirEscanerInventarioEdit;
-    window.confirmarCambioRol = confirmarCambioRol;
-    window.toggleEstadoUsuario = toggleEstadoUsuario;
-    window.abrirEditarProducto = abrirEditarProducto;
-    window.cerrarEditarProducto = cerrarEditarProducto;
-    window.guardarEdicionProducto = guardarEdicionProducto;
-    window.abrirAjusteInventario = abrirAjusteInventario;
-    window.cerrarAjusteInventario = cerrarAjusteInventario;
-    window.confirmarAjusteInventario = confirmarAjusteInventario;
-    window.abrirHistorialInventario = abrirHistorialInventario;
-    window.cerrarHistorialInventario = cerrarHistorialInventario;
-    window.abrirZoomImagen = abrirZoomImagen;
-    window.cerrarZoomImagen = cerrarZoomImagen;
+    window.abrirCambiarSucursal = ejecutarAdmin("abrirCambiarSucursal");
+    window.cerrarCambiarSucursal = ejecutarAdmin("cerrarCambiarSucursal");
+    window.confirmarCambiarSucursal = ejecutarAdmin("confirmarCambiarSucursal");
+    window.abrirEscanerInventarioEdit = ejecutarAdmin("abrirEscanerInventarioEdit");
+    window.confirmarCambioRol = ejecutarAdmin("confirmarCambioRol");
+    window.toggleEstadoUsuario = ejecutarAdmin("toggleEstadoUsuario");
+    window.abrirEditarProducto = ejecutarAdmin("abrirEditarProducto");
+    window.cerrarEditarProducto = ejecutarAdmin("cerrarEditarProducto");
+    window.guardarEdicionProducto = ejecutarAdmin("guardarEdicionProducto");
+    window.abrirAjusteInventario = ejecutarAdmin("abrirAjusteInventario");
+    window.cerrarAjusteInventario = ejecutarAdmin("cerrarAjusteInventario");
+    window.confirmarAjusteInventario = ejecutarAdmin("confirmarAjusteInventario");
+    window.abrirHistorialInventario = ejecutarAdmin("abrirHistorialInventario");
+    window.cerrarHistorialInventario = ejecutarAdmin("cerrarHistorialInventario");
+    window.abrirZoomImagen = ejecutarAdmin("abrirZoomImagen");
+    window.cerrarZoomImagen = ejecutarAdmin("cerrarZoomImagen");
     window.confirmarEliminar = confirmarEliminar;
     window.abrirModalImagen = abrirModalImagen;
     window.cerrarModalImagen = cerrarModalImagen;
@@ -410,11 +468,6 @@ async function inicializarApp() {
         aplicarRol,
         verificarEstadoCaja,
         toggleClienteVenta,
-        cargarClientes,
-        cargarProveedoresCompra,
-        cargarComprobantes: initComprobantes,
-        toggleClienteCompra,
-        toggleAcreedorGasto,
         restaurarCarritoDraft,
         vaciarCarrito,
         limpiarCarritoDraft,
@@ -424,24 +477,30 @@ async function inicializarApp() {
     // Inyectar dependencias en navegacion
     initNavegacion({
         verificarEstadoCaja,
-        cargarUsuarios,
+        cargarUsuarios: ejecutarAdmin("cargarUsuarios"),
         cargarResumenServicios,
-        setReporteStock,
-        setReporteFinanciero,
+        setReporteStock: ejecutarReportes("setReporteStock"),
+        setReporteFinanciero: ejecutarReportes("setReporteFinanciero"),
         cargarClientesModulo,
         listarCuentasCobrar,
         cargarArqueo,
-        cargarAuditoria,
+        cargarAuditoria: ejecutarAuditoria("cargarAuditoria"),
+        precargarModo,
+        prepararCompra: function() {
+            toggleClienteCompra();
+            cargarProveedoresCompra();
+        },
+        prepararGasto: toggleAcreedorGasto,
     });
 
     // Inyectar dependencias en inventario
     initInventario({
-        cargarUsuarios,
+        cargarUsuarios: ejecutarAdmin("cargarUsuarios"),
     });
 
     // Inyectar dependencias en UI
     initUI({
-        cargarInventarioAdmin,
+        cargarInventarioAdmin: ejecutarAdmin("cargarInventarioAdmin"),
     });
 
     // ── 4. Inicializar cada modo ───────────────────────────────
@@ -450,17 +509,13 @@ async function inicializarApp() {
     initCompra({ verificarEstadoCaja: verif });
     initGasto({ verificarEstadoCaja: verif });
     initArqueo({ verificarEstadoCaja: verif });
-    initAuditoria();
     initClientes();
     initCuentasCobrar({ verificarEstadoCaja: verif });
     initCuentasPagar({ verificarEstadoCaja: verif });
     initDevoluciones({ verificarEstadoCaja: verif });
     initTransferencias({ verificarEstadoCaja: verif });
-    initAdmin({ verificarEstadoCaja: verif });
     initLaminas({ verificarEstadoCaja: verif });
     initServicios({ verificarEstadoCaja: verif });
-    initReportes();
-    initAdminMode();
     initLaminasMode();
 
     ["costoCompra", "precioVentaCompra", "inventarioEditPrecioVenta", "devolPrecio", "efectivoRecibidoVenta", "montoEfectivoMixtoVenta", "montoTransferenciaMixtoVenta", "srvMontoEfectivo", "srvMontoTransferencia"]
@@ -534,8 +589,6 @@ async function inicializarApp() {
 
         // Aplicar rol y cargar datos iniciales
         aplicarRol(rol);
-        cargarClientes();
-        initComprobantes();
         toggleClienteVenta();
         verificarEstadoCaja();
         cargarSucursalesEnDropdowns();

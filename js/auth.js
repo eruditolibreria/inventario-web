@@ -11,14 +11,11 @@
  *
  * Dependencias inyectadas via initAuth() (modulos futuros):
  *   - aplicarRol(rol)
- *   - cargarInventario()
  *   - verificarEstadoCaja()
  *   - restaurarCarritoDraft(draft)
  *   - vaciarCarrito()
  *   - limpiarCarritoDraft()
  *   - toggleClienteVenta()
- *   - toggleClienteCompra()
- *   - toggleAcreedorGasto()
  *
  * Uso:
  *   import { initAuth, loginSubmit, cerrarSesion } from './auth.js';
@@ -29,7 +26,7 @@ import { CARRITO_KEY, claveCarritoDraft } from './config.js';
 import { store, setSession, setTokens, clearSession, clearCarrito } from './store.js';
 import { api } from './api.js';
 import { hoy, mostrarToast } from './utils.js';
-import { cargarSucursalesEnDropdowns } from './modos/admin.js';
+import { cargarSucursalesEnDropdowns } from './sucursales.js';
 
 const BLOQUEO_KEY = "eruditos_login_bloqueo";
 let _timerCuentaRegresiva = null;
@@ -76,11 +73,6 @@ let _aplicarRol = null;
 let _initRealtime = null;
 let _verificarEstadoCaja = null;
 let _toggleClienteVenta = null;
-let _cargarClientes = null;
-let _cargarProveedoresCompra = null;
-let _cargarComprobantes = null;
-let _toggleClienteCompra = null;
-let _toggleAcreedorGasto = null;
 let _restaurarCarritoDraft = null;
 let _vaciarCarrito = null;
 let _limpiarCarritoDraft = null;
@@ -94,11 +86,6 @@ export function initAuth(callbacks) {
     if (callbacks.initRealtime) _initRealtime = callbacks.initRealtime;
     if (callbacks.verificarEstadoCaja) _verificarEstadoCaja = callbacks.verificarEstadoCaja;
     if (callbacks.toggleClienteVenta) _toggleClienteVenta = callbacks.toggleClienteVenta;
-    if (callbacks.cargarClientes) _cargarClientes = callbacks.cargarClientes;
-    if (callbacks.cargarProveedoresCompra) _cargarProveedoresCompra = callbacks.cargarProveedoresCompra;
-    if (callbacks.cargarComprobantes) _cargarComprobantes = callbacks.cargarComprobantes;
-    if (callbacks.toggleClienteCompra) _toggleClienteCompra = callbacks.toggleClienteCompra;
-    if (callbacks.toggleAcreedorGasto) _toggleAcreedorGasto = callbacks.toggleAcreedorGasto;
     if (callbacks.restaurarCarritoDraft) _restaurarCarritoDraft = callbacks.restaurarCarritoDraft;
     if (callbacks.vaciarCarrito) _vaciarCarrito = callbacks.vaciarCarrito;
     if (callbacks.limpiarCarritoDraft) _limpiarCarritoDraft = callbacks.limpiarCarritoDraft;
@@ -178,11 +165,6 @@ export async function loginSubmit() {
 
             // Callbacks a modulos externos
             if (_toggleClienteVenta) _toggleClienteVenta();
-            if (_cargarClientes) _cargarClientes();
-            if (_cargarProveedoresCompra) _cargarProveedoresCompra();
-            if (_cargarComprobantes) _cargarComprobantes();
-            if (_toggleClienteCompra) _toggleClienteCompra();
-            if (_toggleAcreedorGasto) _toggleAcreedorGasto();
             if (_aplicarRol) _aplicarRol(store.sessionRol);
             if (_initRealtime) _initRealtime();
 

@@ -1,7 +1,5 @@
-// Nombre de caché con versión (cámbialo cada vez que actualices la app)
-const CACHE_NAME = 'eruditos-v78';
-
-// Archivos a cachear (offline)
+// Cambiar la versión al publicar una nueva entrega de recursos estáticos.
+const CACHE_NAME = 'eruditos-v79';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,55 +8,48 @@ const urlsToCache = [
   '/icon512.png'
 ];
 
-// Instalación: guarda los archivos esenciales
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
-  );
-  // Forzar activación inmediata (no esperar a que cierren la app)
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
   self.skipWaiting();
 });
 
-// Activación: elimina cachés viejas
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(cacheNames => Promise.all(
+      cacheNames.filter(cacheName => cacheName !== CACHE_NAME).map(cacheName => caches.delete(cacheName))
+    ))
   );
-  // Tomar control de las paginas abiertas con la nueva version
   self.clients.claim();
 });
 
-// Estrategia: Network First (intenta red primero, luego caché)
+function esRecursoEstatico(request, url) {
+  if (url.origin !== self.location.origin) return false;
+  if (request.mode === 'navigate') return true;
+  return ['script', 'style', 'font', 'image', 'manifest'].includes(request.destination);
+}
+
+async function actualizarCache(request) {
+  const response = await fetch(request);
+  if (response.ok) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Solo cachear si la petición es GET y la respuesta es válida
-        if (response && response.status === 200 && event.request.method === 'GET') {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Si falla la red, devuelve del caché (pero solo para GET)
-        if (event.request.method === 'GET') {
-          return caches.match(event.request);
-        }
-        // Para otros métodos (POST, etc.) simplemente propagamos el error
-        throw new Error('Network error');
-      })
-  );
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (!esRecursoEstatico(request, url)) return;
+
+  // Las páginas se actualizan desde red; los recursos estáticos ya visitados
+  // se entregan desde caché para no retrasar la interfaz ni guardar respuestas API.
+  if (request.mode === 'navigate') {
+    event.respondWith(actualizarCache(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  event.respondWith(caches.match(request).then(cached => cached || actualizarCache(request)));
 });

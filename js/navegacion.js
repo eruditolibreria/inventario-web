@@ -26,7 +26,7 @@ import { TODOS_MODOS, ORDEN_MODOS } from './config.js';
 import { store, setModoActual } from './store.js';
 import { can, modosAutorizados } from './authorization.js';
 import { hoy } from './utils.js';
-import { cargarSucursalesEnDropdowns } from './modos/admin.js';
+import { cargarSucursalesEnDropdowns } from './sucursales.js';
 
 // ── CALLBACKS (inyectados por initNavegacion) ──────────────────
 let _verificarEstadoCaja = null;
@@ -38,6 +38,9 @@ let _cargarClientesModulo = null;
 let _listarCuentasCobrar = null;
 let _cargarArqueo = null;
 let _cargarAuditoria = null;
+let _precargarModo = null;
+let _prepararCompra = null;
+let _prepararGasto = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -53,13 +56,27 @@ export function initNavegacion(callbacks) {
     if (callbacks.listarCuentasCobrar) _listarCuentasCobrar = callbacks.listarCuentasCobrar;
     if (callbacks.cargarArqueo) _cargarArqueo = callbacks.cargarArqueo;
     if (callbacks.cargarAuditoria) _cargarAuditoria = callbacks.cargarAuditoria;
+    if (callbacks.precargarModo) _precargarModo = callbacks.precargarModo;
+    if (callbacks.prepararCompra) _prepararCompra = callbacks.prepararCompra;
+    if (callbacks.prepararGasto) _prepararGasto = callbacks.prepararGasto;
     _bindTabClicks();
+}
+
+function _puedePrecargar() {
+    const conexion = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    return !conexion || (!conexion.saveData && !["slow-2g", "2g"].includes(conexion.effectiveType));
 }
 
 function _bindTabClicks() {
     TODOS_MODOS.forEach(function(modo) {
         var tab = document.getElementById("tab-" + modo);
-        if (tab) tab.addEventListener("click", function() { setModo(modo); });
+        if (!tab) return;
+        tab.addEventListener("click", function() { setModo(modo); });
+        ["pointerenter", "focusin"].forEach(function(evento) {
+            tab.addEventListener(evento, function() {
+                if (store.sessionToken && _precargarModo && _puedePrecargar()) _precargarModo(modo);
+            });
+        });
     });
     _bindSubTabClicks();
 }
@@ -196,6 +213,7 @@ export function setModo(modo, direccion, velocidad) {
 
     setModoActual(modo);
     _guardarModo(modo);
+    if (_precargarModo) _precargarModo(modo);
     var duracion = 300;
     if (velocidad && velocidad > 0 && direccion !== 0) {
         var anchoPanel = document.querySelector('.panel-body')?.offsetWidth || 360;
@@ -246,6 +264,10 @@ export function setModo(modo, direccion, velocidad) {
     /* Acciones al entrar a cada modo */
     if (modo === "CAJA" && store.sessionToken)
         if (_verificarEstadoCaja) _verificarEstadoCaja();
+    if (modo === "COMPRA" && store.sessionToken)
+        if (_prepararCompra) _prepararCompra();
+    if (modo === "GASTO" && store.sessionToken)
+        if (_prepararGasto) _prepararGasto();
     if (modo === "ARQUEO" && store.sessionToken)
         if (_cargarArqueo) _cargarArqueo();
     if (modo === "AUDITORIA" && store.sessionToken)
@@ -270,8 +292,11 @@ export function setModo(modo, direccion, velocidad) {
         setSubModoServicios("COPIAS");
         document.getElementById("srvResumenFecha").value = hoy();
     }
-    if (store.sessionToken) cargarSucursalesEnDropdowns();
-    bloquearSucursalParaNoAdmin();
+    if (store.sessionToken) {
+        void cargarSucursalesEnDropdowns().finally(bloquearSucursalParaNoAdmin);
+    } else {
+        bloquearSucursalParaNoAdmin();
+    }
 }
 
 function bloquearSucursalParaNoAdmin() {

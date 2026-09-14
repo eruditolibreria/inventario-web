@@ -1,5 +1,5 @@
 /* === MODO ADMIN: Detalle, inventario, usuarios === */
-import { store, setSucursalActiva } from '../store.js';
+import { store } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
 import { manejarRespuesta, renderSearchCard, confirmarEliminar,
@@ -9,11 +9,11 @@ import { manejarRespuesta, renderSearchCard, confirmarEliminar,
 import { listarProductos, ajustarInventario, listarMovimientosInventario } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
+import { cargarSucursalesEnDropdowns, invalidarSucursalesCache, obtenerSucursalesCache, nombreSucursal, escaparSucursal } from '../sucursales.js';
 
 let busquedaTimer = null;
 let _detalleSeq = 0;
 let _verif = null;
-let _sucursalesCache = [];
 let _usuariosCache = [];
 let _sucursalDetalleId = null;
 let _rolesCache = [];
@@ -31,55 +31,6 @@ const ROL_LABELS = {
     ALMACEN: "Almacén",
     SOLO_LECTURA: "Solo lectura"
 };
-
-const escaparSucursal = valor => String(valor ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const nombreSucursal = sucursal => sucursal.nombre_visible || sucursal.nombre;
-
-function renderSelectorSucursalActiva(sucursales) {
-    const activas = sucursales.filter(sucursal => sucursal.estado === "ACTIVO");
-    const badge = document.querySelector(".user-badge");
-    if (!badge || activas.length === 0) return;
-    let contenedor = document.getElementById("selectorSucursalActiva");
-    if (!contenedor) {
-        contenedor = document.createElement("div");
-        contenedor.id = "selectorSucursalActiva";
-        contenedor.style.cssText = "min-width:150px;max-width:220px";
-        badge.parentElement.insertBefore(contenedor, badge);
-    }
-    const esAdministrador = store.sessionRol === "ADMIN" || can("usuarios.asignar_roles_criticos");
-    if (esAdministrador) {
-        contenedor.innerHTML = '<span class="selector-sucursal-etiqueta">Sucursales</span><span class="selector-sucursal-todas">TODAS</span>';
-        return;
-    }
-    if (!contenedor.querySelector("select")) {
-        contenedor.innerHTML = '<label for="sucursalActivaGlobal" class="selector-sucursal-etiqueta">Sucursal actual</label><select id="sucursalActivaGlobal" aria-label="Sucursal actual"></select>';
-        if (!contenedor.dataset.detieneCierreSesion) {
-            contenedor.addEventListener("click", evento => evento.stopPropagation());
-            contenedor.dataset.detieneCierreSesion = "true";
-        }
-    }
-    const select = contenedor.querySelector("select");
-    select.onchange = evento => {
-        const sucursal = evento.target.value;
-        if (!setSucursalActiva(sucursal)) {
-            mostrarMsg("No tienes acceso a esa sucursal", "err");
-            evento.target.value = store.sessionSucursal || "";
-            return;
-        }
-        document.querySelectorAll("select[id*='Sucursal']:not(#sucursalActivaGlobal), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto")
-            .forEach(selectModulo => {
-                if ([...selectModulo.options].some(opcion => opcion.value === store.sessionSucursal)) selectModulo.value = store.sessionSucursal;
-            });
-        window.dispatchEvent(new CustomEvent("eruditos:sucursal-cambiada", { detail: { sucursal: store.sessionSucursal } }));
-        mostrarMsg("Sucursal actual: " + store.sessionSucursal, "ok");
-    };
-    select.innerHTML = activas.map(sucursal => `<option value="${escaparSucursal(sucursal.nombre)}">${escaparSucursal(nombreSucursal(sucursal))}</option>`).join("");
-    const seleccion = activas.some(sucursal => sucursal.nombre === store.sessionSucursal)
-        ? store.sessionSucursal
-        : activas[0].nombre;
-    select.value = seleccion;
-    if (seleccion !== store.sessionSucursal) setSucursalActiva(seleccion);
-}
 
 function asegurarPanelSeguridad() {
     const seccion = document.getElementById("seccion-USUARIOS");
@@ -205,7 +156,7 @@ async function guardarPermisosRol() {
 function actualizarPrincipalAcceso() {
     const principal = document.getElementById("usuarioAccesoPrincipal");
     const marcadas = [...document.querySelectorAll("[data-sucursal-usuario]:checked")].map(el => el.value);
-    principal.innerHTML = '<option value="">Sin principal</option>' + _sucursalesCache.filter(s => marcadas.includes(s.id)).map(s => `<option value="${escaparSucursal(s.id)}">${escaparSucursal(nombreSucursal(s))}</option>`).join('');
+    principal.innerHTML = '<option value="">Sin principal</option>' + obtenerSucursalesCache().filter(s => marcadas.includes(s.id)).map(s => `<option value="${escaparSucursal(s.id)}">${escaparSucursal(nombreSucursal(s))}</option>`).join('');
     if (_usuarioAccesoActual?.sucursal_principal_id && marcadas.includes(_usuarioAccesoActual.sucursal_principal_id)) principal.value = _usuarioAccesoActual.sucursal_principal_id;
 }
 
@@ -220,7 +171,7 @@ function abrirAccesoUsuario(usuarioId) {
     document.getElementById("usuarioAccesoGlobal").checked = Boolean(usuario.acceso_global_sucursales);
     document.getElementById("usuarioAccesoGlobal").disabled = !puedeSucursales || !can("usuarios.asignar_roles_criticos");
     const asignadas = new Set((usuario.usuario_sucursales || []).map(s => String(s.sucursal_id)));
-    document.getElementById("usuarioAccesoSucursales").innerHTML = _sucursalesCache.filter(s => s.estado === "ACTIVO").map(s => `<label class="acceso-sucursal-opcion"><input type="checkbox" data-sucursal-usuario value="${escaparSucursal(s.id)}" ${asignadas.has(String(s.id)) ? 'checked' : ''}><span class="acceso-check-visual" aria-hidden="true">✔</span><span class="acceso-copy"><strong>${escaparSucursal(nombreSucursal(s))}</strong><small>Permitir acceso a esta sucursal</small></span></label>`).join('');
+    document.getElementById("usuarioAccesoSucursales").innerHTML = obtenerSucursalesCache().filter(s => s.estado === "ACTIVO").map(s => `<label class="acceso-sucursal-opcion"><input type="checkbox" data-sucursal-usuario value="${escaparSucursal(s.id)}" ${asignadas.has(String(s.id)) ? 'checked' : ''}><span class="acceso-check-visual" aria-hidden="true">✔</span><span class="acceso-copy"><strong>${escaparSucursal(nombreSucursal(s))}</strong><small>Permitir acceso a esta sucursal</small></span></label>`).join('');
     document.querySelectorAll("[data-sucursal-usuario]").forEach(el => {
         el.disabled = !puedeSucursales;
         el.addEventListener("change", actualizarPrincipalAcceso);
@@ -685,7 +636,7 @@ export async function crearUsuario() {
       , estado = document.getElementById("nuevoUsuarioEstado")?.value || "ACTIVO"
       , accesoGlobal = Boolean(document.getElementById("nuevoUsuarioAccesoGlobal")?.checked)
       , sucursalIds = [...(document.getElementById("nuevoUsuarioSucursales")?.selectedOptions || [])].map(opcion => opcion.value);
-    const principalId = _sucursalesCache.find(item => item.nombre === sucursal)?.id || null;
+    const principalId = obtenerSucursalesCache().find(item => item.nombre === sucursal)?.id || null;
     if (principalId && sucursalIds.length && !sucursalIds.includes(principalId)) sucursalIds.push(principalId);
     if (!nombre) {
         mostrarMsg("Ingresa un nombre de usuario", "err");
@@ -1050,6 +1001,7 @@ export async function crearSucursal() {
             mostrarMsg("Sucursal " + (data.nombreVisible || data.nombre) + " creada", "ok");
             document.getElementById("nuevaSucursalNombre").value = "";
             document.getElementById("nuevaSucursalNombreVisible").value = "";
+            invalidarSucursalesCache();
             await cargarUsuarios();
             if (_verif) _verif();
         } else if (data.error === "SUCURSAL_DUPLICADA") {
@@ -1064,48 +1016,8 @@ export async function crearSucursal() {
     }
 }
 
-// ── cargarSucursalesEnDropdowns ──
-export async function cargarSucursalesEnDropdowns() {
-    try {
-        const data = await api({
-            ACCION: "LISTAR_SUCURSALES",
-            TOKEN: store.sessionToken
-        });
-        if (!data.ok) return [];
-        const sucursales = data.datos || [];
-        _sucursalesCache = sucursales;
-        if (sucursales.length === 0) return sucursales;
-        const selects = document.querySelectorAll("select[id$='Sucursal']:not(#sucursalActivaGlobal), select[id*='Sucursal']:not(#sucursalActivaGlobal):not(#nuevoUsuarioSucursales), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto, select#transfOrigen, select#transfDestino, select#filtroTransfOrigen, select#filtroTransfDestino");
-        selects.forEach(function(sel) {
-            if (sel.disabled) return;
-            const actual = sel.value;
-            while (sel.options.length > 0) sel.remove(0);
-            const esFiltroSucursal = ["filtroInvSucursal", "filtroTransfOrigen", "filtroTransfDestino", "auditoriaSucursal"].includes(sel.id);
-            sel.add(new Option(esFiltroSucursal ? "Todas las sucursales" : "🏪 Seleccionar sucursal", ""));
-            sucursales.forEach(function(s) {
-                if (s.estado !== "ACTIVO") return;
-                sel.add(new Option(nombreSucursal(s), s.nombre));
-            });
-            if (actual) {
-                for (let i = 0; i < sel.options.length; i++) {
-                    if (sel.options[i].value === actual) { sel.value = actual; break; }
-                }
-            }
-        });
-        const sucursalesUsuario = document.getElementById("nuevoUsuarioSucursales");
-        if (sucursalesUsuario) {
-            sucursalesUsuario.innerHTML = sucursales.filter(s => s.estado === "ACTIVO").map(s => `<option value="${escaparSucursal(s.id)}">${escaparSucursal(nombreSucursal(s))}</option>`).join("");
-            sucursalesUsuario.disabled = !can("usuarios.cambiar_sucursales");
-        }
-        const accesoGlobal = document.getElementById("nuevoUsuarioAccesoGlobal");
-        if (accesoGlobal) accesoGlobal.disabled = !can("usuarios.asignar_roles_criticos");
-        renderSelectorSucursalActiva(sucursales);
-        return sucursales;
-    } catch (_) { return []; }
-}
-
 export function abrirDetalleSucursal(sucursalId) {
-    const sucursal = _sucursalesCache.find(s => s.id === sucursalId);
+    const sucursal = obtenerSucursalesCache().find(s => s.id === sucursalId);
     if (!sucursal) return;
     _sucursalDetalleId = sucursal.id;
     document.getElementById("sucursalDetalleNombre").textContent = nombreSucursal(sucursal);
@@ -1137,7 +1049,7 @@ export function abrirDetalleSucursal(sucursalId) {
 }
 
 async function cambiarEstadoSucursal() {
-    const sucursal = _sucursalesCache.find(s => s.id === _sucursalDetalleId);
+    const sucursal = obtenerSucursalesCache().find(s => s.id === _sucursalDetalleId);
     if (!sucursal || !can("sucursales.desactivar")) return;
     const estado = sucursal.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
     if (!confirm(`¿Cambiar ${nombreSucursal(sucursal)} a ${estado.toLowerCase()}?`)) return;
@@ -1145,6 +1057,7 @@ async function cambiarEstadoSucursal() {
     if (!manejarRespuesta(data) || !data.ok) return;
     mostrarMsg("Estado de la sucursal actualizado", "ok");
     cerrarDetalleSucursal();
+    invalidarSucursalesCache();
     await cargarUsuarios();
 }
 
@@ -1183,6 +1096,7 @@ export async function guardarSucursal() {
         });
         if (!manejarRespuesta(data)) return;
         if (!data.ok) return mostrarMsg("Error: " + data.error, "err");
+        invalidarSucursalesCache();
         await cargarUsuarios();
         abrirDetalleSucursal(_sucursalDetalleId);
         if (_verif) _verif();

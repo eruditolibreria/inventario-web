@@ -104,7 +104,6 @@ function renderListado(datos, total, pagina) {
 export function initAuditoria() {
     const hasta = $('auditoriaFechaHasta');
     if (hasta && !hasta.value) hasta.value = hoy();
-    if (store.sessionToken) void cargarFiltrosAuditoria().catch(() => {});
 }
 
 export async function cargarAuditoria(pagina = 1) {
