@@ -1676,7 +1676,10 @@
                                 <div class="section-label">Inventario</div>
                                 <p class="inventario-subtitulo">Consulta existencias y administra los datos de cada producto.</p>
                             </div>
-                            <button class="btn btn-ghost" onclick="cargarInventarioAdmin()">🔄 Actualizar</button>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                                <button class="btn btn-ghost" type="button" data-importar-inventario style="display:none" onclick="abrirImportacionInventario()">Importar Excel</button>
+                                <button class="btn btn-ghost" type="button" onclick="cargarInventarioAdmin()">🔄 Actualizar</button>
+                            </div>
                         </div>
                         <div class="inventario-filtros">
                             <div class="field-group" style="margin:0">
@@ -1911,6 +1914,20 @@
     </div>
     
 
+    <div id="inventarioImportacionOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarImportacionInventario(event)">
+        <section class="producto-detalle-card" style="max-width:620px" role="dialog" aria-modal="true" aria-labelledby="inventarioImportacionTitulo" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
+                <div><div id="inventarioImportacionTitulo" style="font-size:20px;font-weight:800;color:var(--text)">Importar inventario inicial</div><p style="font-size:13px;color:var(--text-light);margin:5px 0 0">Solo agrega productos nuevos. Los duplicados detienen toda la importación.</p></div>
+                <button class="btn btn-ghost" type="button" onclick="cerrarImportacionInventario()" style="min-width:auto;width:auto;padding:3px 9px" aria-label="Cerrar">×</button>
+            </div>
+            <div class="field-group" style="margin-bottom:10px"><label class="field-label" for="inventarioImportacionArchivo">Archivo Excel</label><input id="inventarioImportacionArchivo" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="leerArchivoImportacionInventario(this.files[0])"></div>
+            <a class="btn btn-ghost" href="assets/plantilla-inventario.xlsx" download="plantilla-inventario.xlsx" style="display:inline-flex;margin-bottom:12px">Descargar plantilla</a>
+            <div id="inventarioImportacionVistaPrevia"></div>
+            <div id="inventarioImportacionResultado" aria-live="polite" style="min-height:20px;margin:12px 0;color:var(--text-light);font-size:13px"></div>
+            <div class="row-2"><button id="btnConfirmarImportacionInventario" class="btn btn-primary" type="button" disabled onclick="confirmarImportacionInventario()">Importar inventario</button><button class="btn btn-ghost" type="button" onclick="cerrarImportacionInventario()">Cancelar</button></div>
+        </section>
+    </div>
+
     <!-- Overlay editar producto (ubicación / proveedor) -->
     <div id="inventarioEditOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarEditarProducto(event)">
         <div class="producto-detalle-card" onclick="event.stopPropagation()">
@@ -2032,6 +2049,7 @@
     <div id="printArea"></div>
     <div id="toastContainer"></div>
     <script src="js/vendor/supabase-umd.js"></script>
+    <script src="js/vendor/xlsx.full.min.js"></script>
     <script type="module" src="js/main.js"></script>
     <!-- Reordenar #mensajeApp despues de #seccionesStack -->
     <script>

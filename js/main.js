@@ -314,6 +314,10 @@ async function inicializarApp() {
     window.cargarInventarioAdmin = ejecutarAdmin("cargarInventarioAdmin");
     window.cambiarPaginaInv = ejecutarAdmin("cambiarPaginaInv");
     window.filtrarInventario = ejecutarAdmin("filtrarInventario");
+    window.abrirImportacionInventario = ejecutarAdmin("abrirImportacionInventario");
+    window.cerrarImportacionInventario = ejecutarAdmin("cerrarImportacionInventario");
+    window.leerArchivoImportacionInventario = ejecutarAdmin("leerArchivoImportacionInventario");
+    window.confirmarImportacionInventario = ejecutarAdmin("confirmarImportacionInventario");
     window.cargarResumenServicios = cargarResumenServicios;
     window.buscarProductoVenta = buscarProductoVenta;
     window.agregarCarrito = agregarCarrito;

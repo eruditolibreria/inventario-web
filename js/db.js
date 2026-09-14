@@ -165,6 +165,17 @@ export async function ajustarInventario({ inventarioId, tipo, cantidad, motivo, 
     return data;
 }
 
+/** Importa productos nuevos en una única operación transaccional. */
+export async function importarInventarioInicial({ items, archivoNombre, idempotencyKey }) {
+    const { data, error } = await client.rpc("importar_inventario_inicial", {
+        p_items: items,
+        p_archivo_nombre: archivoNombre,
+        p_idempotency_key: idempotencyKey,
+    });
+    if (error) throw error;
+    return data;
+}
+
 /** Consulta el kardex permitido para un producto, más reciente primero. */
 export async function listarMovimientosInventario(inventarioId, limite = 30) {
     const { data, error } = await client

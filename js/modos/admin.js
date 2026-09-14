@@ -6,7 +6,8 @@ import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
          confirmarResetPass } from '../ui.js';
-import { listarProductos, ajustarInventario, listarMovimientosInventario } from '../db.js';
+import { listarProductos, ajustarInventario, importarInventarioInicial, listarMovimientosInventario } from '../db.js';
+import { validarEncabezadosImportacion, validarFilasImportacion } from '../importacion-inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
 import { cargarSucursalesEnDropdowns, invalidarSucursalesCache, obtenerSucursalesCache, nombreSucursal, escaparSucursal } from '../sucursales.js';
@@ -490,6 +491,7 @@ function renderInventarioMovil(datos, mostrarCostos) {
 
 export async function cargarInventarioAdmin(pagina) {
     if (pagina === undefined) pagina = _invPagina;
+    actualizarAccionImportacionInventario();
     if (!store.sessionToken || !can("inventario.ver")) {
         mostrarMsg("Sin permisos", "err");
         return
@@ -529,6 +531,128 @@ export async function cargarInventarioAdmin(pagina) {
         grid.innerHTML = `<div style="color:var(--red);padding:10px">Error de conexion</div>`
     }
     loader.style.display = "none"
+}
+
+// ══ Importación inicial de inventario ══
+let _importacionInventario = null;
+
+function nuevaClaveImportacion() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, caracter => {
+        const aleatorio = Math.floor(Math.random() * 16);
+        return (caracter === "x" ? aleatorio : (aleatorio & 0x3) | 0x8).toString(16);
+    });
+}
+
+function actualizarAccionImportacionInventario() {
+    document.querySelectorAll("[data-importar-inventario]").forEach(boton => {
+        boton.style.display = can("inventario.importar") ? "" : "none";
+    });
+}
+
+function resultadoImportacion(mensaje = "", esError = false) {
+    const resultado = document.getElementById("inventarioImportacionResultado");
+    resultado.textContent = mensaje;
+    resultado.style.color = esError ? "var(--danger)" : "var(--text-light)";
+}
+
+function renderVistaPreviaImportacion(items, errores) {
+    const vistaPrevia = document.getElementById("inventarioImportacionVistaPrevia");
+    const confirmar = document.getElementById("btnConfirmarImportacionInventario");
+    vistaPrevia.innerHTML = "";
+    confirmar.disabled = Boolean(errores.length || !items.length);
+
+    const resumen = document.createElement("div");
+    resumen.style.cssText = "margin:12px 0;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:13px";
+    resumen.textContent = errores.length
+        ? `${errores.length} fila${errores.length === 1 ? "" : "s"} con errores. Corrige el archivo antes de importarlo.`
+        : `${items.length} producto${items.length === 1 ? "" : "s"} listo${items.length === 1 ? "" : "s"} para importar.`;
+    vistaPrevia.appendChild(resumen);
+
+    const lista = document.createElement("ul");
+    lista.style.cssText = "max-height:180px;overflow:auto;margin:0;padding-left:20px;font-size:12px";
+    (errores.length ? errores : items.slice(0, 12).map(item => `${item.producto} · ${item.sucursal} · stock ${item.stockInicial}`))
+        .slice(0, 12)
+        .forEach(texto => {
+            const fila = document.createElement("li");
+            fila.textContent = texto;
+            if (errores.length) fila.style.color = "var(--danger)";
+            lista.appendChild(fila);
+        });
+    vistaPrevia.appendChild(lista);
+}
+
+export function abrirImportacionInventario() {
+    if (!can("inventario.importar")) return;
+    _importacionInventario = null;
+    document.getElementById("inventarioImportacionArchivo").value = "";
+    document.getElementById("inventarioImportacionVistaPrevia").innerHTML = "";
+    document.getElementById("btnConfirmarImportacionInventario").disabled = true;
+    resultadoImportacion("");
+    document.getElementById("inventarioImportacionOverlay").style.display = "flex";
+}
+
+export function cerrarImportacionInventario(evento) {
+    const overlay = document.getElementById("inventarioImportacionOverlay");
+    if (evento && evento.target !== overlay) return;
+    overlay.style.display = "none";
+}
+
+export async function leerArchivoImportacionInventario(archivo) {
+    if (!archivo || !can("inventario.importar")) return;
+    if (!/\.xlsx$/i.test(archivo.name)) {
+        resultadoImportacion("Selecciona un archivo .xlsx.", true);
+        return;
+    }
+    if (!globalThis.XLSX) {
+        resultadoImportacion("No se pudo cargar el lector de Excel. Vuelve a intentar.", true);
+        return;
+    }
+
+    resultadoImportacion("Leyendo archivo…");
+    document.getElementById("btnConfirmarImportacionInventario").disabled = true;
+    try {
+        const libro = globalThis.XLSX.read(await archivo.arrayBuffer(), { type: "array", cellDates: true });
+        const nombreHoja = libro.SheetNames[0];
+        if (!nombreHoja) throw new Error("El archivo no contiene hojas.");
+        const hoja = libro.Sheets[nombreHoja];
+        const encabezados = globalThis.XLSX.utils.sheet_to_json(hoja, { header: 1, range: 0, defval: "", raw: false })[0] || [];
+        const erroresEncabezados = validarEncabezadosImportacion(encabezados);
+        const filas = globalThis.XLSX.utils.sheet_to_json(hoja, { defval: "", raw: false });
+        const validacion = validarFilasImportacion(filas);
+        const errores = erroresEncabezados.concat(validacion.errores);
+        _importacionInventario = {
+            archivoNombre: archivo.name,
+            items: validacion.items,
+            errores,
+            idempotencyKey: nuevaClaveImportacion(),
+        };
+        renderVistaPreviaImportacion(validacion.items, errores);
+        resultadoImportacion(errores.length ? "El archivo tiene errores." : "Revisa la vista previa y confirma la importación.", Boolean(errores.length));
+    } catch (error) {
+        _importacionInventario = null;
+        document.getElementById("inventarioImportacionVistaPrevia").innerHTML = "";
+        resultadoImportacion(error.message || "No se pudo leer el archivo Excel.", true);
+    }
+}
+
+export async function confirmarImportacionInventario() {
+    if (!_importacionInventario || _importacionInventario.errores.length || !_importacionInventario.items.length) return;
+    const boton = document.getElementById("btnConfirmarImportacionInventario");
+    boton.disabled = true;
+    resultadoImportacion("Importando inventario…");
+    try {
+        const data = await importarInventarioInicial(_importacionInventario);
+        if (!data?.ok) throw new Error(data?.error || "No se pudo importar el inventario.");
+        resultadoImportacion(data.repetida
+            ? "Esta importación ya se había registrado."
+            : `${data.creados} producto${data.creados === 1 ? "" : "s"} importado${data.creados === 1 ? "" : "s"}.`);
+        mostrarMsg(data.repetida ? "La importación ya estaba registrada" : "✅ Inventario importado", "ok");
+        await cargarInventarioAdmin(1);
+    } catch (error) {
+        resultadoImportacion(error.message || "No se pudo importar el inventario.", true);
+        boton.disabled = false;
+    }
 }
 
 // Realtime: si cambia el inventario y el panel admin esta visible, refresca la pagina actual
