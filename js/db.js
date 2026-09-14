@@ -178,3 +178,26 @@ export async function listarMovimientosInventario(inventarioId, limite = 30) {
 }
 
 export { client };
+
+/** Reserva con el JWT del usuario; la RPC verifica permisos, sucursal y stock. */
+export async function reservarStockVenta({ carritoId, producto, sucursal, delta }) {
+    const { data, error } = await client.rpc("reservar_stock_carrito", {
+        p_carrito_id: carritoId, p_producto: producto, p_sucursal: sucursal, p_delta: delta
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || "RESERVA_NO_REGISTRADA");
+    return data;
+}
+
+/** Lectura ligera para escaneo; no convierte errores de red en productos inexistentes. */
+export async function buscarProductoEscaneoVenta(codigo, sucursal) {
+    let qb = client.from("inventario_autorizado")
+        .select("id,producto,precio_venta,sucursal,stock,imagen,codigo_barras")
+        .eq("sucursal", sucursal);
+    // Los códigos numéricos conservan sus ceros iniciales y usan igualdad indexable.
+    qb = /^[0-9]+$/.test(codigo) ? qb.eq("codigo_barras", codigo)
+        : qb.ilike("codigo_barras", codigo.replace(/[%_]/g, ch => "\\" + ch));
+    const { data, error } = await qb.limit(1);
+    if (error) throw error;
+    return data?.length ? _mapProducto(data[0]) : null;
+}

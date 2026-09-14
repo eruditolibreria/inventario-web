@@ -29,8 +29,8 @@ import { mostrarMsg, mostrarToast, vibrar, sonidoCaja, normBusqueda, formatearBs
 import { manejarRespuesta } from '../ui.js';
 import { can } from '../authorization.js';
 import { construirAC } from '../inventario.js';
-import { buscarSugerenciasVenta, buscarProductoPorNombre } from '../db.js';
-import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, buscarPorCodigo, onInputScanner, CODIGO_REGEX } from '../escaner.js';
+import { buscarSugerenciasVenta, buscarProductoPorNombre, buscarProductoEscaneoVenta, reservarStockVenta } from '../db.js';
+import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, onInputScanner, CODIGO_REGEX } from '../escaner.js';
 import { listarComprobantes } from './comprobantes.js';
 
 function _guardarCarritoDraft() {
@@ -176,16 +176,9 @@ async function _ejecutarCambioCarrito(cambio) {
 }
 
 async function _ajustarReserva(item, delta) {
-    const data = await api({
-        ACCION: "RESERVAR_STOCK",
-        CARRITO_ID: _idCarrito(),
-        PRODUCTO: item.producto,
-        SUCURSAL: item.sucursal,
-        DELTA: delta,
-        TOKEN: store.sessionToken
+    return reservarStockVenta({
+        carritoId: _idCarrito(), producto: item.producto, sucursal: item.sucursal, delta
     });
-    if (!data?.ok) throw new Error(data?.error || "RESERVA_NO_REGISTRADA");
-    return data;
 }
 
 export async function restaurarReservasCarrito(carritoId) {
@@ -631,6 +624,11 @@ function initEscanerVenta() {
         input.focus();
     };
     document.addEventListener("keydown", function(e) {
+        if (!store.sessionToken || store.modoActual !== "VENTA" || e.ctrlKey || e.altKey || e.metaKey) {
+            buffer = "";
+            clearTimeout(timer);
+            return;
+        }
         const ahora = Date.now();
         if (e.key === "Enter") {
             if (buffer) {
@@ -650,30 +648,56 @@ function initEscanerVenta() {
     input.focus();
 }
 
-// Busca producto por codigo (local + backend) y lo agrega al carrito
+// La cola mantiene ocupado el carrito hasta confirmar todos los escaneos aceptados.
+const _colaEscaneosVenta = [];
+let _procesandoEscaneosVenta = false;
+
 async function agregarPorCodigoScan(codigo) {
-    const suc = sucursalVentaActual();
-    if (!suc) {
-        mostrarMsg("Selecciona una sucursal", "err");
-        return;
+    const sucursal = sucursalVentaActual();
+    const usuario = store.sessionUser;
+    if (!sucursal || !store.sessionToken || store.modoActual !== "VENTA") {
+        mostrarMsg("Inicia sesión y selecciona la sucursal de venta", "err");
+        return false;
     }
-    let prod = await buscarPorCodigo(codigo, suc);
-    if (!prod) {
+    if (_cobroEnCurso || (_cambioCarritoEnCurso && !_procesandoEscaneosVenta)) {
+        mostrarMsg("Espera a que termine la operación del carrito", "err");
+        return false;
+    }
+    const resultado = new Promise(resolve => _colaEscaneosVenta.push({ codigo, sucursal, usuario, resolve }));
+    if (!_procesandoEscaneosVenta) {
+        _procesandoEscaneosVenta = true;
         try {
-            const data = await api({
-                ACCION: "BUSCAR_PRODUCTO_CODIGO",
-                CODIGO: codigo,
-                SUCURSAL: suc,
-                TOKEN: store.sessionToken
+            await _ejecutarCambioCarrito(async () => {
+                while (_colaEscaneosVenta.length) {
+                    const scan = _colaEscaneosVenta.shift();
+                    let agregado = false;
+                    try {
+                        if (store.sessionUser !== scan.usuario || sucursalVentaActual() !== scan.sucursal ||
+                            !store.sessionToken || store.modoActual !== "VENTA") {
+                            throw new Error("El usuario o la sucursal cambió. Repite los escaneos pendientes.");
+                        }
+                        const prod = await buscarProductoEscaneoVenta(scan.codigo, scan.sucursal);
+                        if (store.sessionUser !== scan.usuario || sucursalVentaActual() !== scan.sucursal || !store.sessionToken) {
+                            throw new Error("La sesión o sucursal cambió durante la búsqueda.");
+                        }
+                        if (!prod) throw new Error("Producto no encontrado: " + scan.codigo);
+                        agregado = await _agregarPorProducto(prod, scan.sucursal) === true;
+                    } catch (error) {
+                        mostrarMsg(error.message || "No se pudo consultar el producto. Revisa la conexión.", "err");
+                    }
+                    scan.resolve(agregado);
+                    if (!agregado) {
+                        if (_colaEscaneosVenta.length) mostrarMsg("Escaneo detenido. Revisa el último producto y repite los códigos pendientes.", "err");
+                        break;
+                    }
+                }
             });
-            if (data.ok && data.producto) prod = data.producto;
-        } catch (_) {}
+        } finally {
+            for (const scan of _colaEscaneosVenta.splice(0)) scan.resolve(false);
+            _procesandoEscaneosVenta = false;
+        }
     }
-    if (prod) {
-        await agregarPorProducto(prod, suc);
-    } else {
-        mostrarMsg("Producto no encontrado: " + codigo, "err");
-    }
+    return resultado;
 }
 
 // Mantiene visible el campo de cliente para cualquier metodo de pago
@@ -746,16 +770,25 @@ async function agregarPorProducto(prod, sucursal) {
 }
 
 async function _agregarPorProducto(prod, sucursal) {
-    if (_carritoCotizadoBloqueado()) return;
+    if (_carritoCotizadoBloqueado()) return false;
+    const usuario = store.sessionUser;
+    if (store.carrito.some(it => it.sucursal && it.sucursal !== sucursal)) {
+        mostrarMsg("Termina o vacía el carrito antes de cambiar de sucursal", "err");
+        return false;
+    }
     const item = { producto: prod.producto, sucursal };
     try {
         await _ajustarReserva(item, 1);
+        if (store.sessionUser !== usuario || !store.sessionToken) {
+            mostrarMsg("La sesión cambió durante la reserva. Revisa el carrito antes de continuar.", "err");
+            return false;
+        }
     } catch (error) {
         mostrarMsg(_mensajeReserva(error.message), "err");
         return;
     }
     const carrito = [...store.carrito];
-    const ex = carrito.find(i => i.producto === prod.producto);
+    const ex = carrito.find(i => i.producto === prod.producto && i.sucursal === sucursal);
     const precio = prod.precio_venta ?? prod.precio ?? prod.precioVenta ?? 0;
     if (ex) {
         ex.cantidad += 1;
@@ -774,6 +807,7 @@ async function _agregarPorProducto(prod, sucursal) {
     renderCarrito();
     vibrar("ok");
     mostrarMsg("📷 " + prod.producto + " agregado (codigo: " + (prod.codigoBarras || "manual") + ")", "ok");
+    return true;
 }
 
 // Un precio es valido si es un numero finito (0 es valido: puede ser bonus)
@@ -823,28 +857,11 @@ export function revisarOrdenEscaner() {
 
 async function procesarCodigoEscanerVenta(codigo) {
     const estado = document.getElementById("escanerEstado");
-    const suc = sucursalVentaActual();
-    if (!suc) {
-        if (estado) estado.textContent = "Selecciona una sucursal antes de escanear";
-        return;
-    }
-    if (estado) estado.textContent = "Buscando producto...";
-    let prod = await buscarPorCodigo(codigo, suc);
-    if (!prod) {
-        const data = await api({
-            ACCION: "BUSCAR_PRODUCTO_CODIGO",
-            CODIGO: codigo,
-            SUCURSAL: suc,
-            TOKEN: store.sessionToken
-        });
-        if (data.ok && data.producto) prod = data.producto;
-    }
-    if (prod) {
-        await agregarPorProducto(prod, suc);
-        if (estado) estado.textContent = "Producto agregado. Listo para el siguiente escaneo";
-    } else if (estado) {
-        estado.textContent = "Producto no encontrado: " + codigo;
-    }
+    if (estado) estado.textContent = "Agregando producto...";
+    const agregado = await agregarPorCodigoScan(codigo);
+    if (estado) estado.textContent = agregado
+        ? "Producto agregado. Listo para el siguiente escaneo"
+        : "No se agregó el producto. Revisa el aviso antes de continuar";
 }
 
 async function abrirEscanerVentaMovil() {
@@ -882,24 +899,7 @@ export async function abrirEscanerVenta() {
     estado.textContent = "Apuntando camara...";
     try {
         const codigo = await iniciarEscanerCamara(video);
-        const suc = sucursalVentaActual();
-        let prod = await buscarPorCodigo(codigo, suc);
-        if (!prod) {
-            const data = await api({
-                ACCION: "BUSCAR_PRODUCTO_CODIGO",
-                CODIGO: codigo,
-                SUCURSAL: suc,
-                TOKEN: store.sessionToken
-            });
-            if (data.ok && data.producto) {
-                prod = data.producto;
-            }
-        }
-        if (prod) {
-            await agregarPorProducto(prod, suc);
-        } else {
-            mostrarMsg("Producto no encontrado: " + codigo, "err");
-        }
+        await agregarPorCodigoScan(codigo);
     } catch(e) {
         if (e.message === "NO_SOPORTADO") {
             mostrarMsg("Escaner no soportado en este navegador", "err");
