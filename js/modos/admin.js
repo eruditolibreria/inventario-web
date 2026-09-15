@@ -1,7 +1,7 @@
 /* === MODO ADMIN: Detalle, inventario, usuarios === */
 import { store } from '../store.js';
 import { api } from '../api.js';
-import { mostrarMsg, mostrarValorInput, obtenerValorInput, debounce } from '../utils.js';
+import { mostrarMsg, mostrarValorInput, obtenerValorInput } from '../utils.js';
 import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
@@ -14,6 +14,7 @@ import { cargarSucursalesEnDropdowns, invalidarSucursalesCache, obtenerSucursale
 
 let busquedaTimer = null;
 let _detalleSeq = 0;
+let _detalleController = null;
 let _verif = null;
 let _usuariosCache = [];
 let _sucursalDetalleId = null;
@@ -244,89 +245,92 @@ function renderListaSucursales(sucursales) {
 }
 
 // ── buscarProductoDetalle ──
-// Autocomplete rapido: consulta paginada server-side con debounce de 300ms
-const _busquedaAcBuscar = debounce(async function(t, sucFiltro, l) {
-    try {
-        const { datos } = await listarProductos({ query: t, sucursal: sucFiltro || null, limite: 8 });
-        l.innerHTML = "";
-        if (datos.length > 0) {
-            datos.forEach(p => {
-                const div = document.createElement("div");
-                div.className = "ac-item";
-                div.innerHTML = `<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
-                div.addEventListener("click", () => {
-                    document.getElementById("busquedaInput").value = p.producto;
-                    l.classList.remove("show");
-                    ejecutarBusquedaDetalle(p.producto)
-                });
-                l.appendChild(div)
-            });
-            l.classList.add("show")
-        } else {
-            l.classList.remove("show")
-        }
-    } catch (_) {}
-}, 300);
+const BUSQUEDA_DETALLE_LIMITE = 50;
+
+function iniciarBusquedaDetalle() {
+    _detalleController?.abort();
+    return ++_detalleSeq;
+}
+
+function renderSugerenciasBusqueda(datos, lista) {
+    lista.replaceChildren();
+    datos.slice(0, 8).forEach(p => {
+        const div = document.createElement("div");
+        div.className = "ac-item";
+        div.innerHTML = `<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
+        div.addEventListener("click", () => {
+            clearTimeout(busquedaTimer);
+            document.getElementById("busquedaInput").value = p.producto;
+            lista.classList.remove("show");
+            ejecutarBusquedaDetalle(p.producto, iniciarBusquedaDetalle());
+        });
+        lista.appendChild(div);
+    });
+    lista.classList.toggle("show", datos.length > 0);
+}
 
 export function buscarProductoDetalle() {
     const t = document.getElementById("busquedaInput").value.trim()
       , l = document.getElementById("listaBusqueda")
-      , sucFiltro = document.getElementById("busquedaSucursal")?.value || "";
+      , co = document.getElementById("searchResultsList");
     clearTimeout(busquedaTimer);
-    document.getElementById("searchResultsList").innerHTML = "";
+    const seq = iniciarBusquedaDetalle();
+    co.replaceChildren();
+    l.replaceChildren();
     if (t.length < 2) {
         l.classList.remove("show");
+        document.getElementById("loaderBusqueda").style.display = "none";
         return
     }
-    _busquedaAcBuscar(t, sucFiltro, l);
-    busquedaTimer = setTimeout(() => ejecutarBusquedaDetalle(t), 600)
+    busquedaTimer = setTimeout(() => ejecutarBusquedaDetalle(t, seq), 300)
 }
 
 // ── ejecutarBusquedaDetalle ──
-export async function ejecutarBusquedaDetalle(t) {
+export async function ejecutarBusquedaDetalle(t, seq = iniciarBusquedaDetalle()) {
     if (!store.sessionToken) {
         mostrarMsg("Sesion expirada", "err");
         return
     }
+    if (seq !== _detalleSeq) return;
     const loader = document.getElementById("loaderBusqueda")
       , l = document.getElementById("listaBusqueda")
       , co = document.getElementById("searchResultsList")
       , sucActual = document.getElementById("busquedaSucursal")?.value || "";
+    const controller = new AbortController();
+    _detalleController = controller;
     l.classList.remove("show");
     loader.style.display = "block";
-    co.innerHTML = "";
+    co.replaceChildren();
     try {
-        const body = {
-            ACCION: "BUSCAR_PRODUCTO_DETALLE",
-            PRODUCTO: t,
-            TOKEN: store.sessionToken
-        };
-        if (sucActual) body.SUCURSAL = sucActual;
-        const seq = ++_detalleSeq;
-        const data = await api(body);
-        if (seq !== _detalleSeq) return;
-        if (!manejarRespuesta(data) || !data.ok) {
-            co.innerHTML = `<div class="empty-state">${data.error || "No se pudo realizar la búsqueda"}</div>`;
-            loader.style.display = "none";
-            return
-        }
-        var rs = data.datos || [];
-        if (sucActual) rs = rs.filter(function(p) { return (p.sucursal || "").toUpperCase() === sucActual.toUpperCase(); });
+        const { datos } = await listarProductos({
+            query: t,
+            sucursal: sucActual || null,
+            limite: BUSQUEDA_DETALLE_LIMITE,
+            contar: false,
+            signal: controller.signal
+        });
+        if (seq !== _detalleSeq || controller.signal.aborted) return;
+        renderSugerenciasBusqueda(datos, l);
+        const rs = datos;
         if (rs.length === 0) {
             co.innerHTML = `<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${t}</b>"</div>`
         } else {
             const vistos = new Set();
+            const resultados = document.createDocumentFragment();
             rs.forEach(p => {
                 const k = (p.producto || "") + "_" + (p.sucursal || "");
                 if (vistos.has(k)) return;
                 vistos.add(k);
-                co.appendChild(renderSearchCard(p))
-            })
+                resultados.appendChild(renderSearchCard(p))
+            });
+            co.appendChild(resultados);
         }
     } catch (e) {
+        if (controller.signal.aborted || seq !== _detalleSeq) return;
         co.innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>`
+    } finally {
+        if (seq === _detalleSeq) loader.style.display = "none";
     }
-    loader.style.display = "none"
 }
 
 // ── cargarInventarioAdmin ──

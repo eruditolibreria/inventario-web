@@ -65,13 +65,14 @@ function _mapProducto(r) {
  * Lista productos con paginacion y busqueda en servidor.
  * @returns {Promise<{datos: Array, total: number}>}
  */
-export async function listarProductos({ query = "", sucursal = null, pagina = 0, limite = 20 } = {}) {
+export async function listarProductos({ query = "", sucursal = null, pagina = 0, limite = 20, contar = true, signal } = {}) {
     const q = query.replace(/[%_]/g, ch => "\\" + ch);
     const desde = pagina * limite;
     const hasta = desde + limite - 1;
-    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS, { count: "exact" });
+    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS, contar ? { count: "exact" } : undefined);
     if (sucursal) qb = qb.eq("sucursal", sucursal);
     if (q) qb = qb.ilike("producto", `%${q}%`);
+    if (signal) qb = qb.abortSignal(signal);
     const { data, error, count } = await qb.order("producto").range(desde, hasta);
     if (error) throw error;
     return { datos: (data || []).map(_mapProducto), total: count || 0 };
