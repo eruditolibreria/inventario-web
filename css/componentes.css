@@ -614,6 +614,23 @@
                 border-left-color: var(--blue);
             }
 
+            .sr-field--price,
+            .sr-field--location {
+                border-left-width: 3px;
+            }
+
+            .sr-field--price {
+                background: var(--gold-metal);
+                border-left-color: var(--gold);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 6px rgba(216,163,33,0.22);
+            }
+
+            .sr-field--location {
+                background: var(--silver-metal);
+                border-left-color: var(--silver);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(152,164,178,0.22);
+            }
+
             .sr-key {
                 font-size: 9px;
                 letter-spacing: 1.5px;
@@ -639,6 +656,26 @@
 
             .sr-val.orange {
                 color: var(--orange);
+            }
+
+            .sr-field--price .sr-key,
+            .sr-val--price {
+                color: var(--gold-text);
+            }
+
+            .sr-field--location .sr-key,
+            .sr-val--location {
+                color: var(--silver-text);
+            }
+
+            .sr-val--price {
+                font-size: 18px;
+                font-weight: 700;
+            }
+
+            .sr-val--location {
+                font-size: 16px;
+                font-weight: 700;
             }
 
             .search-results-list {
@@ -1807,6 +1844,8 @@
         }
 
             [data-theme='light'] .sr-val { color: var(--text); }
+            [data-theme='light'] .sr-val--price { color: var(--gold-text); }
+            [data-theme='light'] .sr-val--location { color: var(--silver-text); }
             [data-theme='light'] .tipo-compra { color: var(--blue-text); }
 
             /* Estados seleccionados y controles: contraste alto en tema claro */

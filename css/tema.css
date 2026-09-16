@@ -10,6 +10,12 @@
                 --accent-text: #00e676;
                 --accent-dim: rgba(0,230,118,0.12);
                 --accent-glow: rgba(0,230,118,0.25);
+                --gold: #d8a321;
+                --gold-text: #111111;
+                --gold-metal: linear-gradient(135deg, #fff6ba 0%, #e7bd3f 24%, #c8870e 47%, #fff0a0 68%, #d8a321 100%);
+                --silver: #98a4b2;
+                --silver-text: #111111;
+                --silver-metal: linear-gradient(135deg, #ffffff 0%, #c8d0da 24%, #909daa 47%, #f7f9fb 68%, #aab5c1 100%);
                 --orange: #ff9800;
                 --orange-text: #ff9800;
                 --red: #ff4757;

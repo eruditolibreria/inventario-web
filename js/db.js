@@ -139,6 +139,18 @@ export async function buscarProductoPorCodigo(codigo, sucursal) {
     return data && data.length ? _mapProducto(data[0]) : null;
 }
 
+/** Busca las existencias visibles de un código de barras, opcionalmente por sucursal. */
+export async function buscarProductosPorCodigo(codigo, sucursal = null) {
+    const valor = String(codigo || "").trim();
+    if (!valor) return [];
+    const { data, error } = await client.rpc("buscar_inventario_por_codigo", {
+        p_codigo_barras: valor,
+        p_sucursal: sucursal || null
+    });
+    if (error) throw error;
+    return (data || []).map(_mapProducto);
+}
+
 /** Devuelve los datos de la ultima compra registrada del producto (misma sucursal) */
 export async function ultimaCompraProducto(producto, sucursal) {
     let qb = client.from("compras")

@@ -63,11 +63,11 @@ export function renderSearchCard(p) {
     div.innerHTML = `<div class="sr-img">${p.imagen ? `<img src="${p.imagen}" alt="${p.producto}" loading="lazy" onerror="this.style.display='none'">` : `<span>📦</span>`}</div>
 <div class="sr-name">🔍 ${p.producto}</div>
 <div class="sr-grid">
-<div class="sr-field accent"><div class="sr-key">Precio Venta</div><div class="sr-val ok">${formatearBs(p.precioVenta)}</div></div>
-<div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">${formatearBs(p.precioUnidad)}</div></div>
+<div class="sr-field sr-field--price"><div class="sr-key">Precio Venta</div><div class="sr-val sr-val--price">${formatearBs(p.precioVenta)}</div></div>
+<div class="sr-field sr-field--location"><div class="sr-key">Ubicación</div><div class="sr-val sr-val--location">${p.ubicacion || '—'}</div></div>
 <div class="sr-field ${sc === 'warn' ? 'red' : sc === 'orange' ? 'orange' : 'accent'}"><div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud.  ${sl}</div></div>
         <div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:var(--blue-text)">${p.sucursal ?? '—'}</div></div>
-<div class="sr-field"><div class="sr-key">Ubicación</div><div class="sr-val">${p.ubicacion || '—'}</div></div>
+<div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">${formatearBs(p.precioUnidad)}</div></div>
 <div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor || '—'}</div></div>
 </div>`;
     return div;

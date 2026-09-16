@@ -422,6 +422,7 @@ async function inicializarApp() {
     window.compartirVistaPreviaComprobante = compartirVistaPreviaComprobante;
     window.buscarProductoDetalle = ejecutarAdmin("buscarProductoDetalle");
     window.ejecutarBusquedaDetalle = ejecutarAdmin("ejecutarBusquedaDetalle");
+    window.abrirEscanerBusqueda = ejecutarAdmin("abrirEscanerBusqueda");
     window.crearUsuario = ejecutarAdmin("crearUsuario");
     window.crearSucursal = ejecutarAdmin("crearSucursal");
     window.abrirDetalleSucursal = ejecutarAdmin("abrirDetalleSucursal");

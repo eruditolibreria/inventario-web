@@ -6,7 +6,7 @@ import { manejarRespuesta, renderSearchCard, confirmarEliminar,
          abrirModalImagen, cerrarModalImagen, guardarImagenProducto,
          abrirModalRol, cerrarModalRol, abrirModalPass, cerrarModalPass,
          confirmarResetPass } from '../ui.js';
-import { listarProductos, ajustarInventario, importarInventarioInicial, listarMovimientosInventario } from '../db.js';
+import { listarProductos, buscarProductosPorCodigo, ajustarInventario, importarInventarioInicial, listarMovimientosInventario } from '../db.js';
 import { validarEncabezadosImportacion, validarFilasImportacion } from '../importacion-inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
@@ -269,6 +269,18 @@ function renderSugerenciasBusqueda(datos, lista) {
     lista.classList.toggle("show", datos.length > 0);
 }
 
+function renderResultadosBusqueda(datos, contenedor) {
+    const vistos = new Set();
+    const resultados = document.createDocumentFragment();
+    datos.forEach(p => {
+        const k = (p.producto || "") + "_" + (p.sucursal || "");
+        if (vistos.has(k)) return;
+        vistos.add(k);
+        resultados.appendChild(renderSearchCard(p));
+    });
+    contenedor.appendChild(resultados);
+}
+
 export function buscarProductoDetalle() {
     const t = document.getElementById("busquedaInput").value.trim()
       , l = document.getElementById("listaBusqueda")
@@ -315,21 +327,49 @@ export async function ejecutarBusquedaDetalle(t, seq = iniciarBusquedaDetalle())
         if (rs.length === 0) {
             co.innerHTML = `<div class="empty-state">Sin resultados para "<b style="color:var(--text)">${t}</b>"</div>`
         } else {
-            const vistos = new Set();
-            const resultados = document.createDocumentFragment();
-            rs.forEach(p => {
-                const k = (p.producto || "") + "_" + (p.sucursal || "");
-                if (vistos.has(k)) return;
-                vistos.add(k);
-                resultados.appendChild(renderSearchCard(p))
-            });
-            co.appendChild(resultados);
+            renderResultadosBusqueda(rs, co);
         }
     } catch (e) {
         if (controller.signal.aborted || seq !== _detalleSeq) return;
         co.innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>`
     } finally {
         if (seq === _detalleSeq) loader.style.display = "none";
+    }
+}
+
+export async function abrirEscanerBusqueda() {
+    if (!store.sessionToken) {
+        mostrarMsg("Sesión expirada", "err");
+        return;
+    }
+    const modal = document.getElementById("escanerModal");
+    const video = document.getElementById("escanerVideo");
+    const estado = document.getElementById("escanerEstado");
+    if (!modal || !video) return;
+    const sucursal = document.getElementById("busquedaSucursal")?.value || null;
+    modal.style.display = "flex";
+    if (estado) estado.textContent = "Apuntando cámara...";
+    try {
+        const codigo = await iniciarEscanerCamara(video);
+        if (estado) estado.textContent = "Buscando producto...";
+        const productos = await buscarProductosPorCodigo(codigo, sucursal);
+        if (!productos.length) {
+            mostrarMsg("Producto no encontrado: " + codigo, "err");
+            return;
+        }
+        document.getElementById("busquedaInput").value = productos[0].producto || "";
+        const lista = document.getElementById("listaBusqueda");
+        lista.replaceChildren();
+        lista.classList.remove("show");
+        const resultados = document.getElementById("searchResultsList");
+        resultados.replaceChildren();
+        renderResultadosBusqueda(productos, resultados);
+    } catch (e) {
+        if (e.message === "NO_SOPORTADO") mostrarMsg("Escáner no soportado en este navegador", "err");
+        else mostrarMsg("Error de cámara o conexión", "err");
+    } finally {
+        detenerEscanerCamara();
+        modal.style.display = "none";
     }
 }
 

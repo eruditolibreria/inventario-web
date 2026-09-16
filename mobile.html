@@ -1344,9 +1344,12 @@
                         <div class="section-label">Búsqueda de producto</div>
                         <div class="field-group">
                             <label class="field-label">Nombre del producto</label>
-                            <input id="busquedaInput" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDetalle()">
-                                                        <div id="listaBusqueda" class="autocomplete"></div>
-                                                    </div>
+                            <div style="display:flex;gap:8px">
+                                <input id="busquedaInput" placeholder="🔎 Escribe para buscar..." onkeyup="buscarProductoDetalle()" style="flex:1;min-width:0">
+                                <button type="button" class="btn btn-ghost" onclick="abrirEscanerBusqueda()" aria-label="Escanear código de barras" title="Escanear código de barras" style="flex-shrink:0;padding:3px 8px;min-width:auto;width:auto;font-size:16px">📷</button>
+                            </div>
+                            <div id="listaBusqueda" class="autocomplete"></div>
+                        </div>
                                                     <div class="field-group">
                                                         <label class="field-label">Sucursal</label>
                                                         <select id="busquedaSucursal" onchange="buscarProductoDetalle()">
