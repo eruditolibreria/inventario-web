@@ -12,6 +12,7 @@ import { COMPROBANTE_ANCHO_DEFAULT } from '../config.js';
 import { mostrarMsg } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { can } from '../authorization.js';
+import { obtenerSucursalesCache, nombreSucursal } from '../sucursales.js';
 
 let _anchoTicket = COMPROBANTE_ANCHO_DEFAULT;
 let _paginaComp = 1;
@@ -23,6 +24,14 @@ let _previewPdf = null;
 let _previewSeq = 0;
 
 export function getAnchoTicket() { return _anchoTicket; }
+
+function _nombreSucursalVisible(c) {
+    if (c.sucursalVisible) return c.sucursalVisible;
+    const sucursal = obtenerSucursalesCache().find(function (item) {
+        return String(item.nombre) === String(c.sucursal) || String(item.id) === String(c.sucursal);
+    });
+    return sucursal ? nombreSucursal(sucursal) : (c.sucursal || "");
+}
 
 export function setAnchoTicket(ancho) {
     if (ancho === "57" || ancho === "80") _anchoTicket = ancho;
@@ -537,7 +546,7 @@ export function imprimirCotizacion(cotizacion) {
     if (!cotizacion) { mostrarMsg("No hay cotización disponible", "err"); return; }
     const pa = document.getElementById("printArea");
     if (!pa) return;
-    const c = { ...cotizacion, tipoDocumento: "COTIZACION" };
+    const c = { ...cotizacion, tipoDocumento: "COTIZACION", sucursalVisible: _nombreSucursalVisible(cotizacion) };
     let st = document.getElementById("ticketPageStyle");
     if (!st) {
         st = document.createElement("style");
