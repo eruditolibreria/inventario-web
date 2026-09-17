@@ -19,7 +19,7 @@ let _terminoComp = "";
 let _reqSeq = 0;
 let _previewHtml = "";
 let _previewComprobante = null;
-let _previewJpg = null;
+let _previewPdf = null;
 let _previewSeq = 0;
 
 export function getAnchoTicket() { return _anchoTicket; }
@@ -263,75 +263,148 @@ function _esMovil() {
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function _obtenerCssLocal() {
-    let css = "";
-    Array.from(document.styleSheets).forEach(function (sheet) {
-        try {
-            css += Array.from(sheet.cssRules).map(rule => rule.cssText).join("\n");
-        } catch (_) {}
-    });
-    return css;
-}
-
-function _blobADataUrl(blob) {
-    return new Promise(function (resolve, reject) {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-}
-
-async function _incrustarImagenes(root) {
-    const imagenes = Array.from(root.querySelectorAll("img"));
-    await Promise.all(imagenes.map(async function (img) {
-        const src = img.getAttribute("src");
-        if (!src) return;
-        try {
-            const response = await fetch(new URL(src, location.href).href);
-            if (!response.ok) throw new Error("No se pudo cargar la imagen");
-            img.setAttribute("src", await _blobADataUrl(await response.blob()));
-        } catch (_) {
-            img.remove();
+function _dividirLineaPdf(valor, limite) {
+    const palabras = String(valor ?? "").trim().split(/\s+/).filter(Boolean);
+    if (!palabras.length) return [""];
+    const lineas = [];
+    let linea = "";
+    palabras.forEach(function (palabra) {
+        while (palabra.length > limite) {
+            if (linea) {
+                lineas.push(linea);
+                linea = "";
+            }
+            lineas.push(palabra.slice(0, limite));
+            palabra = palabra.slice(limite);
         }
-    }));
+        const candidata = linea ? linea + " " + palabra : palabra;
+        if (candidata.length > limite) {
+            lineas.push(linea);
+            linea = palabra;
+        } else {
+            linea = candidata;
+        }
+    });
+    if (linea) lineas.push(linea);
+    return lineas;
 }
 
-async function _generarJpg(ticket) {
-    if (!ticket) throw new Error("Ticket no disponible");
-    const rect = ticket.getBoundingClientRect();
-    const width = Math.ceil(rect.width);
-    const height = Math.ceil(rect.height);
-    if (!width || !height) throw new Error("Ticket sin dimensiones");
+function _escaparTextoPdf(valor) {
+    return Array.from(String(valor ?? "")).map(function (caracter) {
+        if (caracter === "\\" || caracter === "(" || caracter === ")") return "\\" + caracter;
+        if (caracter === "−" || caracter === "–" || caracter === "—") return "-";
+        const codigo = caracter.codePointAt(0);
+        return codigo >= 32 && codigo <= 255 ? caracter : "?";
+    }).join("");
+}
 
-    const clone = ticket.cloneNode(true);
-    await _incrustarImagenes(clone);
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
-        '<foreignObject width="100%" height="100%">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml"><style>' + _obtenerCssLocal() + '</style>' +
-        clone.outerHTML + '</div></foreignObject></svg>';
-    const image = await new Promise(function (resolve, reject) {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+function _aBytesPdf(valor) {
+    const bytes = new Uint8Array(valor.length);
+    for (let indice = 0; indice < valor.length; indice += 1) bytes[indice] = valor.charCodeAt(indice) & 0xff;
+    return bytes;
+}
+
+function _lineasDocumentoPdf(c) {
+    const esCotizacion = c.tipoDocumento === "COTIZACION";
+    const items = (c.items || []).map(function (item) {
+        return {
+            producto: item.producto || "Producto",
+            cantidad: Number(item.cantidad || 0),
+            precio: Number(item.precio ?? item.precioUnitario ?? 0),
+        };
     });
-    const scale = Math.min(3, Math.max(2, window.devicePixelRatio || 1));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(width * scale);
-    canvas.height = Math.ceil(height * scale);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas no disponible");
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(scale, scale);
-    ctx.drawImage(image, 0, 0, width, height);
-    return await new Promise(function (resolve, reject) {
-        canvas.toBlob(function (blob) {
-            if (blob) resolve(blob);
-            else reject(new Error("No se pudo generar el JPG"));
-        }, "image/jpeg", 0.92);
+    const totalVenta = Number(c.total || 0);
+    const subtotal = esCotizacion ? Number(c.subtotal || 0) : Number(c.subtotal ?? totalVenta);
+    const descuento = Number(c.descuento ?? c.descuentoMonto ?? 0);
+    const total = esCotizacion ? Number(c.total || subtotal - descuento) : totalVenta;
+    const totalRedondeado = c.totalRedondeado !== undefined && c.totalRedondeado !== null
+        ? Number(c.totalRedondeado) : total;
+    const ajuste = Number(c.ajusteRedondeo || 0);
+    const codigo = c.codigo || (c.numero !== undefined && c.numero !== null ? c.numero : "");
+    const cliente = esCotizacion ? (c.cliente || c.clienteNombre || "MOSTRADOR")
+        : (c.cliente && c.cliente !== "MOSTRADOR" ? c.cliente : "MOSTRADOR");
+    const lineas = [
+        "LIBRERÍA ERUDITOS",
+        c.sucursalVisible || c.sucursal || "",
+        esCotizacion ? "COTIZACIÓN N° " + codigo : (codigo ? "COMPROBANTE N° " + codigo : "COMPROBANTE DE VENTA"),
+        "--------------------------------",
+        (esCotizacion ? "Fecha: " : "") + [c.fecha, c.hora].filter(Boolean).join(" "),
+        esCotizacion && (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento)
+            ? "Válida hasta: " + (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) : "",
+        "Cliente: " + cliente,
+        c.usuario ? "Vendedor: " + c.usuario : "",
+        !esCotizacion && c.metodoPago ? "Pago: " + c.metodoPago : "",
+        "--------------------------------",
+    ].filter(Boolean);
+
+    items.forEach(function (item) {
+        lineas.push(item.producto);
+        lineas.push(item.cantidad + " x " + _fmtBs(item.precio) + " = " + _fmtBs(item.cantidad * item.precio));
     });
+
+    lineas.push("--------------------------------");
+    if (descuento > 0) {
+        lineas.push("Subtotal: " + _fmtBs(subtotal));
+        lineas.push("Descuento: - " + _fmtBs(descuento));
+    }
+    if (!esCotizacion && ajuste !== 0) {
+        if (descuento === 0) lineas.push("Subtotal: " + _fmtBs(total));
+        lineas.push("Redondeo: " + (ajuste > 0 ? "+" : "") + _fmtBs(ajuste));
+        lineas.push("TOTAL: " + _fmtBs(totalRedondeado));
+    } else {
+        lineas.push("TOTAL: " + _fmtBs(total));
+    }
+    if (esCotizacion && c.observaciones) {
+        lineas.push("--------------------------------");
+        lineas.push("Nota: " + c.observaciones);
+    }
+    lineas.push("--------------------------------");
+    lineas.push(esCotizacion ? "Este documento no constituye una venta." : "¡Gracias por su compra!");
+    return lineas;
+}
+
+function _generarPdf(c) {
+    const anchoPagina = _anchoTicket === "57" ? 162 : 227;
+    const margen = 8;
+    const tamanoFuente = 8;
+    const altoLinea = 11;
+    const limiteCaracteres = _anchoTicket === "57" ? 30 : 43;
+    const lineas = [];
+    _lineasDocumentoPdf(c).forEach(function (linea) {
+        _dividirLineaPdf(linea, limiteCaracteres).forEach(function (fragmento) {
+            lineas.push(fragmento);
+        });
+    });
+    const altoPagina = Math.max(120, margen * 2 + tamanoFuente + Math.max(0, lineas.length - 1) * altoLinea);
+    const instrucciones = [
+        "BT",
+        "/F1 " + tamanoFuente + " Tf",
+        margen + " " + (altoPagina - margen - tamanoFuente) + " Td",
+    ];
+    lineas.forEach(function (linea, indice) {
+        instrucciones.push("(" + _escaparTextoPdf(linea) + ") Tj");
+        if (indice < lineas.length - 1) instrucciones.push("0 -" + altoLinea + " Td");
+    });
+    instrucciones.push("ET");
+    const contenido = instrucciones.join("\n") + "\n";
+    let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+    const offsets = [0];
+    const agregarObjeto = function (contenidoObjeto) {
+        offsets.push(pdf.length);
+        pdf += offsets.length - 1 + " 0 obj\n" + contenidoObjeto + "\nendobj\n";
+    };
+    agregarObjeto("<< /Type /Catalog /Pages 2 0 R >>");
+    agregarObjeto("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+    agregarObjeto("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + anchoPagina + " " + altoPagina + "] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>");
+    agregarObjeto("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
+    agregarObjeto("<< /Length " + contenido.length + " >>\nstream\n" + contenido + "endstream");
+    const inicioXref = pdf.length;
+    pdf += "xref\n0 " + offsets.length + "\n0000000000 65535 f \n";
+    for (let indice = 1; indice < offsets.length; indice += 1) {
+        pdf += String(offsets[indice]).padStart(10, "0") + " 00000 n \n";
+    }
+    pdf += "trailer\n<< /Size " + offsets.length + " /Root 1 0 R >>\nstartxref\n" + inicioXref + "\n%%EOF";
+    return new Blob([_aBytesPdf(pdf)], { type: "application/pdf" });
 }
 
 function _mostrarVistaPrevia(html, comp) {
@@ -343,28 +416,30 @@ function _mostrarVistaPrevia(html, comp) {
     const seq = _previewSeq;
     _previewHtml = html;
     _previewComprobante = comp;
-    _previewJpg = null;
+    _previewPdf = null;
     body.innerHTML = html;
     overlay.style.display = "flex";
     if (shareBtn) {
         shareBtn.disabled = true;
-        shareBtn.textContent = "Preparando JPG...";
+        shareBtn.textContent = "Preparando PDF...";
     }
     requestAnimationFrame(function () {
-        _generarJpg(body.querySelector(".ticket")).then(function (blob) {
+        Promise.resolve().then(function () {
+            return _generarPdf(comp);
+        }).then(function (blob) {
             if (seq !== _previewSeq) return;
-            _previewJpg = blob;
+            _previewPdf = blob;
             if (shareBtn) {
                 shareBtn.disabled = false;
-                shareBtn.textContent = "Compartir JPG";
+                shareBtn.textContent = "Compartir PDF";
             }
         }).catch(function () {
             if (seq !== _previewSeq) return;
             if (shareBtn) {
                 shareBtn.disabled = true;
-                shareBtn.textContent = "JPG no disponible";
+                shareBtn.textContent = "PDF no disponible";
             }
-            mostrarMsg("No se pudo generar el comprobante como JPG", "err");
+            mostrarMsg("No se pudo generar el comprobante como PDF", "err");
         });
     });
     return true;
@@ -380,7 +455,7 @@ export function cerrarVistaPreviaComprobante(event) {
     if (body) body.innerHTML = "";
     _previewHtml = "";
     _previewComprobante = null;
-    _previewJpg = null;
+    _previewPdf = null;
 }
 
 export function imprimirVistaPreviaComprobante() {
@@ -403,9 +478,9 @@ export async function compartirVistaPreviaComprobante() {
     const codigo = c.codigo || (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "");
     const titulo = (esCotizacion ? "Cotización " : "Comprobante ") + codigo;
     try {
-        if (_previewJpg && typeof File !== "undefined" && navigator.share) {
-            const nombre = (esCotizacion ? "cotizacion-" : "comprobante-") + (c.codigo || c.numero || (esCotizacion ? "nueva" : "venta")) + ".jpg";
-            const archivo = new File([_previewJpg], nombre, { type: "image/jpeg" });
+        if (_previewPdf && typeof File !== "undefined" && navigator.share) {
+            const nombre = (esCotizacion ? "cotizacion-" : "comprobante-") + (c.codigo || c.numero || (esCotizacion ? "nueva" : "venta")) + ".pdf";
+            const archivo = new File([_previewPdf], nombre, { type: "application/pdf" });
             const puedeArchivo = !navigator.canShare || navigator.canShare({ files: [archivo] });
             if (puedeArchivo) {
                 await navigator.share({ title: titulo, files: [archivo] });
@@ -415,7 +490,7 @@ export async function compartirVistaPreviaComprobante() {
     } catch (error) {
         if (error && error.name === "AbortError") return;
     }
-    mostrarMsg("Este dispositivo no permite compartir el comprobante como JPG", "err");
+    mostrarMsg("Este dispositivo no permite compartir el comprobante como PDF", "err");
 }
 
 export function imprimirComprobante(comp) {
