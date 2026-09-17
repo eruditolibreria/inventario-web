@@ -86,7 +86,6 @@ export function abrirDetalleProducto(p) {
     }
     infoDiv.innerHTML = `<div class="detalle-nombre">${p.producto}</div>
 <div class="detalle-item"><span class="detalle-key">Precio Venta</span><span class="detalle-val">${formatearBs(p.precioVenta)}</span></div>
-<div class="detalle-item"><span class="detalle-key">Precio Unidad</span><span class="detalle-val">${formatearBs(p.precioUnidad)}</span></div>
 <div class="detalle-item"><span class="detalle-key">Stock</span><span class="detalle-val">${p.stock} ud.</span></div>
 <div class="detalle-item"><span class="detalle-key">Sucursal</span><span class="detalle-val">${p.sucursal || '—'}</span></div>
 <div class="detalle-item"><span class="detalle-key">Ubicación</span><span class="detalle-val">${p.ubicacion || '—'}</span></div>

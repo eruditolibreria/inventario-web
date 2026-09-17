@@ -19,7 +19,7 @@ let _terminoComp = "";
 let _reqSeq = 0;
 let _previewHtml = "";
 let _previewComprobante = null;
-let _previewPng = null;
+let _previewJpg = null;
 let _previewSeq = 0;
 
 export function getAnchoTicket() { return _anchoTicket; }
@@ -297,7 +297,7 @@ async function _incrustarImagenes(root) {
     }));
 }
 
-async function _generarPng(ticket) {
+async function _generarJpg(ticket) {
     if (!ticket) throw new Error("Ticket no disponible");
     const rect = ticket.getBoundingClientRect();
     const width = Math.ceil(rect.width);
@@ -329,8 +329,8 @@ async function _generarPng(ticket) {
     return await new Promise(function (resolve, reject) {
         canvas.toBlob(function (blob) {
             if (blob) resolve(blob);
-            else reject(new Error("No se pudo generar el PNG"));
-        }, "image/png");
+            else reject(new Error("No se pudo generar el JPG"));
+        }, "image/jpeg", 0.92);
     });
 }
 
@@ -343,49 +343,31 @@ function _mostrarVistaPrevia(html, comp) {
     const seq = _previewSeq;
     _previewHtml = html;
     _previewComprobante = comp;
-    _previewPng = null;
+    _previewJpg = null;
     body.innerHTML = html;
     overlay.style.display = "flex";
     if (shareBtn) {
         shareBtn.disabled = true;
-        shareBtn.textContent = "Preparando...";
+        shareBtn.textContent = "Preparando JPG...";
     }
     requestAnimationFrame(function () {
-        _generarPng(body.querySelector(".ticket")).then(function (blob) {
+        _generarJpg(body.querySelector(".ticket")).then(function (blob) {
             if (seq !== _previewSeq) return;
-            _previewPng = blob;
+            _previewJpg = blob;
             if (shareBtn) {
                 shareBtn.disabled = false;
-                shareBtn.textContent = "Compartir";
+                shareBtn.textContent = "Compartir JPG";
             }
         }).catch(function () {
             if (seq !== _previewSeq) return;
             if (shareBtn) {
-                shareBtn.disabled = false;
-                shareBtn.textContent = "Compartir texto";
+                shareBtn.disabled = true;
+                shareBtn.textContent = "JPG no disponible";
             }
+            mostrarMsg("No se pudo generar el comprobante como JPG", "err");
         });
     });
     return true;
-}
-
-function _textoComprobante(c) {
-    const esCotizacion = c.tipoDocumento === "COTIZACION";
-    const titulo = esCotizacion ? "Cotización" : "Comprobante de venta";
-    const items = (c.items || []).map(function (item) {
-        const precio = Number(item.precio ?? item.precioUnitario ?? 0);
-        return `${item.cantidad} x ${item.producto} = ${_fmtBs(Number(item.cantidad || 0) * precio)}`;
-    });
-    return [
-        titulo,
-        c.codigo || (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : ""),
-        `${c.fecha || ""} ${c.hora || ""}`.trim(),
-        "Sucursal: " + (c.sucursalVisible || c.sucursal || ""),
-        "Cliente: " + (c.cliente || "MOSTRADOR"),
-        items.join("\n"),
-        esCotizacion && (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) ? "Válida hasta: " + (c.vigenciaHasta || c.vigencia || c.validaHasta || c.fechaVencimiento) : "",
-        "TOTAL: " + _fmtBs(c.totalRedondeado ?? c.total)
-    ].filter(Boolean).join("\n");
 }
 
 export function cerrarVistaPreviaComprobante(event) {
@@ -398,7 +380,7 @@ export function cerrarVistaPreviaComprobante(event) {
     if (body) body.innerHTML = "";
     _previewHtml = "";
     _previewComprobante = null;
-    _previewPng = null;
+    _previewJpg = null;
 }
 
 export function imprimirVistaPreviaComprobante() {
@@ -417,37 +399,23 @@ export function imprimirVistaPreviaComprobante() {
 export async function compartirVistaPreviaComprobante() {
     const c = _previewComprobante;
     if (!c) return;
-    const texto = _textoComprobante(c);
     const esCotizacion = c.tipoDocumento === "COTIZACION";
     const codigo = c.codigo || (c.numero !== undefined && c.numero !== null ? "N° " + c.numero : "");
     const titulo = (esCotizacion ? "Cotización " : "Comprobante ") + codigo;
     try {
-        if (_previewPng && typeof File !== "undefined" && navigator.share) {
-            const nombre = (esCotizacion ? "cotizacion-" : "comprobante-") + (c.codigo || c.numero || (esCotizacion ? "nueva" : "venta")) + ".png";
-            const archivo = new File([_previewPng], nombre, { type: "image/png" });
+        if (_previewJpg && typeof File !== "undefined" && navigator.share) {
+            const nombre = (esCotizacion ? "cotizacion-" : "comprobante-") + (c.codigo || c.numero || (esCotizacion ? "nueva" : "venta")) + ".jpg";
+            const archivo = new File([_previewJpg], nombre, { type: "image/jpeg" });
             const puedeArchivo = !navigator.canShare || navigator.canShare({ files: [archivo] });
             if (puedeArchivo) {
-                await navigator.share({ title: titulo, text: esCotizacion ? "Cotización" : "Comprobante de venta", files: [archivo] });
+                await navigator.share({ title: titulo, files: [archivo] });
                 return;
             }
-        }
-        if (navigator.share) {
-            await navigator.share({ title: titulo, text: texto });
-            return;
         }
     } catch (error) {
         if (error && error.name === "AbortError") return;
     }
-    const url = "https://wa.me/?text=" + encodeURIComponent(texto);
-    const popup = window.open(url, "_blank", "noopener,noreferrer");
-    if (!popup) {
-        try {
-            await navigator.clipboard.writeText(texto);
-            mostrarMsg("Comprobante copiado al portapapeles", "ok");
-        } catch (_) {
-            mostrarMsg("No se pudo abrir el compartir", "err");
-        }
-    }
+    mostrarMsg("Este dispositivo no permite compartir el comprobante como JPG", "err");
 }
 
 export function imprimirComprobante(comp) {

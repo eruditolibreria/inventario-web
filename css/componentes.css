@@ -533,16 +533,24 @@
 
             .search-result {
                 background: var(--surface2);
-                border: 1px solid var(--border);
+                border: 2px solid var(--border);
                 border-radius: 12px;
                 padding: 14px;
                 margin-top: 12px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+                transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
                 animation: fadeIn 0.25s ease;
                 display: none;
             }
 
             .search-result.show {
                 display: block;
+            }
+
+            .search-result:hover {
+                border-color: var(--accent);
+                box-shadow: 0 7px 18px rgba(0,0,0,0.2);
+                transform: translateY(-1px);
             }
 
             .sr-name {
@@ -751,7 +759,7 @@
 
             .modal-content {
                 background: var(--surface);
-                border: 1px solid var(--border);
+                border: 2px solid var(--border);
                 border-radius: 14px;
                 padding: 20px;
                 width: 90%;
@@ -1290,6 +1298,7 @@
             }
             .producto-detalle-card {
                 background: var(--surface);
+                border: 2px solid var(--border);
                 border-radius: 16px;
                 padding: 20px;
                 max-width: 420px;
@@ -1405,9 +1414,14 @@
                  max-height: 94vh;
                  overflow: hidden;
                  background: var(--surface);
-                 border: 1px solid var(--border);
+                 border: 2px solid var(--border);
                  border-radius: 16px;
                  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+             }
+
+             .modal-overlay > .modal-card,
+             .producto-detalle-overlay > #imagenZoomImg {
+                 border: 2px solid var(--border);
              }
              .comprobante-preview-header {
                  display: flex;
