@@ -1136,13 +1136,36 @@ export async function abrirEscanerInventarioEdit() {
     modal.style.display = "none";
 }
 
+const ESTADO_ZOOM_IMAGEN = "imagenZoomOverlay";
+let _escuchaHistorialZoom = false;
+
+function ocultarZoomImagen() {
+    document.getElementById("imagenZoomOverlay").style.display = "none";
+}
+
+function manejarAtrasZoomImagen() {
+    const overlay = document.getElementById("imagenZoomOverlay");
+    if (overlay && overlay.style.display === "flex") ocultarZoomImagen();
+}
+
 export function abrirZoomImagen(url) {
     document.getElementById("imagenZoomImg").src = url;
     document.getElementById("imagenZoomOverlay").style.display = "flex";
+    if (!_escuchaHistorialZoom) {
+        window.addEventListener("popstate", manejarAtrasZoomImagen);
+        _escuchaHistorialZoom = true;
+    }
+    if (!window.history.state?.[ESTADO_ZOOM_IMAGEN]) {
+        window.history.pushState({ ...(window.history.state || {}), [ESTADO_ZOOM_IMAGEN]: true }, "");
+    }
 }
 
 export function cerrarZoomImagen() {
-    document.getElementById("imagenZoomOverlay").style.display = "none";
+    if (window.history.state?.[ESTADO_ZOOM_IMAGEN]) {
+        window.history.back();
+        return;
+    }
+    ocultarZoomImagen();
 }
 
 // ── crearSucursal ──
