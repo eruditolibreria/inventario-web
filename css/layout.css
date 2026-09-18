@@ -824,6 +824,22 @@
                 color: var(--muted);
             }
 
+            .lamina-resumen {
+                color: var(--muted);
+                font-size: 12px;
+                margin: 0 0 8px;
+            }
+
+            .lamina-paginacion {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin: 14px 0 4px;
+                color: var(--muted);
+                font-size: 12px;
+            }
+
             .lamina-card .lam-actions {
                 display: flex;
                 gap: 6px;

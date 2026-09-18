@@ -1467,9 +1467,8 @@
                             </div>
                             <div id="lam-BUSCAR">
                                 <div class="field-group">
-                                    <label class="field-label">Título de la lámina</label>
-                                    <input id="laminaInput" placeholder="🔎 Escribe el título..." onkeyup="buscarLaminas()">
-                                    <div id="listaLaminas" class="autocomplete"></div>
+                                    <label class="field-label">Buscar láminas</label>
+                                    <input id="laminaInput" placeholder="🔎 Título, categoría o ubicación..." oninput="buscarLaminas()" onkeydown="if (event.key === 'Enter') buscarLaminas(true)">
                                 </div>
                                 <div class="row-2 mb-12">
                                     <div class="field-group" style="margin:0">
@@ -1489,9 +1488,15 @@
                                         </select>
                                     </div>
                                 </div>
+                                <button class="btn btn-ghost btn-sm mb-12" type="button" onclick="buscarLaminas(true)"><i class="fa-solid fa-magnifying-glass"></i> Buscar láminas</button>
                                 <div class="loader" id="loaderBuscarLamina"></div>
-                                <div id="laminaResultados"></div>
+                                <div id="laminaResultados" class="lamina-resumen" role="status" aria-live="polite"></div>
                                 <div id="listaLaminasResultados"></div>
+                                <div id="laminaPaginacion" class="lamina-paginacion" style="display:none">
+                                    <button id="laminaPaginaAnterior" class="btn btn-ghost btn-sm" type="button" onclick="cambiarPaginaLaminas(-1)">← Anterior</button>
+                                    <span id="laminaPaginaInfo"></span>
+                                    <button id="laminaPaginaSiguiente" class="btn btn-ghost btn-sm" type="button" onclick="cambiarPaginaLaminas(1)">Siguiente →</button>
+                                </div>
                             </div>
                             <div id="lam-AGREGAR" class="oculto">
                                 <div class="field-group">
@@ -2045,6 +2050,20 @@
             <button class="btn btn-primary" onclick="guardarEdicionProducto()">✅ Guardar</button>
             <button class="btn btn-ghost" onclick="cerrarEditarProducto()">Cancelar</button>
         </div>
+    </div>
+</div>
+
+<div id="laminaEditOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarEditarLamina(event)">
+    <div class="producto-detalle-card" style="max-width:460px" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px">
+            <div><div style="font-size:20px;font-weight:800;color:var(--text)">Editar lámina</div><div style="font-size:13px;color:var(--text-light);margin-top:4px">Sucursal: <span id="laminaEditSucursal"></span></div></div>
+            <button class="btn btn-ghost" type="button" onclick="cerrarEditarLamina()" style="min-width:auto;width:auto;padding:3px 9px" aria-label="Cerrar">×</button>
+        </div>
+        <div class="field-group" style="margin-bottom:10px"><label class="field-label">Título</label><input id="laminaEditTitulo" type="text" placeholder="Título de la lámina"></div>
+        <div class="field-group" style="margin-bottom:10px"><label class="field-label">Categoría</label><input id="laminaEditCategoria" type="text" placeholder="Ej: Arte, Animales"></div>
+        <div class="field-group" style="margin-bottom:12px"><label class="field-label">Ubicación</label><input id="laminaEditUbicacion" type="text" placeholder="Ej: Estante A3"></div>
+        <div id="laminaEditResultado" aria-live="polite" style="min-height:20px;margin-bottom:12px;color:var(--red);font-size:13px"></div>
+        <div class="row-2"><button id="btnGuardarLamina" class="btn btn-primary" type="button" onclick="guardarEdicionLamina()">Guardar</button><button class="btn btn-ghost" type="button" onclick="cerrarEditarLamina()">Cancelar</button></div>
     </div>
 </div>
 
