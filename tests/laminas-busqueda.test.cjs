@@ -12,8 +12,9 @@ function crearElemento() {
         style: {},
         className: '',
         children: [],
+        listeners: {},
         appendChild(hijo) { this.children.push(hijo); },
-        addEventListener() {},
+        addEventListener(tipo, escucha) { this.listeners[tipo] = escucha; },
         querySelector() { return null; },
     };
 }
@@ -23,14 +24,14 @@ function cargarModuloLaminas(canEditar = false) {
         'laminaInput', 'laminaFiltroSucursal', 'laminaFiltroEstado',
         'listaLaminasResultados', 'laminaResultados', 'loaderBuscarLamina',
         'laminaPaginacion', 'laminaPaginaInfo', 'laminaPaginaAnterior', 'laminaPaginaSiguiente',
-        'laminaEditTitulo', 'laminaEditCategoria', 'laminaEditUbicacion', 'laminaEditSucursal',
-        'laminaEditResultado', 'laminaEditOverlay', 'btnGuardarLamina',
+        'laminaEditTitulo', 'laminaEditCategoria', 'laminaEditUbicacion',
+        'laminaEditResultado', 'laminaEditOverlay', 'laminaDetalleOverlay', 'laminaDetalleContenido', 'btnGuardarLamina',
     ].map(id => [id, crearElemento()]));
     const pendientes = [];
     const fuente = fs.readFileSync(path.resolve(__dirname, '../js/modos/laminas.js'), 'utf8')
         .replace(/^import .*;\r?\n/gm, '')
         .replaceAll('export ', '')
-        .concat('\nglobalThis.laminasPrueba = { buscarLaminas, abrirEditarLamina, guardarEdicionLamina };');
+        .concat('\nglobalThis.laminasPrueba = { buscarLaminas, renderLaminaCard, abrirEditarLamina, guardarEdicionLamina, cerrarDetalleLamina };');
     const contexto = vm.createContext({
         document: {
             getElementById(id) { return elementos[id]; },
@@ -99,6 +100,33 @@ test('la búsqueda general solicita la página indicada y muestra el total', asy
     assert.equal(elementos.laminaResultados.textContent, 'Mostrando 21–21 de 21 láminas');
     assert.equal(elementos.laminaPaginaInfo.textContent, 'Página 2 de 2');
     assert.equal(elementos.laminaPaginaSiguiente.disabled, true);
+});
+
+test('la tarjeta destaca categoría y ubicación sin mostrar la sucursal', () => {
+    const { renderLaminaCard } = cargarModuloLaminas();
+    const tarjeta = renderLaminaCard({
+        titulo: 'Paisaje', categoria: 'Arte', ubicacion: 'Estante A3', sucursal: 'CENTRAL', estado: 'DISPONIBLE',
+    });
+
+    assert.match(tarjeta.innerHTML, /Categoría/);
+    assert.match(tarjeta.innerHTML, /Ubicación/);
+    assert.match(tarjeta.innerHTML, /Arte/);
+    assert.match(tarjeta.innerHTML, /Estante A3/);
+    assert.doesNotMatch(tarjeta.innerHTML, /CENTRAL/);
+});
+
+test('al tocar una tarjeta se abre su detalle y el fondo lo cierra', () => {
+    const { elementos, renderLaminaCard, cerrarDetalleLamina } = cargarModuloLaminas();
+    const tarjeta = renderLaminaCard({ titulo: 'Paisaje', categoria: 'Arte', ubicacion: 'Estante A3', estado: 'DISPONIBLE' });
+
+    tarjeta.listeners.click();
+    assert.equal(elementos.laminaDetalleOverlay.style.display, 'flex');
+    assert.match(elementos.laminaDetalleContenido.innerHTML, /Paisaje/);
+    assert.match(elementos.laminaDetalleContenido.innerHTML, /Categoría/);
+    assert.match(elementos.laminaDetalleContenido.innerHTML, /Ubicación/);
+
+    cerrarDetalleLamina({ target: elementos.laminaDetalleOverlay });
+    assert.equal(elementos.laminaDetalleOverlay.style.display, 'none');
 });
 
 test('la edición envía título, categoría y ubicación de la lámina seleccionada', async () => {

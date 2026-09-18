@@ -112,7 +112,7 @@ export async function ejecutarBusquedaLaminas (t, suc, est, version, pagina) {
 // renderLaminaCard
 export function renderLaminaCard (lam) {
     const div = document.createElement("div");
-    div.className = "lamina-card";
+    div.className = "lamina-card lamina-card-interactiva";
     const esDis = lam.estado === "DISPONIBLE"
       , estadoClass = esDis ? "lam-estado-disponible" : "lam-estado-sinstock"
       , nuevoEstado = esDis ? "SIN STOCK" : "DISPONIBLE"
@@ -120,14 +120,19 @@ export function renderLaminaCard (lam) {
       , acciones = can("laminas.editar")
         ? `<button class="btn-icon" data-accion="editar" title="Editar lámina">✏️</button><button class="btn-icon" data-accion="cambiar-estado" title="Cambiar estado">${btnLabel}</button>`
         : "";
-    div.innerHTML = `<div style="flex:1;min-width:0"><div class="lam-titulo">${escaparHtml(lam.titulo || "Sin título")}</div><div class="lam-meta">${escaparHtml(lam.categoria || "—")} · ${escaparHtml(lam.sucursal || "—")} · ${escaparHtml(lam.ubicacion || "—")}</div></div><div class="lam-actions"><span class="${estadoClass}">${escaparHtml(lam.estado || "—")}</span>${acciones}</div>`;
+    div.innerHTML = `<div class="lamina-info"><div class="lam-titulo">${escaparHtml(lam.titulo || "Sin título")}</div><div class="lamina-detalles"><div class="lamina-detalle"><span class="lamina-detalle-label">Categoría</span><span class="lamina-detalle-valor">${escaparHtml(lam.categoria || "—")}</span></div><div class="lamina-detalle"><span class="lamina-detalle-label">Ubicación</span><span class="lamina-detalle-valor">${escaparHtml(lam.ubicacion || "—")}</span></div></div></div><div class="lam-actions"><span class="${estadoClass}">${escaparHtml(lam.estado || "—")}</span>${acciones}</div>`;
+    div.addEventListener('click', () => abrirDetalleLamina(lam));
     const btnEditar = div.querySelector('[data-accion="editar"]');
-    if (btnEditar) btnEditar.addEventListener('click', () => abrirEditarLamina(lam));
+    if (btnEditar) btnEditar.addEventListener('click', event => {
+        event.stopPropagation();
+        abrirEditarLamina(lam);
+    });
     const btnEstado = div.querySelector('[data-accion="cambiar-estado"]');
     if (btnEstado) {
         btnEstado.dataset.laminaId = String(lam.id ?? "");
         btnEstado.dataset.nuevoEstado = nuevoEstado;
-        btnEstado.addEventListener('click', function() {
+        btnEstado.addEventListener('click', function(event) {
+            event.stopPropagation();
             cambiarEstadoLamina(this.dataset.laminaId, this.dataset.nuevoEstado, this);
         });
     }
@@ -230,6 +235,22 @@ export function cambiarPaginaLaminas(delta) {
     buscarLaminas(true, destino);
 }
 
+export function abrirDetalleLamina(lam) {
+    const overlay = document.getElementById("laminaDetalleOverlay");
+    const contenido = document.getElementById("laminaDetalleContenido");
+    const esDis = lam.estado === "DISPONIBLE";
+    const estadoClass = esDis ? "lam-estado-disponible" : "lam-estado-sinstock";
+    contenido.innerHTML = `<div class="lamina-detalle-encabezado"><span class="${estadoClass}">${escaparHtml(lam.estado || "—")}</span><h2 class="lamina-detalle-titulo">${escaparHtml(lam.titulo || "Sin título")}</h2></div><div class="lamina-detalle-datos"><div class="lamina-detalle-dato"><span class="lamina-detalle-dato-label">Categoría</span><strong class="lamina-detalle-dato-valor">${escaparHtml(lam.categoria || "—")}</strong></div><div class="lamina-detalle-dato"><span class="lamina-detalle-dato-label">Ubicación</span><strong class="lamina-detalle-dato-valor">${escaparHtml(lam.ubicacion || "—")}</strong></div></div>`;
+    overlay.onclick = cerrarDetalleLamina;
+    overlay.style.display = "flex";
+}
+
+export function cerrarDetalleLamina(e) {
+    const overlay = document.getElementById("laminaDetalleOverlay");
+    if (e && e.target !== overlay) return;
+    overlay.style.display = "none";
+}
+
 export function abrirEditarLamina(lam) {
     if (!can("laminas.editar")) {
         mostrarMsg("Sin permisos para editar láminas", "err");
@@ -239,7 +260,6 @@ export function abrirEditarLamina(lam) {
     document.getElementById("laminaEditTitulo").value = lam.titulo || "";
     document.getElementById("laminaEditCategoria").value = lam.categoria || "";
     document.getElementById("laminaEditUbicacion").value = lam.ubicacion || "";
-    document.getElementById("laminaEditSucursal").textContent = lam.sucursal || "—";
     document.getElementById("laminaEditResultado").textContent = "";
     document.getElementById("laminaEditOverlay").style.display = "flex";
 }

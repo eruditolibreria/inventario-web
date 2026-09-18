@@ -71,7 +71,8 @@ import { initDevoluciones, limpiarBuscadorDevol, buscarTransaccionDevol,
 import { initLaminas, buscarLaminas, ejecutarBusquedaLaminas,
          renderLaminaCard, cambiarEstadoLamina, agregarLamina,
          initLaminasMode, cambiarPaginaLaminas, abrirEditarLamina,
-         cerrarEditarLamina, guardarEdicionLamina }
+         cerrarEditarLamina, guardarEdicionLamina, abrirDetalleLamina,
+         cerrarDetalleLamina }
   from './modos/laminas.js';
 import { initServicios, calcTotalServ, agregarServicio, togglePagoServicio,
          buscarClienteServicio, cargarResumenServicios, eliminarServicio }
@@ -209,7 +210,7 @@ function setupBackHandler() {
     window.addEventListener('popstate', function(e) {
         e.preventDefault();
         // Si hay un overlay abierto, cerrarlo en vez de salir
-        var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "laminaEditOverlay", "cajaDetalleOverlay", "imagenZoomOverlay", "escanerModal"];
+        var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "laminaEditOverlay", "laminaDetalleOverlay", "cajaDetalleOverlay", "imagenZoomOverlay", "escanerModal"];
         for (var i = 0; i < overlays.length; i++) {
             var ov = document.getElementById(overlays[i]);
             if (ov && ov.style.display === "flex") {
@@ -377,6 +378,8 @@ async function inicializarApp() {
     window.abrirEditarLamina = abrirEditarLamina;
     window.cerrarEditarLamina = cerrarEditarLamina;
     window.guardarEdicionLamina = guardarEdicionLamina;
+    window.abrirDetalleLamina = abrirDetalleLamina;
+    window.cerrarDetalleLamina = cerrarDetalleLamina;
     window.calcTotalServ = calcTotalServ;
     window.agregarServicio = agregarServicio;
     window.togglePagoServicio = togglePagoServicio;

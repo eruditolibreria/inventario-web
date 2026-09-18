@@ -2056,7 +2056,7 @@
 <div id="laminaEditOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarEditarLamina(event)">
     <div class="producto-detalle-card" style="max-width:460px" onclick="event.stopPropagation()">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px">
-            <div><div style="font-size:20px;font-weight:800;color:var(--text)">Editar lámina</div><div style="font-size:13px;color:var(--text-light);margin-top:4px">Sucursal: <span id="laminaEditSucursal"></span></div></div>
+            <div><div style="font-size:20px;font-weight:800;color:var(--text)">Editar lámina</div></div>
             <button class="btn btn-ghost" type="button" onclick="cerrarEditarLamina()" style="min-width:auto;width:auto;padding:3px 9px" aria-label="Cerrar">×</button>
         </div>
         <div class="field-group" style="margin-bottom:10px"><label class="field-label">Título</label><input id="laminaEditTitulo" type="text" placeholder="Título de la lámina"></div>
@@ -2066,6 +2066,8 @@
         <div class="row-2"><button id="btnGuardarLamina" class="btn btn-primary" type="button" onclick="guardarEdicionLamina()">Guardar</button><button class="btn btn-ghost" type="button" onclick="cerrarEditarLamina()">Cancelar</button></div>
     </div>
 </div>
+
+<div id="laminaDetalleOverlay" class="producto-detalle-overlay" style="display:none"><div id="laminaDetalleContenido" class="producto-detalle-card lamina-detalle-card"></div></div>
 
 <div id="inventarioAjusteOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarAjusteInventario(event)">
     <div class="producto-detalle-card" style="max-width:470px" onclick="event.stopPropagation()">
