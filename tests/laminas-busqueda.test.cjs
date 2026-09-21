@@ -14,6 +14,7 @@ function crearElemento() {
         children: [],
         listeners: {},
         appendChild(hijo) { this.children.push(hijo); },
+        insertAdjacentElement(_, hijo) { this.inserted = hijo; },
         addEventListener(tipo, escucha) { this.listeners[tipo] = escucha; },
         querySelector() { return null; },
     };
@@ -24,18 +25,20 @@ function cargarModuloLaminas(canEditar = false) {
         'laminaInput', 'laminaFiltroSucursal', 'laminaFiltroEstado',
         'listaLaminasResultados', 'laminaResultados', 'loaderBuscarLamina',
         'laminaPaginacion', 'laminaPaginaInfo', 'laminaPaginaAnterior', 'laminaPaginaSiguiente',
+        'laminaBuscarLaminas',
         'laminaEditTitulo', 'laminaEditCategoria', 'laminaEditUbicacion',
-        'laminaEditResultado', 'laminaEditOverlay', 'laminaDetalleOverlay', 'laminaDetalleContenido', 'btnGuardarLamina',
+        'laminaEditResultado', 'laminaEditOverlay', 'laminaDetalleOverlay', 'laminaDetalleContenido', 'btnGuardarLamina', 'btnPdfLaminasSinStock',
     ].map(id => [id, crearElemento()]));
     const pendientes = [];
     const fuente = fs.readFileSync(path.resolve(__dirname, '../js/modos/laminas.js'), 'utf8')
         .replace(/^import .*;\r?\n/gm, '')
         .replaceAll('export ', '')
-        .concat('\nglobalThis.laminasPrueba = { buscarLaminas, renderLaminaCard, abrirEditarLamina, guardarEdicionLamina, cerrarDetalleLamina };');
+        .concat('\nglobalThis.laminasPrueba = { initLaminasMode, buscarLaminas, renderLaminaCard, abrirEditarLamina, guardarEdicionLamina, cerrarDetalleLamina, generarReporteLaminasSinStock, precargarReporteLaminasSinStock };');
     const contexto = vm.createContext({
         document: {
             getElementById(id) { return elementos[id]; },
             createElement() { return crearElemento(); },
+            querySelector(selector) { return selector === "#lam-BUSCAR button[onclick='buscarLaminas(true)']" ? elementos.laminaBuscarLaminas : null; },
         },
         store: { sessionToken: 'token-prueba' },
         api: body => new Promise(resolve => pendientes.push({ body, resolve })),
@@ -44,9 +47,20 @@ function cargarModuloLaminas(canEditar = false) {
         can: () => canEditar,
         clearTimeout,
         setTimeout,
+        Blob,
+        Uint8Array,
     });
     vm.runInContext(fuente, contexto);
     return { elementos, pendientes, ...contexto.laminasPrueba };
+}
+
+function cargarModuloPdfLaminas() {
+    const fuente = fs.readFileSync(path.resolve(__dirname, '../js/modos/laminas-pdf.js'), 'utf8')
+        .replaceAll('export ', '')
+        .concat('\nglobalThis.pdfLaminasPrueba = { construirReporteLaminasSinStock, crearArchivoPdfLaminasSinStock };');
+    const contexto = vm.createContext({ Blob, Uint8Array });
+    vm.runInContext(fuente, contexto);
+    return contexto.pdfLaminasPrueba;
 }
 
 test('la búsqueda de láminas conserva únicamente la respuesta más reciente', async () => {
@@ -113,6 +127,65 @@ test('la tarjeta destaca categoría y ubicación sin mostrar la sucursal', () =>
     assert.match(tarjeta.innerHTML, /Arte/);
     assert.match(tarjeta.innerHTML, /Estante A3/);
     assert.doesNotMatch(tarjeta.innerHTML, /CENTRAL/);
+});
+
+test('la tarjeta muestra editar y el cambio de estado con texto completo', () => {
+    const { renderLaminaCard } = cargarModuloLaminas(true);
+    const tarjeta = renderLaminaCard({ titulo: 'Paisaje', categoria: 'Arte', ubicacion: 'Estante A3', estado: 'DISPONIBLE' });
+
+    assert.match(tarjeta.innerHTML, /Editar/);
+    assert.match(tarjeta.innerHTML, /Sin stock/);
+});
+
+test('el botón de PDF se agrega junto a la búsqueda de láminas', () => {
+    const { elementos, initLaminasMode } = cargarModuloLaminas();
+    delete elementos.btnPdfLaminasSinStock;
+    initLaminasMode();
+
+    assert.equal(elementos.laminaBuscarLaminas.inserted.id, 'btnPdfLaminasSinStock');
+    assert.match(elementos.laminaBuscarLaminas.inserted.innerHTML, /PDF sin stock/);
+});
+
+test('la sucursal seleccionada prepara las láminas sin stock para el PDF', async () => {
+    const { elementos, pendientes, precargarReporteLaminasSinStock } = cargarModuloLaminas();
+    const preparacion = precargarReporteLaminasSinStock('CENTRAL');
+
+    assert.deepEqual({ ...pendientes[0].body }, {
+        ACCION: 'LISTAR_LAMINAS_SIN_STOCK', SUCURSAL: 'CENTRAL', TOKEN: 'token-prueba',
+    });
+    pendientes[0].resolve({ ok: true, datos: [] });
+    await preparacion;
+
+    assert.notEqual(elementos.btnPdfLaminasSinStock.disabled, true);
+});
+
+test('el PDF agrupa y ordena las láminas por categoría y título', () => {
+    const { construirReporteLaminasSinStock } = cargarModuloPdfLaminas();
+    const pdf = construirReporteLaminasSinStock([
+        { categoria: 'NATURALEZA', titulo: 'Zorro', ubicacion: 'B2' },
+        { categoria: 'ARTE', titulo: 'Mural', ubicacion: 'A2' },
+        { categoria: 'ARTE', titulo: 'Ábaco', ubicacion: 'A1' },
+    ], 'Sucursal Central');
+
+    assert.ok(pdf.indexOf('ARTE') < pdf.indexOf('NATURALEZA'));
+    assert.ok(pdf.indexOf('Ábaco') < pdf.indexOf('Mural'));
+    assert.match(pdf, /Sucursal Central/);
+    assert.match(pdf, /laminas-reporte-lista/);
+    assert.match(pdf, /<section class="laminas-reporte">/);
+});
+
+test('el archivo móvil es un PDF Carta real con dos columnas', async () => {
+    const { crearArchivoPdfLaminasSinStock } = cargarModuloPdfLaminas();
+    const archivo = crearArchivoPdfLaminasSinStock([
+        ...Array.from({ length: 60 }, (_, indice) => ({ categoria: 'ARTE', titulo: `Mural andino ${indice + 1}`, ubicacion: 'Estante A2' })),
+        { categoria: 'NATURALEZA', titulo: 'Zorro', ubicacion: 'Estante B2' },
+    ], 'Sucursal Central', '21/9/2026, 10:00');
+    const contenido = await archivo.text();
+
+    assert.equal(archivo.type, 'application/pdf');
+    assert.match(contenido, /^%PDF-1\.4/);
+    assert.match(contenido, /\/MediaBox \[0 0 612 792\]/);
+    assert.match(contenido, /318/);
 });
 
 test('al tocar una tarjeta se abre su detalle y el fondo lo cierra', () => {

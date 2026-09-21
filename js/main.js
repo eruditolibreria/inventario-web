@@ -72,7 +72,7 @@ import { initLaminas, buscarLaminas, ejecutarBusquedaLaminas,
          renderLaminaCard, cambiarEstadoLamina, agregarLamina,
          initLaminasMode, cambiarPaginaLaminas, abrirEditarLamina,
          cerrarEditarLamina, guardarEdicionLamina, abrirDetalleLamina,
-         cerrarDetalleLamina }
+         cerrarDetalleLamina, generarReporteLaminasSinStock }
   from './modos/laminas.js';
 import { initServicios, calcTotalServ, agregarServicio, togglePagoServicio,
          buscarClienteServicio, cargarResumenServicios, eliminarServicio }
@@ -380,6 +380,7 @@ async function inicializarApp() {
     window.guardarEdicionLamina = guardarEdicionLamina;
     window.abrirDetalleLamina = abrirDetalleLamina;
     window.cerrarDetalleLamina = cerrarDetalleLamina;
+    window.generarReporteLaminasSinStock = generarReporteLaminasSinStock;
     window.calcTotalServ = calcTotalServ;
     window.agregarServicio = agregarServicio;
     window.togglePagoServicio = togglePagoServicio;

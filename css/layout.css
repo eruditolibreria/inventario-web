@@ -801,7 +801,7 @@
                 padding: 12px 14px;
                 margin-bottom: 10px;
                 display: flex;
-                align-items: center;
+                align-items: stretch;
                 justify-content: space-between;
                 gap: 10px;
                 animation: fadeIn 0.2s ease;
@@ -858,12 +858,10 @@
 
             .lamina-detalle-valor {
                 display: block;
-                overflow: hidden;
                 color: var(--text);
                 font-size: 13px;
                 font-weight: 600;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                overflow-wrap: anywhere;
             }
 
             .lamina-detalle-card { max-width: 520px; }
@@ -927,9 +925,30 @@
 
             .lamina-card .lam-actions {
                 display: flex;
+                flex-direction: column;
                 gap: 6px;
                 flex-shrink: 0;
-                align-items: center;
+                align-items: stretch;
+                justify-content: center;
+                width: 106px;
+            }
+
+            .lamina-card .lam-actions > * {
+                box-sizing: border-box;
+                text-align: center;
+            }
+
+            .lamina-card .lam-actions .lam-accion {
+                min-height: 30px;
+                padding: 5px 6px;
+                font-size: 11px;
+                white-space: nowrap;
+            }
+
+            .lamina-card .lam-actions .lam-estado-disponible,
+            .lamina-card .lam-actions .lam-estado-sinstock {
+                display: block;
+                padding: 5px 6px;
             }
 
             .lam-estado-disponible {

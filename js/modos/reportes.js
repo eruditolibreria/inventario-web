@@ -18,7 +18,23 @@ const TABLAS_REPORTES_MOVIL = {
     tablaCobrarRep: { principal: 'Cliente' },
 };
 
+const COLUMNAS_PDF = {
+    masVendidos: [{ etiqueta: '#', campo: '_indice', formato: 'numero' }, { etiqueta: 'Producto', campo: 'producto' }, { etiqueta: 'Uds', campo: 'cantidad', formato: 'numero' }, { etiqueta: 'Ingresos', campo: 'ingresos', formato: 'moneda' }],
+    menosVendidos: [{ etiqueta: '#', campo: '_indice', formato: 'numero' }, { etiqueta: 'Producto', campo: 'producto' }, { etiqueta: 'Uds', campo: 'cantidad', formato: 'numero' }, { etiqueta: 'Ingresos', campo: 'ingresos', formato: 'moneda' }],
+    alertas: [{ etiqueta: 'Producto', campo: 'producto' }, { etiqueta: 'Categoría', campo: 'categoria' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Stock', campo: 'stock', formato: 'numero' }, { etiqueta: 'Mínimo', campo: 'stock_minimo', formato: 'numero' }, { etiqueta: 'Precio', campo: 'precio_venta', formato: 'moneda' }, { etiqueta: 'Ubicación', campo: 'ubicacion' }, { etiqueta: 'Estado', campo: 'estado' }],
+    rotacion: [{ etiqueta: 'Producto', campo: 'producto' }, { etiqueta: 'Categoría', campo: 'categoria' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Stock', campo: 'stock', formato: 'numero' }, { etiqueta: 'Precio', campo: 'precio_venta', formato: 'moneda' }, { etiqueta: 'Última venta', campo: 'ultima_venta' }, { etiqueta: 'Días sin venta', campo: 'dias_sin_venta', formato: 'numero' }, { etiqueta: 'Rotación', campo: 'rotacion' }],
+    valorizacion: [{ etiqueta: 'Categoría', campo: 'categoria' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Productos', campo: 'productos', formato: 'numero' }, { etiqueta: 'Stock total', campo: 'stock_total', formato: 'numero' }, { etiqueta: 'Costo total', campo: 'costo_total', formato: 'moneda' }, { etiqueta: 'Valor venta', campo: 'valor_venta_total', formato: 'moneda' }, { etiqueta: 'Utilidad potencial', campo: 'utilidad_potencial', formato: 'moneda' }],
+    movimientos: [{ etiqueta: 'Fecha', campo: 'fecha' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Producto', campo: 'producto' }, { etiqueta: 'Tipo', campo: 'tipo_mov' }, { etiqueta: 'Origen', campo: 'origen' }, { etiqueta: 'Cant.', campo: 'cantidad', formato: 'numero' }, { etiqueta: 'Monto', campo: 'monto', formato: 'moneda' }, { etiqueta: 'Usuario', campo: 'usuario' }],
+    ventasPeriodo: [{ etiqueta: 'Período', campo: '_periodo' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Tipo', campo: 'tipo' }, { etiqueta: 'Método', campo: 'metodo_pago' }, { etiqueta: 'Operaciones', campo: 'operaciones', formato: 'numero' }, { etiqueta: 'Líneas históricas', campo: 'lineas_legacy', formato: 'numero' }, { etiqueta: 'Unidades', campo: 'unidades', formato: 'numero' }, { etiqueta: 'Total Bs', campo: 'total_bs', formato: 'moneda' }],
+    utilidad: [{ etiqueta: 'Período', campo: '_periodo' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Producto', campo: 'producto' }, { etiqueta: 'Cant.', campo: 'cantidad', formato: 'numero' }, { etiqueta: 'Ingresos', campo: 'ingresos', formato: 'moneda' }, { etiqueta: 'Costo', campo: 'costo', formato: 'moneda' }, { etiqueta: 'Utilidad', campo: 'utilidad_bruta', formato: 'moneda' }, { etiqueta: 'Sin costo', campo: 'unidades_sin_costo', formato: 'numero' }],
+    flujo: [{ etiqueta: 'Período', campo: '_periodo' }, { etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Método', campo: 'metodo_pago' }, { etiqueta: 'Tipo', campo: 'tipo' }, { etiqueta: 'Entradas', campo: 'total_entradas', formato: 'moneda' }, { etiqueta: 'Salidas', campo: 'total_salidas', formato: 'moneda' }, { etiqueta: 'Saldo neto', campo: 'saldo_neto', formato: 'moneda' }, { etiqueta: 'Mov.', campo: 'movimientos', formato: 'numero' }],
+    cobrar: [{ etiqueta: 'Sucursal', campo: 'sucursal' }, { etiqueta: 'Cliente', campo: 'cliente' }, { etiqueta: 'Cuentas', campo: 'cuentas', formato: 'numero' }, { etiqueta: 'Total adeudado', campo: 'total_adeudado', formato: 'moneda' }, { etiqueta: 'Total abonado', campo: 'total_abonado', formato: 'moneda' }, { etiqueta: 'Saldo pendiente', campo: 'saldo_pendiente', formato: 'moneda' }, { etiqueta: 'Canceladas', campo: 'canceladas', formato: 'numero' }, { etiqueta: 'Pendientes', campo: 'pendientes', formato: 'numero' }],
+};
+
 let observadorReportesMovil = null;
+let moduloPdfReportes = null;
+let cargaModuloPdfReportes = null;
+const ES_MOVIL = /Android|iPhone|iPad|iPod/i;
 
 function escaparHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
@@ -84,7 +100,35 @@ function observarTablasReportesMovil() {
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
-export function _formatearBs(v) { return 'Bs ' + Number(v || 0).toFixed(2); }
+
+function guardarReportePdf(tipo, datos, titulo, resumen, boton) {
+    setRptCache(tipo, { datos, columnas: COLUMNAS_PDF[tipo], titulo, resumen });
+    habilitarPdfReporte(boton);
+}
+
+function habilitarPdfReporte(id) {
+    const boton = document.getElementById(id);
+    if (!boton) return;
+    boton.style.display = 'inline-block';
+    boton.disabled = true;
+    cargarModuloPdfReportes().then(() => { boton.disabled = false; }).catch(() => {
+        boton.style.display = 'none';
+        mostrarMsg('No se pudo preparar el PDF', 'err');
+    });
+}
+
+function cargarModuloPdfReportes() {
+    if (!cargaModuloPdfReportes) {
+        cargaModuloPdfReportes = import('./reportes-pdf.js').then(modulo => {
+            moduloPdfReportes = modulo;
+            return modulo;
+        }).catch(error => {
+            cargaModuloPdfReportes = null;
+            throw error;
+        });
+    }
+    return cargaModuloPdfReportes;
+}
 
 export function obtenerFiltrosReporte() {
     return {
@@ -125,8 +169,7 @@ export async function cargarMasVendidos() {
         const data = await api({ ACCION: "PRODUCTOS_MAS_VENDIDOS", SUCURSAL: sucursal, LIMITE: limite, FECHA_DESDE: fechaDesde, FECHA_HASTA: fechaHasta, TOKEN: store.sessionToken });
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return; }
         renderTablaReporte("tablaRepMas", "totalesMas", data.datos, data.totales, "");
-        setRptCache("masVendidos", { datos: data.datos, cols: ['#', 'Producto', 'Uds', 'Ingresos'], title: 'Productos Más Vendidos', resumen: { cantidad: data.totales.cantidad, ingresos: data.totales.ingresos } });
-        document.getElementById('btnPdfMasVendidos').style.display = 'inline-block';
+        guardarReportePdf('masVendidos', data.datos, 'Productos Más Vendidos', { cantidad: data.totales.cantidad, ingresos: data.totales.ingresos }, 'btnPdfMasVendidos');
     } catch (e) { document.getElementById("tablaRepMas").innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
     loader.style.display = "none";
 }
@@ -142,8 +185,7 @@ export async function cargarMenosVendidos() {
         const data = await api({ ACCION: "PRODUCTOS_MENOS_VENDIDOS", SUCURSAL: sucursal, LIMITE: limite, FECHA_DESDE: fechaDesde, FECHA_HASTA: fechaHasta, TOKEN: store.sessionToken });
         if (!manejarRespuesta(data)) { loader.style.display = "none"; return; }
         renderTablaReporte("tablaRepMenos", "totalesMenos", data.datos, data.totales, "orange");
-        setRptCache("menosVendidos", { datos: data.datos, cols: ['#', 'Producto', 'Uds', 'Ingresos'], title: 'Productos Menos Vendidos', resumen: { cantidad: data.totales.cantidad, ingresos: data.totales.ingresos } });
-        document.getElementById('btnPdfMenosVendidos').style.display = 'inline-block';
+        guardarReportePdf('menosVendidos', data.datos, 'Productos Menos Vendidos', { cantidad: data.totales.cantidad, ingresos: data.totales.ingresos }, 'btnPdfMenosVendidos');
     } catch (e) { document.getElementById("tablaRepMenos").innerHTML = `<div style="color:var(--red);font-size:13px;padding:10px">Error de conexión</div>`; }
     loader.style.display = "none";
 }
@@ -191,8 +233,7 @@ export async function cargarStockAlertas() {
                 h += '<tr><td class="col-prod">' + d.producto + '</td><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono)">' + d.stock + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + d.stock_minimo + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.precio_venta).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + d.ubicacion + '</td><td class="' + estadoClase + '" style="font-size:11px">' + d.estado + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("alertas", { datos: data.datos, cols: ['Producto', 'Categoria', 'Sucursal', 'Stock', 'Minimo', 'Precio', 'Ubicacion', 'Estado'], title: 'Alertas de Stock', resumen: null });
-            document.getElementById('btnPdfAlertas').style.display = 'inline-block';
+            guardarReportePdf('alertas', data.datos, 'Alertas de Stock', null, 'btnPdfAlertas');
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
     loader.style.display = "none";
@@ -214,8 +255,7 @@ export async function cargarRotacionInventario() {
                 h += '<tr><td class="col-prod">' + d.producto + '</td><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono)">' + d.stock + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.precio_venta).toFixed(2) + '</td><td style="font-size:11px;color:var(--muted)">' + (d.ultima_venta || 'Nunca') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.dias_sin_venta + '</td><td class="' + rotClase + '" style="font-size:11px">' + d.rotacion + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("rotacion", { datos: data.datos, cols: ['Producto', 'Categoria', 'Sucursal', 'Stock', 'Precio', 'Ultima venta', 'Dias sin venta', 'Rotacion'], title: 'Rotacion de Inventario', resumen: null });
-            document.getElementById('btnPdfRotacion').style.display = 'inline-block';
+            guardarReportePdf('rotacion', data.datos, 'Rotación de Inventario', null, 'btnPdfRotacion');
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
     loader.style.display = "none";
@@ -239,8 +279,7 @@ export async function cargarValorizacionInventario() {
             });
             tabla.innerHTML = h + '</tbody></table>';
             tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Productos</div><div class="rtc-val">' + productos + '</div></div><div class="reporte-total-card"><div class="rtc-label">Stock total</div><div class="rtc-val">' + stockTotal + '</div></div><div class="reporte-total-card"><div class="rtc-label">Costo total</div><div class="rtc-val">Bs ' + totalCosto.toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Valor venta</div><div class="rtc-val">Bs ' + totalValor.toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad potencial</div><div class="rtc-val">Bs ' + totalUtilidad.toFixed(2) + '</div></div>';
-            setRptCache("valorizacion", { datos: data.datos, cols: ['Categoria', 'Sucursal', 'Productos', 'Stock total', 'Costo total', 'Valor venta', 'Utilidad potencial'], title: 'Valorizacion de Inventario', resumen: { productos: productos, stockTotal: stockTotal, costoTotal: totalCosto, valorVenta: totalValor, utilidadPotencial: totalUtilidad } });
-            document.getElementById('btnPdfValorizacion').style.display = 'inline-block';
+            guardarReportePdf('valorizacion', data.datos, 'Valorización de Inventario', { productos: productos, stockTotal: stockTotal, costoTotal: totalCosto, valorVenta: totalValor, utilidadPotencial: totalUtilidad }, 'btnPdfValorizacion');
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
     loader.style.display = "none";
@@ -262,8 +301,7 @@ export async function cargarHistorialMovimientos(pg) {
                 h += '<tr><td style="font-size:11px;color:var(--muted)">' + fc + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td class="' + tipoClase + '" style="font-size:11px">' + d.tipo_mov + '</td><td style="font-size:10px;color:var(--muted)">' + (d.origen || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.monto).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + (d.usuario || '') + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("movimientos", { datos: data.datos, cols: ['Fecha', 'Sucursal', 'Producto', 'Tipo', 'Origen', 'Cant', 'Monto', 'Usuario'], title: 'Historial de Movimientos', resumen: null });
-            document.getElementById('btnPdfMovimientos').style.display = 'inline-block';
+            guardarReportePdf('movimientos', data.datos, 'Historial de Movimientos', null, 'btnPdfMovimientos');
             if (data.paginas > 1) { pdiv.style.display = "flex"; document.getElementById("paginMovimientos-info").textContent = "Pag " + data.pagina + " de " + data.paginas + " (" + data.total + " total)"; pdiv.querySelector("button:first-child").disabled = (pg <= 1); pdiv.querySelector("button:last-child").disabled = (pg >= data.paginas); } else { pdiv.style.display = "none"; }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
@@ -289,8 +327,7 @@ export async function cargarVentasPeriodo() {
                 h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-size:11px">' + (d.tipo || '') + '</td><td style="font-size:10px;color:var(--muted)">' + (d.metodo_pago || '') + '</td><td style="font-family:var(--mono)">' + d.operaciones + '</td><td style="font-family:var(--mono)">' + (d.lineas_legacy || 0) + '</td><td style="font-family:var(--mono)">' + d.unidades + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.total_bs).toFixed(2) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("ventasPeriodo", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Tipo', 'Metodo', 'Operaciones', 'Líneas históricas', 'Unidades', 'Total Bs'], title: 'Ventas por Periodo', resumen: data.resumen || null });
-            document.getElementById('btnPdfVentas').style.display = 'inline-block';
+            guardarReportePdf('ventasPeriodo', data.datos, 'Ventas por Período', data.resumen || null, 'btnPdfVentas');
             if (data.resumen) {
                 tdiv.style.display = "grid";
                 var r = data.resumen;
@@ -319,8 +356,7 @@ export async function cargarUtilidadBruta() {
                 h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td style="font-family:var(--mono)">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.ingresos).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_bruta).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.unidades_sin_costo || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("utilidad", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Producto', 'Cant', 'Ingresos', 'Costo', 'Utilidad', 'Sin costo'], title: 'Utilidad Bruta', resumen: data.resumen || null });
-            document.getElementById('btnPdfUtilidad').style.display = 'inline-block';
+            guardarReportePdf('utilidad', data.datos, 'Utilidad Bruta', data.resumen || null, 'btnPdfUtilidad');
             if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Ingresos netos</div><div class="rtc-val">Bs ' + Number(data.resumen.ingresos || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Costos históricos</div><div class="rtc-val">Bs ' + Number(data.resumen.costo || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad bruta</div><div class="rtc-val">Bs ' + Number(data.resumen.utilidad_bruta || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Unidades sin costo</div><div class="rtc-val">' + Number(data.resumen.unidades_sin_costo || 0) + '</div></div>'; }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
@@ -343,8 +379,7 @@ export async function cargarFlujoCajaReporte() {
                 h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono);font-size:10px">' + (d.metodo_pago || '') + '</td><td style="font-size:10px">' + (d.tipo || '') + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_entradas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_salidas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_neto).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.movimientos || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("flujo", { datos: data.datos, cols: ['Periodo', 'Sucursal', 'Método', 'Tipo', 'Entradas', 'Salidas', 'Saldo neto', 'Mov.'], title: 'Flujo de Caja', resumen: data.resumen || null });
-            document.getElementById('btnPdfFlujo').style.display = 'inline-block';
+            guardarReportePdf('flujo', data.datos, 'Flujo de Caja', data.resumen || null, 'btnPdfFlujo');
             if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Total entradas</div><div class="rtc-val">Bs ' + Number(data.resumen.total_entradas || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Total salidas</div><div class="rtc-val">Bs ' + Number(data.resumen.total_salidas || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo neto</div><div class="rtc-val">Bs ' + Number(data.resumen.saldo_neto || 0).toFixed(2) + '</div></div>'; }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
@@ -388,8 +423,7 @@ export async function cargarCuentasCobrarReporte() {
                 h += '<tr><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-size:11px">' + d.cliente + '</td><td style="font-family:var(--mono)">' + d.cuentas + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_adeudado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_abonado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_pendiente).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + (d.canceladas || 0) + '</td><td style="font-family:var(--mono);font-size:11px">' + (d.pendientes || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
-            setRptCache("cobrar", { datos: data.datos, cols: ['Sucursal', 'Cliente', 'Cuentas', 'Total adeudado', 'Total abonado', 'Saldo pendiente', 'Canceladas', 'Pendientes'], title: 'Cuentas por Cobrar', resumen: data.resumen || null });
-            document.getElementById('btnPdfCobrar').style.display = 'inline-block';
+            guardarReportePdf('cobrar', data.datos, 'Cuentas por Cobrar', data.resumen || null, 'btnPdfCobrar');
             if (data.resumen) { tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Total adeudado</div><div class="rtc-val">Bs ' + Number(data.resumen.total_adeudado || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Total abonado</div><div class="rtc-val">Bs ' + Number(data.resumen.total_abonado || 0).toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Saldo pendiente</div><div class="rtc-val">Bs ' + Number(data.resumen.saldo_pendiente || 0).toFixed(2) + '</div></div>'; }
         }
     } catch (e) { tabla.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Error de conexion</div>'; }
@@ -398,108 +432,111 @@ export async function cargarCuentasCobrarReporte() {
 
 // ===== FUNCIONES PDF PARA REPORTES ==================================
 
-// ══ IMPRIMIR REPORTE GENÉRICO ═════════════════════════════════=
-export function imprimirReporte(title, cols, datos, resumen) {
-    var pa = document.getElementById('printArea');
-    var h = '';
-    h += '<div class="print-header">';
-    h += '<div class="print-logo"><i class="fa-solid fa-boxes-stacked"></i> GRUPO ERUDITOS</div>';
-    h += '<div class="print-sub">Sistema de Inventario</div>';
-    h += '</div>';
-    h += '<div class="print-title">' + title + '</div>';
-    h += '<div class="print-meta">Generado: ' + new Date().toLocaleString("es-BO", { timeZone: "America/La_Paz", hour12: false }) + ' · Usuario: ' + store.sessionUser + '</div>';
-    if (resumen) {
-        h += '<div class="print-summary">';
-        for (var k in resumen) {
-            var v = resumen[k];
-            var label = k.replace(/([A-Z])/g, ' $1').replace(/^./, function (s) { return s.toUpperCase(); });
-            var val = (typeof v === 'number') ? (v % 1 === 0 ? v.toLocaleString() : _formatearBs(v)) : v;
-            h += '<div class="print-summary-card"><div class="psc-label">' + label + '</div><div class="psc-val">' + val + '</div></div>';
-        }
-        h += '</div>';
+// ══ PDF GENÉRICO ══════════════════════════════════════════════
+export function imprimirReporte(reporte) {
+    if (!moduloPdfReportes) {
+        cargarModuloPdfReportes();
+        mostrarMsg('Preparando el PDF. Intenta nuevamente en un momento', 'ok');
+        return;
     }
-    h += '<table><thead><tr>';
-    cols.forEach(function (c) { h += '<th>' + c + '</th>'; });
-    h += '</tr></thead><tbody>';
-    datos.forEach(function (d) {
-        h += '<tr>';
-        cols.forEach(function (c) {
-            var v = d[c] !== undefined ? d[c] : d[c.toLowerCase()];
-            if (v === undefined || v === null) v = '';
-            h += '<td>' + v + '</td>';
-        });
-        h += '</tr>';
-    });
-    h += '</tbody></table>';
-    h += '<div class="print-footer">GRUPO ERUDITOS &copy; ' + new Date().getFullYear() + ' · Este documento es una representacion impresa de los datos del sistema.</div>';
-    pa.innerHTML = h;
-    setTimeout(function () {
-        _imprimirOMostrar(pa);
-        pa.innerHTML = "";
-    }, 200);
+    const documento = {
+        ...reporte,
+        fecha: new Date().toLocaleString("es-BO", { timeZone: "America/La_Paz", hour12: false }),
+        usuario: store.sessionUser,
+    };
+    if (ES_MOVIL.test(navigator.userAgent)) compartirReportePdf(documento);
+    else imprimirReporteDirecto(documento);
 }
 
-function _imprimirOMostrar(pa) {
-    var esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (esMovil) {
-        var blob = new Blob(['<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;padding:16px;color:#000;max-width:600px;margin:0 auto}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}th{background:#eee;padding:6px 8px;text-align:left;border-bottom:2px solid #000}td{padding:5px 8px;border-bottom:1px solid #ddd}.print-header{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px}.print-header .print-logo{font-size:20px;font-weight:700}.print-header .print-sub{font-size:11px;color:#555}.print-title{font-size:16px;font-weight:700;text-align:center;margin:12px 0}.print-meta{font-size:11px;color:#555;margin-bottom:10px;text-align:center}.print-summary{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.print-summary-card{border:1px solid #ddd;padding:10px 16px;border-radius:6px;flex:1;min-width:100px;text-align:center}.print-summary-card .psc-label{font-size:10px;color:#555}.print-summary-card .psc-val{font-size:16px;font-weight:700}.print-footer{text-align:center;font-size:10px;color:#888;margin-top:20px;border-top:1px solid #ccc;padding-top:10px}</style></head><body>' + pa.innerHTML + '</body></html>'], { type: 'text/html' });
-        var url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(function() { URL.revokeObjectURL(url); }, 60000);
-    } else {
-        window.print();
+function imprimirReporteDirecto(reporte) {
+    const area = document.getElementById('printArea');
+    if (!area) return;
+    area.className = 'reporte-print';
+    area.innerHTML = moduloPdfReportes.construirReporteParaImprimir(reporte);
+    window.addEventListener('afterprint', () => {
+        area.innerHTML = '';
+        area.className = '';
+    }, { once: true });
+    setTimeout(() => window.print(), 50);
+}
+
+function compartirReportePdf(reporte) {
+    const pdf = moduloPdfReportes.crearArchivoPdfReporte(reporte);
+    const nombre = `reporte-${normalizarNombreArchivo(reporte.titulo)}.pdf`;
+    if (typeof File !== 'undefined' && navigator.share) {
+        const archivo = new File([pdf], nombre, { type: 'application/pdf' });
+        if (!navigator.canShare || navigator.canShare({ files: [archivo] })) {
+            navigator.share({ title: reporte.titulo, files: [archivo] }).catch(error => {
+                if (error?.name !== 'AbortError') descargarReportePdf(pdf, nombre);
+            });
+            return;
+        }
     }
+    descargarReportePdf(pdf, nombre);
+}
+
+function descargarReportePdf(pdf, nombre) {
+    const enlace = document.createElement('a');
+    const url = URL.createObjectURL(pdf);
+    enlace.href = url;
+    enlace.download = nombre;
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+function normalizarNombreArchivo(valor) {
+    return String(valor || 'reporte').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'reporte';
 }
 
 // ══ IMPRIMIR ALERTAS ═══════════════════════════════════════════
 export function imprimirReporteAlertas() {
     var c = store._rptCache.alertas; if (!c) { mostrarMsg('Primero consulta las alertas', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteRotacion() {
     var c = store._rptCache.rotacion; if (!c) { mostrarMsg('Primero consulta la rotacion', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteValorizacion() {
     var c = store._rptCache.valorizacion; if (!c) { mostrarMsg('Primero calcula la valorizacion', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteMovimientos() {
     var c = store._rptCache.movimientos; if (!c) { mostrarMsg('Primero consulta los movimientos', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteVentas() {
     var c = store._rptCache.ventasPeriodo; if (!c) { mostrarMsg('Primero genera el reporte de ventas', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteUtilidad() {
     var c = store._rptCache.utilidad; if (!c) { mostrarMsg('Primero calcula la utilidad', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteFlujo() {
     var c = store._rptCache.flujo; if (!c) { mostrarMsg('Primero genera el flujo de caja', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteCobrar() {
     var c = store._rptCache.cobrar; if (!c) { mostrarMsg('Primero consulta las cuentas', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteMasVendidos() {
     var c = store._rptCache.masVendidos; if (!c) { mostrarMsg('Primero genera el reporte', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 export function imprimirReporteMenosVendidos() {
     var c = store._rptCache.menosVendidos; if (!c) { mostrarMsg('Primero genera el reporte', 'err'); return; }
-    imprimirReporte(c.title, c.cols, c.datos, c.resumen);
+    imprimirReporte(c);
 }
 
 // ── Init: main.js llamará initReportes() en fase 5 ──────────

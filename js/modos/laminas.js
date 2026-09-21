@@ -10,7 +10,13 @@ let busquedaLaminasVersion = 0;
 let paginaLaminas = 1;
 let totalLaminas = 0;
 let laminaEditando = null;
+const reportesSinStockCache = new Map();
+const reportesSinStockPendientes = new Map();
+let moduloPdfLaminas = null;
+let cargaModuloPdfLaminas = null;
+let versionReporteSinStock = 0;
 const LIMITE_LAMINAS = 20;
+const ES_MOVIL = /Android|iPhone|iPad|iPod/i;
 let _verif = null;
 export function initLaminas(cb) {
     if (cb && cb.verificarEstadoCaja) _verif = cb.verificarEstadoCaja;
@@ -118,7 +124,7 @@ export function renderLaminaCard (lam) {
       , nuevoEstado = esDis ? "SIN STOCK" : "DISPONIBLE"
       , btnLabel = esDis ? "❌ Sin stock" : "✅ Disponible"
       , acciones = can("laminas.editar")
-        ? `<button class="btn-icon" data-accion="editar" title="Editar lámina">✏️</button><button class="btn-icon" data-accion="cambiar-estado" title="Cambiar estado">${btnLabel}</button>`
+        ? `<button class="btn-icon lam-accion" data-accion="editar" title="Editar lámina">✏️ Editar</button><button class="btn-icon lam-accion" data-accion="cambiar-estado" title="Cambiar estado">${btnLabel}</button>`
         : "";
     div.innerHTML = `<div class="lamina-info"><div class="lam-titulo">${escaparHtml(lam.titulo || "Sin título")}</div><div class="lamina-detalles"><div class="lamina-detalle"><span class="lamina-detalle-label">Categoría</span><span class="lamina-detalle-valor">${escaparHtml(lam.categoria || "—")}</span></div><div class="lamina-detalle"><span class="lamina-detalle-label">Ubicación</span><span class="lamina-detalle-valor">${escaparHtml(lam.ubicacion || "—")}</span></div></div></div><div class="lam-actions"><span class="${estadoClass}">${escaparHtml(lam.estado || "—")}</span>${acciones}</div>`;
     div.addEventListener('click', () => abrirDetalleLamina(lam));
@@ -159,6 +165,7 @@ export async function cambiarEstadoLamina (id, nuevoEstado, btn) {
         }
         if (data.ok) {
             mostrarMsg(`✅ Lámina marcada como ${nuevoEstado}`, "ok");
+            invalidarReporteLaminasSinStock();
             const t = document.getElementById("laminaInput").value.trim();
             const suc = document.getElementById("laminaFiltroSucursal").value;
             const est = document.getElementById("laminaFiltroEstado").value;
@@ -211,6 +218,7 @@ export async function agregarLamina () {
         }
         if (data.ok) {
             mostrarMsg(`🖼️ Lámina "${data.titulo}" agregada correctamente`, "ok");
+            invalidarReporteLaminasSinStock();
             document.getElementById("nuevaLaminaTitulo").value = "";
             document.getElementById("nuevaLaminaCategoria").value = "";
             document.getElementById("nuevaLaminaSucursal").value = "";
@@ -226,13 +234,154 @@ export async function agregarLamina () {
 }
 
 // ── Init laminas ──
-export function initLaminasMode() {}
+export function initLaminasMode() {
+    const selector = document.getElementById("laminaFiltroSucursal");
+    if (selector && !selector._reporteLaminasInicializado) {
+        selector._reporteLaminasInicializado = true;
+        selector.addEventListener("change", () => prepararReporteLaminasSinStock(selector.value));
+        if (selector.value) prepararReporteLaminasSinStock(selector.value);
+    }
+    if (document.getElementById("btnPdfLaminasSinStock")) return;
+    const buscar = document.querySelector("#lam-BUSCAR button[onclick='buscarLaminas(true)']");
+    if (!buscar) return;
+    const boton = document.createElement("button");
+    boton.id = "btnPdfLaminasSinStock";
+    boton.type = "button";
+    boton.className = "btn btn-ghost btn-sm mb-12 no-print";
+    boton.innerHTML = '<i class="fa-solid fa-file-pdf"></i> PDF sin stock';
+    boton.addEventListener("click", generarReporteLaminasSinStock);
+    buscar.insertAdjacentElement("afterend", boton);
+}
 
 export function cambiarPaginaLaminas(delta) {
     const paginas = Math.ceil(totalLaminas / LIMITE_LAMINAS);
     const destino = paginaLaminas + Number(delta || 0);
     if (destino < 1 || destino > paginas) return;
     buscarLaminas(true, destino);
+}
+
+export async function generarReporteLaminasSinStock() {
+    if (!store.sessionToken) {
+        mostrarMsg("Sesión expirada", "err");
+        return;
+    }
+    const selector = document.getElementById("laminaFiltroSucursal");
+    const sucursal = selector.value;
+    if (!sucursal) {
+        mostrarMsg("Selecciona una sucursal para generar el PDF", "err");
+        return;
+    }
+    const laminas = reportesSinStockCache.get(sucursal);
+    if (!laminas || !moduloPdfLaminas) {
+        prepararReporteLaminasSinStock(sucursal);
+        mostrarMsg("Preparando el PDF. Intenta nuevamente en un momento", "ok");
+        return;
+    }
+    if (!laminas.length) {
+        mostrarMsg("No hay láminas sin stock en esta sucursal", "ok");
+        return;
+    }
+    const sucursalVisible = selector.selectedOptions?.[0]?.textContent || sucursal;
+    const fecha = new Date().toLocaleString("es-BO", { timeZone: "America/La_Paz", hour12: false });
+    if (ES_MOVIL.test(navigator.userAgent)) {
+        compartirPdfLaminasSinStock(laminas, sucursalVisible, fecha);
+    } else {
+        imprimirReporteLaminasSinStock(laminas, sucursalVisible, fecha);
+    }
+}
+
+function precargarReporteLaminasSinStock(sucursal) {
+    if (!sucursal || !store.sessionToken || reportesSinStockCache.has(sucursal)) return Promise.resolve();
+    if (reportesSinStockPendientes.has(sucursal)) return reportesSinStockPendientes.get(sucursal);
+    const version = versionReporteSinStock;
+    let preparacion;
+    preparacion = (async () => {
+        try {
+            const data = await api({
+                ACCION: "LISTAR_LAMINAS_SIN_STOCK",
+                SUCURSAL: sucursal,
+                TOKEN: store.sessionToken,
+            });
+            if (manejarRespuesta(data) && data.ok && version === versionReporteSinStock) reportesSinStockCache.set(sucursal, data.datos || []);
+        } catch (_) {
+            mostrarMsg("No se pudo preparar el PDF", "err");
+        } finally {
+            if (reportesSinStockPendientes.get(sucursal) === preparacion) reportesSinStockPendientes.delete(sucursal);
+        }
+    })();
+    reportesSinStockPendientes.set(sucursal, preparacion);
+    return preparacion;
+}
+
+function prepararReporteLaminasSinStock(sucursal) {
+    if (!sucursal || !store.sessionToken) return Promise.resolve();
+    const boton = document.getElementById("btnPdfLaminasSinStock");
+    if (boton) boton.disabled = true;
+    return Promise.all([precargarReporteLaminasSinStock(sucursal), precargarModuloPdfLaminas()])
+        .catch(() => mostrarMsg("No se pudo preparar el PDF", "err"))
+        .finally(() => { if (boton) boton.disabled = false; });
+}
+
+function precargarModuloPdfLaminas() {
+    if (!cargaModuloPdfLaminas) {
+        cargaModuloPdfLaminas = import("./laminas-pdf.js").then((modulo) => {
+            moduloPdfLaminas = modulo;
+            return modulo;
+        }).catch((error) => {
+            cargaModuloPdfLaminas = null;
+            throw error;
+        });
+    }
+    return cargaModuloPdfLaminas;
+}
+
+function invalidarReporteLaminasSinStock() {
+    versionReporteSinStock += 1;
+    reportesSinStockCache.clear();
+    reportesSinStockPendientes.clear();
+    const selector = document.getElementById("laminaFiltroSucursal");
+    if (selector?.value) prepararReporteLaminasSinStock(selector.value);
+}
+
+function imprimirReporteLaminasSinStock(laminas, sucursal, fecha) {
+    const area = document.getElementById("printArea");
+    if (!area || !moduloPdfLaminas) return;
+    area.className = "laminas-print";
+    area.innerHTML = moduloPdfLaminas.construirReporteLaminasSinStock(laminas, sucursal, fecha);
+    window.addEventListener("afterprint", () => {
+        area.innerHTML = "";
+        area.className = "";
+    }, { once: true });
+    setTimeout(() => window.print(), 50);
+}
+
+function compartirPdfLaminasSinStock(laminas, sucursal, fecha) {
+    if (!moduloPdfLaminas) return;
+    const archivoPdf = moduloPdfLaminas.crearArchivoPdfLaminasSinStock(laminas, sucursal, fecha);
+    const nombre = `laminas-sin-stock-${normalizarNombreArchivo(sucursal)}.pdf`;
+    if (typeof File !== "undefined" && navigator.share) {
+        const archivo = new File([archivoPdf], nombre, { type: "application/pdf" });
+        if (!navigator.canShare || navigator.canShare({ files: [archivo] })) {
+            navigator.share({ title: "Láminas sin stock", files: [archivo] }).catch((error) => {
+                if (error?.name !== "AbortError") descargarPdfLaminas(archivoPdf, nombre);
+            });
+            return;
+        }
+    }
+    descargarPdfLaminas(archivoPdf, nombre);
+}
+
+function descargarPdfLaminas(pdf, nombre) {
+    const enlace = document.createElement("a");
+    const url = URL.createObjectURL(pdf);
+    enlace.href = url;
+    enlace.download = nombre;
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+function normalizarNombreArchivo(valor) {
+    return String(valor || "sucursal").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)/g, "").toLowerCase() || "sucursal";
 }
 
 export function abrirDetalleLamina(lam) {
