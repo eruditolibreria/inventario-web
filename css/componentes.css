@@ -1908,7 +1908,7 @@
 
 /* Overlays de clientes y cuentas diversas: panel sólido y contraste temático. */
 #clienteFormOverlay,#cuentaDiversaDetalleOverlay{padding:20px;background:rgba(0,0,0,.76);backdrop-filter:blur(3px)}
-#clienteFormOverlay .clientes-modal,#cuentaDiversaDetalleOverlay .clientes-modal{padding:22px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+#clienteFormOverlay .clientes-modal,#clientePagoOverlay .clientes-modal,#cuentaDiversaDetalleOverlay .clientes-modal{padding:22px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
 #clienteFormOverlay .clientes-modal-head,#cuentaDiversaDetalleOverlay .clientes-modal-head{padding-bottom:12px;border-bottom:1px solid var(--border)}
 #clienteFormOverlay .clientes-modal-head strong,#cuentaDiversaDetalleOverlay .clientes-modal-head strong,#cuentaDiversaDetalleOverlay .cliente-perfil-head h2,#cuentaDiversaDetalleOverlay .cliente-datos-grid strong{color:var(--text)}
 #clienteFormOverlay .field-label,#cuentaDiversaDetalleOverlay .cliente-datos-grid span{color:var(--accent-text);font-weight:700}
