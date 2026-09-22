@@ -55,8 +55,6 @@ import { initCompra, toggleClienteCompra, buscarProductoCompra, registrarCompra,
   from './modos/compra.js';
 import { initGasto, toggleAcreedorGasto, registrarGasto }
   from './modos/gasto.js';
-import { initClientes, cargarClientesModulo }
-  from './modos/clientes.js';
 import { initCuentasCobrar, listarCuentasCobrar, abrirFormAbonoCobrar,
          cancelarAbonoCobrar, confirmarAbonoCobrar, registrarCuentaCobrar,
          toggleMovimientoCuentaCobrar }
@@ -94,6 +92,7 @@ import { initRealtime } from './realtime.js';
 let adminModuloPromise = null;
 let reportesModuloPromise = null;
 let auditoriaModuloPromise = null;
+let clientesModuloPromise = null;
 let adminInicializado = false;
 let reportesInicializado = false;
 let auditoriaInicializada = false;
@@ -168,7 +167,27 @@ function ejecutarAuditoria(nombre) {
     return async (...args) => (await obtenerAuditoria())[nombre](...args);
 }
 
+function precargarClientes() {
+    if (!clientesModuloPromise) clientesModuloPromise = import('./modos/clientes.js').catch(error => {
+        clientesModuloPromise = null;
+        throw error;
+    });
+    return clientesModuloPromise;
+}
+
+async function cargarClientesModulo(pagina) {
+    try {
+        const modulo = await precargarClientes();
+        if (store.modoActual === 'CLIENTES') {
+            modulo.initClientes();
+            modulo.cerrarPerfilCliente(false);
+            return modulo.cargarClientesModulo(pagina);
+        }
+    } catch (_) { mostrarMsg('No se pudo cargar Clientes. Vuelve a intentarlo.', 'err'); }
+}
+
 function precargarModo(modo) {
+    if (modo === "CLIENTES") void precargarClientes().catch(() => {});
     if (modo === "REPORTES") void precargarReportes();
     if (modo === "AUDITORIA") void precargarAuditoria();
     if (modo === "INVENTARIO" || modo === "USUARIOS") void precargarAdmin();
@@ -523,7 +542,6 @@ async function inicializarApp() {
     initCompra({ verificarEstadoCaja: verif });
     initGasto({ verificarEstadoCaja: verif });
     initArqueo({ verificarEstadoCaja: verif });
-    initClientes();
     initCuentasCobrar({ verificarEstadoCaja: verif });
     initCuentasPagar({ verificarEstadoCaja: verif });
     initDevoluciones({ verificarEstadoCaja: verif });

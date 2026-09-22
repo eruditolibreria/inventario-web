@@ -33,7 +33,7 @@ test('la carga inicial conserva separados los módulos secundarios', () => {
   const archivos = cargaInicial();
   const bytes = [...archivos].reduce((total, archivo) => total + fs.statSync(archivo).size, 0);
 
-  ['js/modos/admin.js', 'js/modos/reportes.js', 'js/modos/auditoria.js'].forEach(relativo => {
+  ['js/modos/admin.js', 'js/modos/reportes.js', 'js/modos/auditoria.js', 'js/modos/clientes.js'].forEach(relativo => {
     assert.equal(archivos.has(path.join(ROOT, relativo)), false, `${relativo} no debe ser parte de la carga inicial`);
   });
   assert.ok(bytes <= LIMITE_JS_INICIAL, `La carga inicial suma ${bytes} bytes; el límite es ${LIMITE_JS_INICIAL}`);

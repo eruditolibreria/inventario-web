@@ -10,6 +10,23 @@ let _paginas = 1;
 let _clienteActual = null;
 let _perfil = null;
 let _timerBusqueda = null;
+let _listadoSolicitud = null;
+let _listadoVersion = 0;
+let _listadoSucio = false;
+let _perfilVersion = 0;
+let _perfilControl = null;
+let _tabControl = null;
+let _tabActual = 'HISTORIAL';
+
+const contextoClientes = () => JSON.stringify([store.sessionUsuarioId, store.sessionUser,
+    store.sessionPermisos, store.sessionSucursales, store.sessionAccesoGlobalSucursales]);
+
+function invalidarListado() {
+    ++_listadoVersion;
+    _listadoSolicitud?.control.abort();
+    _listadoSolicitud = null;
+    _listadoSucio = true;
+}
 
 const esc = (v) => String(v ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 const fecha = (v) => {
@@ -116,6 +133,7 @@ export function initClientes() {
     document.getElementById('filtroClientes').addEventListener('change', () => cargarClientesModulo(1));
     document.getElementById('buscarClientes').addEventListener('input', () => {
         clearTimeout(_timerBusqueda);
+        invalidarListado();
         _timerBusqueda = setTimeout(() => cargarClientesModulo(1), 300);
     });
 }
@@ -123,30 +141,51 @@ export function initClientes() {
 export async function cargarClientesModulo(pagina) {
     initClientes();
     if (!store.sessionToken || !document.getElementById('tablaClientes')) return;
-    _pagina = pagina || _pagina;
+    clearTimeout(_timerBusqueda);
+    const solicitada = pagina || _pagina;
+    const contexto = contextoClientes();
+    const busqueda = document.getElementById('buscarClientes').value.trim();
+    const filtro = document.getElementById('filtroClientes').value;
+    const clave = JSON.stringify([contexto, busqueda, filtro, solicitada]);
+    if (_listadoSolicitud?.clave === clave) return _listadoSolicitud.promise;
+    invalidarListado();
+    _pagina = solicitada;
+    const version = _listadoVersion;
+    const control = new AbortController();
+    const vigente = () => version === _listadoVersion && contexto === contextoClientes() && !!store.sessionToken;
     const loader = document.getElementById('loaderClientes');
     const tabla = document.getElementById('tablaClientes');
     loader.style.display = 'block';
-    try {
-        const data = await api({
-            ACCION: 'LISTAR_CLIENTES_MODULO',
-            BUSQUEDA: document.getElementById('buscarClientes').value.trim(),
-            FILTRO: document.getElementById('filtroClientes').value,
-            PAGINA: _pagina,
-            LIMITE: 25,
-            TOKEN: store.sessionToken
-        });
-        if (!manejarRespuesta(data)) return;
-        _paginas = data.paginas || 1;
-        renderClientes(data.datos || []);
-        const pag = document.getElementById('paginClientes');
-        pag.style.display = _paginas > 1 ? 'flex' : 'none';
-        document.getElementById('clientesPaginaInfo').textContent = `Página ${_pagina} de ${_paginas}`;
-        document.getElementById('clientesAnterior').disabled = _pagina <= 1;
-        document.getElementById('clientesSiguiente').disabled = _pagina >= _paginas;
-    } catch (_) {
-        tabla.innerHTML = '<div class="empty-state">No se pudo cargar clientes</div>';
-    } finally { loader.style.display = 'none'; }
+    const solicitud = { clave, control, promise: null };
+    _listadoSolicitud = solicitud;
+    solicitud.promise = (async () => {
+        try {
+            const data = await api({
+                ACCION: 'LISTAR_CLIENTES_MODULO',
+                BUSQUEDA: busqueda,
+                FILTRO: filtro,
+                PAGINA: solicitada,
+                LIMITE: 25,
+                TOKEN: store.sessionToken
+            }, { signal: control.signal });
+            if (!vigente() || !manejarRespuesta(data)) return;
+            if (!data.ok) throw new Error(data.error || 'Error al cargar');
+            _listadoSucio = false;
+            _paginas = data.paginas || 1;
+            renderClientes(data.datos || []);
+            const pag = document.getElementById('paginClientes');
+            pag.style.display = _paginas > 1 ? 'flex' : 'none';
+            document.getElementById('clientesPaginaInfo').textContent = `Página ${_pagina} de ${_paginas}`;
+            document.getElementById('clientesAnterior').disabled = _pagina <= 1;
+            document.getElementById('clientesSiguiente').disabled = _pagina >= _paginas;
+        } catch (error) {
+            if (vigente() && error.name !== 'AbortError') tabla.innerHTML = '<div class="empty-state">No se pudo cargar clientes</div>';
+        } finally {
+            if (version === _listadoVersion) loader.style.display = 'none';
+            if (_listadoSolicitud === solicitud) _listadoSolicitud = null;
+        }
+    })();
+    return solicitud.promise;
 }
 
 function renderClientes(clientes) {
@@ -232,31 +271,56 @@ export async function guardarCliente() {
         if (!data.ok) { mostrarMsg('Error: ' + (data.error || 'No se pudo guardar'), 'err'); return; }
         mostrarMsg(id ? 'Cliente actualizado' : 'Cliente creado', 'ok');
         cerrarFormCliente();
-        await cargarClientesModulo(id ? _pagina : 1);
-        if (id && _perfil) await abrirPerfilCliente(id);
+        invalidarListado();
+        if (id && _perfil?.cliente.id === id) await abrirPerfilCliente(id, _tabActual);
+        else await cargarClientesModulo(id ? _pagina : 1);
     } catch (_) { mostrarMsg('Error de conexión', 'err'); }
     finally { loader.style.display = 'none'; }
 }
 
-export async function abrirPerfilCliente(id) {
+export async function abrirPerfilCliente(id, tab = 'HISTORIAL') {
+    const version = ++_perfilVersion;
+    const contexto = contextoClientes();
+    _perfilControl?.abort();
+    _tabControl?.abort();
+    const control = new AbortController();
+    _perfilControl = control;
+    _perfil = null;
     const listado = document.getElementById('clientesListado'), perfil = document.getElementById('clientePerfil');
     listado.classList.add('oculto'); perfil.classList.remove('oculto');
     perfil.innerHTML = '<div class="loader" style="display:block"></div>';
     try {
-        const data = await api({ ACCION: 'OBTENER_CLIENTE', ID: id, TOKEN: store.sessionToken });
+        const data = await api({ ACCION: 'OBTENER_CLIENTE', ID: id, DIFERIDO: true, TAB: tab, TOKEN: store.sessionToken }, { signal: control.signal });
+        if (version !== _perfilVersion || contexto !== contextoClientes() || !store.sessionToken) return;
         if (!manejarRespuesta(data) || !data.ok) { cerrarPerfilCliente(); return; }
-        _perfil = data; _clienteActual = data.cliente;
-        renderPerfil('HISTORIAL');
-    } catch (_) { perfil.innerHTML = '<div class="empty-state">No se pudo cargar el perfil</div>'; }
+        _perfil = { cliente: data.cliente, ventas: [], deudas: [], pagos: [], tabs: {}, contexto };
+        _perfil.tabs[`${data.tab}:1`] = { ...data.movimientos, cachedAt: Date.now() };
+        _clienteActual = data.cliente;
+        renderPerfil(data.tab);
+    } catch (error) {
+        if (version === _perfilVersion && error.name !== 'AbortError') {
+            perfil.innerHTML = '<div class="empty-state">No se pudo cargar el perfil</div><button id="volverClientesError" class="btn btn-ghost">← Clientes</button>';
+            perfil.querySelector('#volverClientesError').addEventListener('click', cerrarPerfilCliente);
+        }
+    }
 }
 
-export function cerrarPerfilCliente() {
+export function cerrarPerfilCliente(recargar = true) {
+    ++_perfilVersion;
+    _perfilControl?.abort();
+    _tabControl?.abort();
     document.getElementById('clientePerfil').classList.add('oculto');
     document.getElementById('clientesListado').classList.remove('oculto');
     _perfil = null;
+    if (recargar && _listadoSucio) cargarClientesModulo(_pagina);
 }
 
 function renderPerfil(tab) {
+    if (!_perfil || _perfil.contexto !== contextoClientes() || !store.sessionToken) {
+        cerrarPerfilCliente();
+        return;
+    }
+    _tabActual = tab;
     const c = _perfil.cliente;
     const root = document.getElementById('clientePerfil');
     root.innerHTML = `
@@ -274,7 +338,45 @@ function renderPerfil(tab) {
         btn.classList.toggle('active', btn.dataset.tab === tab);
         btn.addEventListener('click', () => renderPerfil(btn.dataset.tab));
     });
-    renderPerfilTab(tab);
+    cargarTabPerfil(tab);
+}
+
+async function cargarTabPerfil(tab, pagina = 1) {
+    _tabActual = tab;
+    _tabControl?.abort();
+    const control = new AbortController();
+    _tabControl = control;
+    const perfil = _perfil;
+    if (!perfil) return;
+    if (tab === 'DATOS') { renderPerfilTab(tab); return; }
+    const cont = document.getElementById('clienteTabContenido');
+    const clave = `${tab}:${pagina}`;
+    const vigente = () => _perfil === perfil && _tabControl === control &&
+        perfil.contexto === contextoClientes() && !!store.sessionToken;
+    try {
+        let data = perfil.tabs[clave];
+        if (!data || Date.now() - data.cachedAt >= 15000) {
+            cont.innerHTML = '<div class="loader" style="display:block"></div>';
+            data = await api({ ACCION: 'OBTENER_CLIENTE_MOVIMIENTOS', ID: perfil.cliente.id,
+                TAB: tab, PAGINA: pagina, LIMITE: 25, TOKEN: store.sessionToken }, { signal: control.signal });
+            if (!vigente() || !manejarRespuesta(data)) return;
+            if (!data.ok) throw new Error(data.error || 'Error al cargar');
+            perfil.tabs[clave] = { ...data, cachedAt: Date.now() };
+        }
+        if (!vigente()) return;
+        perfil[{ HISTORIAL: 'ventas', DEUDAS: 'deudas', PAGOS: 'pagos' }[tab]] = data.datos;
+        renderPerfilTab(tab);
+        if (pagina > 1 || data.hayMas) {
+            cont.insertAdjacentHTML('beforeend', `<div class="clientes-paginacion"><button class="btn btn-ghost btn-sm" id="clienteTabAnterior" ${pagina === 1 ? 'disabled' : ''}>← Anterior</button><span>Página ${pagina}</span><button class="btn btn-ghost btn-sm" id="clienteTabSiguiente" ${data.hayMas ? '' : 'disabled'}>Siguiente →</button></div>`);
+            cont.querySelector('#clienteTabAnterior').addEventListener('click', () => cargarTabPerfil(tab, pagina - 1));
+            cont.querySelector('#clienteTabSiguiente').addEventListener('click', () => cargarTabPerfil(tab, pagina + 1));
+        }
+    } catch (error) {
+        if (vigente() && error.name !== 'AbortError') {
+            cont.innerHTML = '<div class="empty-state">No se pudo cargar esta pestaña</div><button class="btn btn-ghost" id="clienteTabReintentar">Reintentar</button>';
+            cont.querySelector('#clienteTabReintentar').addEventListener('click', () => cargarTabPerfil(tab, pagina));
+        }
+    }
 }
 
 function renderPerfilTab(tab) {
@@ -311,6 +413,8 @@ export function abrirPagoCliente(cuentaId) {
 export function cerrarPagoCliente() { document.getElementById('clientePagoOverlay').style.display = 'none'; }
 
 export async function registrarPagoCliente() {
+    const clienteId = _perfil?.cliente.id;
+    if (!clienteId) return;
     const cuentaId = document.getElementById('clientePagoCuentaId').value;
     const monto = Number(document.getElementById('clientePagoMonto').value);
     const deuda = _perfil.deudas.find(d => d.id === cuentaId);
@@ -322,12 +426,15 @@ export async function registrarPagoCliente() {
         if (!data.ok) { mostrarMsg('Error: ' + (data.error || 'No se pudo registrar'), 'err'); return; }
         mostrarMsg('Pago registrado · Saldo: ' + formatearBs(data.nuevoSaldo), 'ok');
         cerrarPagoCliente();
-        await abrirPerfilCliente(_perfil.cliente.id);
+        invalidarListado();
+        if (_perfil?.cliente.id === clienteId) await abrirPerfilCliente(clienteId, 'DEUDAS');
     } catch (_) { mostrarMsg('Error de conexión', 'err'); }
     finally { loader.style.display = 'none'; }
 }
 
 export async function anularPagoCliente(pagoId) {
+    const clienteId = _perfil?.cliente.id;
+    if (!clienteId) return;
     const motivo = prompt('Motivo de la anulación:');
     if (!motivo?.trim()) return;
     try {
@@ -335,6 +442,7 @@ export async function anularPagoCliente(pagoId) {
         if (!manejarRespuesta(data)) return;
         if (!data.ok) { mostrarMsg('Error: ' + (data.error || 'No se pudo anular'), 'err'); return; }
         mostrarMsg('Pago anulado', 'ok');
-        await abrirPerfilCliente(_perfil.cliente.id);
+        invalidarListado();
+        if (_perfil?.cliente.id === clienteId) await abrirPerfilCliente(clienteId, 'PAGOS');
     } catch (_) { mostrarMsg('Error de conexión', 'err'); }
 }

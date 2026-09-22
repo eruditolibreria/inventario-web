@@ -108,6 +108,7 @@ function resolverBaseUrl(accion) {
         LISTAR_CLIENTES_MODULO: BASE_URL_CLIENTES,
         BUSCAR_CLIENTES_VENTA: BASE_URL_CLIENTES,
         OBTENER_CLIENTE: BASE_URL_CLIENTES,
+        OBTENER_CLIENTE_MOVIMIENTOS: BASE_URL_CLIENTES,
         CREAR_CLIENTE: BASE_URL_CLIENTES,
         ACTUALIZAR_CLIENTE: BASE_URL_CLIENTES,
         REGISTRAR_PAGO_CLIENTE: BASE_URL_CLIENTES,
@@ -159,7 +160,7 @@ export async function renovarSesionSiNecesario() {
     return pendiente.promise;
 }
 
-async function api(params) {
+async function api(params, { signal } = {}) {
     const tokenAntesDeRefrescar = store.sessionToken;
     const usuarioAntes = store.sessionUser;
     const publica = params.ACCION === "LOGIN" || params.ACCION === "REFRESH_TOKEN";
@@ -180,7 +181,8 @@ async function api(params) {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${tokenSolicitud || SUPABASE_ANON_KEY}`
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal
     });
     return res.json();
 }
