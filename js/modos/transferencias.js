@@ -121,7 +121,7 @@ function _renderProductos() {
 // Autocompleta productos de la sucursal de origen elegida.
 const _transfAcBuscar = debounce(async function(t, lista, origen) {
     try {
-        const { datos } = await listarProductos({ query: t, sucursal: origen, limite: 8 });
+        const { datos } = await listarProductos({ query: t, sucursal: origen, limite: 8, contar: false });
         if (document.getElementById("transfOrigen")?.value !== origen) return;
         lista.replaceChildren();
         if (!datos.length) { lista.classList.remove("show"); return; }

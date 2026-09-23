@@ -66,31 +66,34 @@ function _mapProducto(r) {
  * @returns {Promise<{datos: Array, total: number}>}
  */
 export async function listarProductos({ query = "", sucursal = null, pagina = 0, limite = 20, contar = true, signal } = {}) {
-    const q = query.replace(/[%_]/g, ch => "\\" + ch);
-    const desde = pagina * limite;
-    const hasta = desde + limite - 1;
-    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS, contar ? { count: "exact" } : undefined);
-    if (sucursal) qb = qb.eq("sucursal", sucursal);
-    if (q) qb = qb.ilike("producto", `%${q}%`);
+    let qb = client.rpc("buscar_inventario_autorizado", {
+        p_busqueda: query,
+        p_sucursal: sucursal,
+        p_limite: limite,
+        p_offset: pagina * limite,
+        p_contar: contar,
+        p_sugerencias: false
+    });
     if (signal) qb = qb.abortSignal(signal);
-    const { data, error, count } = await qb.order("producto").range(desde, hasta);
+    const { data, error } = await qb;
     if (error) throw error;
-    return { datos: (data || []).map(_mapProducto), total: count || 0 };
+    return { datos: (data?.datos || []).map(_mapProducto), total: data?.total || 0 };
 }
 
 /** Sugerencias POS: sin conteo ni columnas administrativas. */
 export async function buscarSugerenciasVenta({ query, sucursal, signal }) {
-    const q = query.replace(/[%_]/g, ch => "\\" + ch);
-    let qb = client.from("inventario_autorizado")
-        .select("id,producto,precio_venta,sucursal,stock,imagen")
-        .eq("sucursal", sucursal)
-        .ilike("producto", "%" + q + "%")
-        .order("producto")
-        .limit(8);
+    let qb = client.rpc("buscar_inventario_autorizado", {
+        p_busqueda: query,
+        p_sucursal: sucursal,
+        p_limite: 8,
+        p_offset: 0,
+        p_contar: false,
+        p_sugerencias: true
+    });
     if (signal) qb = qb.abortSignal(signal);
     const { data, error } = await qb;
     if (error) throw error;
-    return (data || []).map(_mapProducto);
+    return (data?.datos || []).map(_mapProducto);
 }
 
 /** Lista las categorías únicas visibles en el inventario autorizado. */
@@ -132,11 +135,8 @@ export async function buscarProductoPorNombre(producto, sucursal) {
 
 /** Busca un producto por codigo de barras (case-insensitive) */
 export async function buscarProductoPorCodigo(codigo, sucursal) {
-    let qb = client.from("inventario_autorizado").select(PRODUCTO_COLS).ilike("codigo_barras", codigo);
-    if (sucursal) qb = qb.eq("sucursal", sucursal);
-    const { data, error } = await qb.limit(1);
-    if (error) throw error;
-    return data && data.length ? _mapProducto(data[0]) : null;
+    const datos = await buscarProductosPorCodigo(codigo, sucursal);
+    return datos[0] || null;
 }
 
 /** Busca las existencias visibles de un código de barras, opcionalmente por sucursal. */
@@ -215,13 +215,6 @@ export async function reservarStockVenta({ carritoId, producto, sucursal, delta 
 
 /** Lectura ligera para escaneo; no convierte errores de red en productos inexistentes. */
 export async function buscarProductoEscaneoVenta(codigo, sucursal) {
-    let qb = client.from("inventario_autorizado")
-        .select("id,producto,precio_venta,sucursal,stock,imagen,codigo_barras")
-        .eq("sucursal", sucursal);
-    // Los códigos numéricos conservan sus ceros iniciales y usan igualdad indexable.
-    qb = /^[0-9]+$/.test(codigo) ? qb.eq("codigo_barras", codigo)
-        : qb.ilike("codigo_barras", codigo.replace(/[%_]/g, ch => "\\" + ch));
-    const { data, error } = await qb.limit(1);
-    if (error) throw error;
-    return data?.length ? _mapProducto(data[0]) : null;
+    const datos = await buscarProductosPorCodigo(codigo, sucursal);
+    return datos[0] || null;
 }

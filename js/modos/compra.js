@@ -419,7 +419,7 @@ async function verProveedor(idProveedor) {
 // Al seleccionar, precarga todos los datos del producto + los de su ultima compra
 const _compraAcBuscar = debounce(async function(t, s, l, info) {
     try {
-        const { datos } = await listarProductos({ query: t, sucursal: s, limite: 8 });
+        const { datos } = await listarProductos({ query: t, sucursal: s, limite: 8, contar: false });
         construirAC(l, datos, async p => {
             document.getElementById("productoCompra").value = p.producto;
             document.getElementById("categoriaCompra").value = p.categoria || "";

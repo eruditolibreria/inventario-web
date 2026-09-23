@@ -939,7 +939,7 @@ function initScannerInput() {
 }
 
 // Busca productos en inventario para autocompletar en la venta
-// (paginado server-side con debounce de 300ms; RLS aplica)
+// (paginado server-side con debounce de 200ms; RLS aplica)
 let _productoSeleccionadoVenta = null;
 let _ventaAcSeq = 0;
 let _ventaAcController = null;
@@ -963,7 +963,7 @@ const _ventaAcBuscar = debounce(async function(t, su, seq) {
             info.classList.add("show")
         });
     } catch (_) {}
-}, 300);
+}, 200);
 
 export function buscarProductoVenta() {
     const seq = ++_ventaAcSeq;
