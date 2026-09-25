@@ -98,6 +98,18 @@ test('una pestaña atrasada no pisa la pestaña seleccionada', async () => {
     assert.match(h.element('clienteTabContenido').innerHTML, /cliente-datos-grid/);
 });
 
+test('la pestaña Club carga y muestra el resumen del cliente', async () => {
+    const h = setup();
+    const a = h.ctx.abrirPerfilCliente('c1'); h.pending[0].resolve(perfil()); await a;
+    h.ctx.renderPerfil('CLUB');
+    assert.equal(h.pending[1].body.ACCION, 'CLUB_OBTENER_CLIENTE');
+    h.pending[1].resolve({ ok: true, cuenta: { saldo_disponible: 25, saldo_pendiente: 3, total_ganado: 28 }, movimientos: [], vinculada: false });
+    await tick();
+    assert.match(h.element('clienteTabContenido').innerHTML, /Puntos disponibles/);
+    assert.match(h.element('clienteTabContenido').innerHTML, />25</);
+    assert.match(h.element('clienteTabContenido').innerHTML, /Sin vincular/);
+});
+
 test('cerrar el perfil descarta su respuesta pendiente', async () => {
     const h = setup();
     const a = h.ctx.abrirPerfilCliente('c1');

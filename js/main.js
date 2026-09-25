@@ -191,6 +191,23 @@ function precargarModo(modo) {
     if (modo === "REPORTES") void precargarReportes();
     if (modo === "AUDITORIA") void precargarAuditoria();
     if (modo === "INVENTARIO" || modo === "USUARIOS") void precargarAdmin();
+    if (modo === "CLUB") void precargarClub();
+}
+
+let clubModuloPromise = null;
+function precargarClub() {
+    if (!clubModuloPromise) clubModuloPromise = import('./modos/club.js').catch(error => {
+        clubModuloPromise = null;
+        throw error;
+    });
+    return clubModuloPromise;
+}
+
+async function cargarClub() {
+    try {
+        const modulo = await precargarClub();
+        if (store.modoActual === 'CLUB') await modulo.cargarClub();
+    } catch (_) { mostrarMsg('No se pudo cargar Club Eruditos. Vuelve a intentarlo.', 'err'); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -524,6 +541,7 @@ async function inicializarApp() {
             cargarProveedoresCompra();
         },
         prepararGasto: toggleAcreedorGasto,
+        cargarClub,
     });
 
     // Inyectar dependencias en inventario

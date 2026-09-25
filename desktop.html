@@ -6,7 +6,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <!--- PWA --->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#00e676">
     <meta name="mobile-web-app-capable" content="yes">
@@ -99,16 +98,14 @@
         }
     </script>
     <title>Sistema Inventario — Grupo Eruditos</title>
-    <!-- Estilos locales -->
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/tema.css">
     <link rel="stylesheet" href="/css/layout.css">
     <link rel="stylesheet" href="/css/login.css">
     <link rel="stylesheet" href="/css/componentes.css">
+    <link rel="stylesheet" href="/css/club.css">
     <link rel="stylesheet" href="/css/desktop-layout.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome 6 para iconos vectoriales -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body class="desktop">
@@ -179,6 +176,7 @@
                     <span class="sidebar-icon"><i class="fa-solid fa-address-book"></i></span>
                     <span>Clientes</span>
                 </div>
+                <div class="sidebar-item" id="sidebar-tab-CLUB" data-modo="CLUB" onclick="document.getElementById('tab-CLUB').click()"><span class="sidebar-icon"><i class="fa-solid fa-star"></i></span><span>Club Eruditos</span></div>
                 <div class="sidebar-item" id="sidebar-tab-COMPRA" data-modo="COMPRA" onclick="document.getElementById('tab-COMPRA').click()">
                     <span class="sidebar-icon"><i class="fa-solid fa-cart-shopping"></i></span>
                     <span>Compra</span>
@@ -264,6 +262,7 @@
                             <div class="mode-tab" id="tab-CLIENTES" aria-label="Clientes">
                                 <span class="tab-icon"><i class="fa-solid fa-address-book"></i></span>Clientes
                             </div>
+                            <div class="mode-tab" id="tab-CLUB" aria-label="Club Eruditos"><span class="tab-icon"><i class="fa-solid fa-star"></i></span>Club</div>
                             <div class="mode-tab" id="tab-COMPRA" aria-label="Compra">
                                 <span class="tab-icon"><i class="fa-solid fa-cart-shopping"></i></span>Compra
                             </div>
@@ -494,6 +493,10 @@
                         <!-- CLIENTES -->
                         <div id="seccion-CLIENTES" class="oculto">
                             <div id="clientesRoot"></div>
+                        </div>
+
+                        <div id="seccion-CLUB" class="oculto">
+                            <div id="clubRoot"></div>
                         </div>
 
                         <!-- COMPRA -->

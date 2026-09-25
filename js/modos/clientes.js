@@ -330,7 +330,7 @@ function renderPerfil(tab) {
         <div><span>Deuda actual</span><strong class="cliente-deuda">${formatearBs(c.deuda)}</strong></div><div><span>Deuda vencida</span><strong class="cliente-deuda">${formatearBs(c.deudaVencida)}</strong></div>
         <div><span>Crédito disponible</span><strong>${formatearBs(c.creditoDisponible)}</strong></div>
       </div>
-      <div class="sub-tabs clientes-tabs"><button data-tab="HISTORIAL">Historial</button><button data-tab="DEUDAS">Deudas</button><button data-tab="PAGOS">Pagos</button><button data-tab="DATOS">Datos</button></div>
+      <div class="sub-tabs clientes-tabs"><button data-tab="HISTORIAL">Historial</button><button data-tab="DEUDAS">Deudas</button><button data-tab="PAGOS">Pagos</button><button data-tab="CLUB">Club</button><button data-tab="DATOS">Datos</button></div>
       <div id="clienteTabContenido"></div>`;
     root.querySelector('#volverClientes').addEventListener('click', cerrarPerfilCliente);
     root.querySelector('#editarClientePerfil').addEventListener('click', () => abrirFormCliente(c));
@@ -348,11 +348,24 @@ async function cargarTabPerfil(tab, pagina = 1) {
     _tabControl = control;
     const perfil = _perfil;
     if (!perfil) return;
-    if (tab === 'DATOS') { renderPerfilTab(tab); return; }
     const cont = document.getElementById('clienteTabContenido');
-    const clave = `${tab}:${pagina}`;
     const vigente = () => _perfil === perfil && _tabControl === control &&
         perfil.contexto === contextoClientes() && !!store.sessionToken;
+    if (tab === 'DATOS') { renderPerfilTab(tab); return; }
+    if (tab === 'CLUB') {
+        try {
+            cont.innerHTML = '<div class="loader" style="display:block"></div>';
+            const data = await api({ ACCION: 'CLUB_OBTENER_CLIENTE', CLIENTE_ID: perfil.cliente.id });
+            if (!vigente()) return;
+            if (!data.ok) throw new Error(data.error || 'Error al cargar Club');
+            perfil.club = data;
+            renderPerfilTab('CLUB');
+        } catch (error) {
+            if (vigente()) cont.innerHTML = `<div class="empty-state">${esc(error.message || 'No se pudo cargar Club')}</div>`;
+        }
+        return;
+    }
+    const clave = `${tab}:${pagina}`;
     try {
         let data = perfil.tabs[clave];
         if (!data || Date.now() - data.cachedAt >= 15000) {
@@ -389,8 +402,39 @@ function renderPerfilTab(tab) {
     } else if (tab === 'PAGOS') {
         cont.innerHTML = tablaSimple(['Fecha','Origen','Monto','Método','Usuario','Estado',''], _perfil.pagos.map(p => [fecha(p.fechaPago), esc(p.origen || 'Abono a crédito'), formatearBs(p.monto), esc(p.metodoPago), esc(p.usuario), esc(p.estado), can('clientes.anular_pago') && p.anulable !== false && p.estado === 'REGISTRADO' ? `<button class="btn btn-ghost btn-sm" data-anular-pago="${esc(p.id)}">Anular</button>` : '']));
         cont.querySelectorAll('[data-anular-pago]').forEach(btn => btn.addEventListener('click', () => anularPagoCliente(btn.dataset.anularPago)));
+    } else if (tab === 'CLUB') {
+        const club = _perfil.club || {};
+        const cuenta = club.cuenta;
+        cont.innerHTML = `<div class="clientes-resumen"><div><span>Puntos disponibles</span><strong>${Number(cuenta?.saldo_disponible || 0).toLocaleString('es-BO')}</strong></div><div><span>Puntos pendientes</span><strong>${Number(cuenta?.saldo_pendiente || 0).toLocaleString('es-BO')}</strong></div><div><span>Total ganado</span><strong>${Number(cuenta?.total_ganado || 0).toLocaleString('es-BO')}</strong></div><div><span>Portal</span><strong>${club.vinculada ? 'Vinculado' : 'Sin vincular'}</strong></div></div>
+          <div class="row-2 mt-8">${can('club.generar_vinculacion') && !club.vinculada ? '<button id="clienteClubVincular" class="btn btn-primary">Generar código de acceso</button>' : ''}${can('club.recuperar_cuenta') && club.vinculada ? '<button id="clienteClubRecuperar" class="btn btn-ghost">Generar recuperación</button>' : ''}</div>
+          ${can('club.ajustar_puntos') ? '<div class="row-2 mt-8"><input id="clienteClubPuntos" type="number" step="1" placeholder="Puntos (+ o -)"><input id="clienteClubMotivo" placeholder="Motivo del ajuste"><button id="clienteClubAjustar" class="btn btn-ghost">Aplicar ajuste</button></div>' : ''}
+          <div id="clienteClubResultado" class="muted mt-8"></div>
+          <h3 class="mt-8">Movimientos recientes</h3>${tablaSimple(['Fecha','Tipo','Disponibles','Pendientes','Descripción'], (club.movimientos || []).map(m => [fecha(m.creado_en), esc(m.tipo), Number(m.puntos_disponibles_delta || 0), Number(m.puntos_pendientes_delta || 0), esc(m.descripcion || '—')]))}`;
+        cont.querySelector('#clienteClubVincular')?.addEventListener('click', () => accionClubCliente('CLUB_GENERAR_VINCULACION'));
+        cont.querySelector('#clienteClubRecuperar')?.addEventListener('click', () => accionClubCliente('CLUB_GENERAR_RECUPERACION'));
+        cont.querySelector('#clienteClubAjustar')?.addEventListener('click', () => accionClubCliente('CLUB_AJUSTAR_PUNTOS'));
     } else {
         cont.innerHTML = `<div class="cliente-datos-grid"><div><span>Documento</span><strong>${esc(c.documento || '—')}</strong></div><div><span>Teléfono</span><strong>${esc(c.telefono || '—')}</strong></div><div><span>Email</span><strong>${esc(c.email || '—')}</strong></div><div><span>Dirección</span><strong>${esc(c.direccion || '—')}</strong></div><div><span>Límite</span><strong>${formatearBs(c.limiteCredito)}</strong></div><div><span>Observaciones</span><strong>${esc(c.observaciones || '—')}</strong></div></div>`;
+    }
+}
+
+async function accionClubCliente(accion) {
+    const clienteId = _perfil?.cliente.id;
+    const resultado = document.getElementById('clienteClubResultado');
+    if (!clienteId || !resultado) return;
+    const payload = { ACCION: accion, CLIENTE_ID: clienteId };
+    if (accion === 'CLUB_AJUSTAR_PUNTOS') {
+        payload.PUNTOS = Number(document.getElementById('clienteClubPuntos').value);
+        payload.MOTIVO = document.getElementById('clienteClubMotivo').value.trim();
+    }
+    resultado.textContent = 'Procesando…';
+    const data = await api(payload);
+    if (!data.ok) { resultado.textContent = data.error || 'No se pudo completar.'; return; }
+    if (data.tokenVinculacion) resultado.textContent = `Código de vinculación: ${data.tokenVinculacion}`;
+    else if (data.codigoRecuperacion) resultado.textContent = `Código de recuperación: ${data.codigoRecuperacion} (vence en 30 minutos)`;
+    else {
+        resultado.textContent = 'Ajuste aplicado.';
+        await cargarTabPerfil('CLUB');
     }
 }
 

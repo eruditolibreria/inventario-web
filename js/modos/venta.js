@@ -1385,12 +1385,18 @@ export async function cobrar() {
             ajusteRedondeo: Number(data.ajusteRedondeo ?? descuento.ajusteRedondeo ?? 0),
             metodoPago, sucursal, sucursalVisible: document.getElementById("sucursalVenta")?.selectedOptions[0]?.textContent?.trim() || sucursal,
             cliente, clienteId, operacionId: data.operacionId, numero: data.numeroComprobante,
-            usuario: store.sessionUser, fecha: hoy(), hora: horaActual()
+            usuario: store.sessionUser, fecha: hoy(), hora: horaActual(), club: data.club || null
         };
         setUltimaVenta(ventaResumen);
         document.getElementById("btnComprobante").style.display = "inline-block";
-        const toast = mostrarToast(`✅ VENTA REGISTRADA · Bs ${ventaResumen.total.toFixed(2)}${data.numeroComprobante ? " · N° " + data.numeroComprobante : ""}`, "VER COMPROBANTE", () => window.imprimirComprobante?.(), 6500);
+        const puntosClub = Number(data.club?.puntosVenta || 0);
+        const textoClub = puntosClub ? ` · ${puntosClub} punto${puntosClub === 1 ? '' : 's'} Club` : '';
+        const toast = mostrarToast(`✅ VENTA REGISTRADA · Bs ${ventaResumen.total.toFixed(2)}${data.numeroComprobante ? " · N° " + data.numeroComprobante : ""}${textoClub}`, "VER COMPROBANTE", () => window.imprimirComprobante?.(), 6500);
         toast.classList.add("toast-venta-exitosa");
+        if (data.club?.tokenVinculacion) {
+            const codigoClub = data.club.tokenVinculacion;
+            mostrarToast(`⭐ Código Club del cliente: ${codigoClub}`, 'COPIAR', () => navigator.clipboard?.writeText(codigoClub), 12000);
+        }
         document.getElementById("mainPanel").classList.add("ok");
         setTimeout(() => document.getElementById("mainPanel").classList.remove("ok"), 700);
         clearCarrito(); _carritoId = ""; limpiarCarritoDraft(); _limpiarCotizacionEnVenta(); _limpiarDescuentoVenta(); renderCarrito();

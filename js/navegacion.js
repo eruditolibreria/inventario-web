@@ -41,6 +41,7 @@ let _cargarAuditoria = null;
 let _precargarModo = null;
 let _prepararCompra = null;
 let _prepararGasto = null;
+let _cargarClub = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -59,6 +60,7 @@ export function initNavegacion(callbacks) {
     if (callbacks.precargarModo) _precargarModo = callbacks.precargarModo;
     if (callbacks.prepararCompra) _prepararCompra = callbacks.prepararCompra;
     if (callbacks.prepararGasto) _prepararGasto = callbacks.prepararGasto;
+    if (callbacks.cargarClub) _cargarClub = callbacks.cargarClub;
     _bindTabClicks();
 }
 
@@ -282,6 +284,8 @@ export function setModo(modo, direccion, velocidad) {
         if (_cargarUsuarios) _cargarUsuarios();
     if (modo === "CLIENTES" && store.sessionToken)
         if (_cargarClientesModulo) _cargarClientesModulo(1);
+    if (modo === "CLUB" && store.sessionToken)
+        if (_cargarClub) _cargarClub();
     if (modo === "CUENTAS" && store.sessionToken)
         if (_listarCuentasCobrar) _listarCuentasCobrar();
     if (modo === "TRANSFERENCIAS")

@@ -1,6 +1,6 @@
 /* === CONFIGURACION: Constantes, baseURL, permisos, modos === */
 
-const LOCAL = false; // usar true solo para desarrollo local
+const LOCAL = ["localhost", "127.0.0.1"].includes(globalThis.location?.hostname); // local automático, producción por dominio
 
 export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
@@ -29,6 +29,7 @@ export const BASE_URL_CLIENTES      = `${HOST}/clientes`;
 export const BASE_URL_PROVEEDORES   = `${HOST}/proveedores`;
 export const BASE_URL_ARQUEO        = `${HOST}/arqueo`;
 export const BASE_URL_AUDITORIA     = `${HOST}/auditoria`;
+export const BASE_URL_CLUB_ADMIN    = `${HOST}/club-admin`;
 
 export const COMPROBANTE_ANCHO_DEFAULT = "57";
 
@@ -43,5 +44,5 @@ export function claveCarritoDraft(usuarioId) {
   return id ? `${CARRITO_KEY}:${encodeURIComponent(id)}` : null;
 }
 
-export const TODOS_MODOS = ["VENTA", "CLIENTES", "COMPRA", "GASTO", "CAJA", "ARQUEO", "AUDITORIA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
-export const ORDEN_MODOS = ["VENTA","CLIENTES","COMPRA","GASTO","CAJA","ARQUEO","AUDITORIA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];
+export const TODOS_MODOS = ["VENTA", "CLIENTES", "CLUB", "COMPRA", "GASTO", "CAJA", "ARQUEO", "AUDITORIA", "CUENTAS", "DEVOLUCIONES", "TRANSFERENCIAS", "REPORTES", "BUSQUEDA", "LAMINAS", "SERVICIOS", "INVENTARIO", "USUARIOS"];
+export const ORDEN_MODOS = ["VENTA","CLIENTES","CLUB","COMPRA","GASTO","CAJA","ARQUEO","AUDITORIA","CUENTAS","DEVOLUCIONES","TRANSFERENCIAS","REPORTES","BUSQUEDA","LAMINAS","SERVICIOS","INVENTARIO","USUARIOS"];

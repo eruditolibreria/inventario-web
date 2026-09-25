@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#25164a"><title>Club Eruditos</title>
+  <link rel="manifest" href="/club/manifest.json"><link rel="stylesheet" href="/club/styles.css"><style>[hidden]{display:none!important}</style>
+</head>
+<body>
+  <main class="shell">
+    <section id="authView" class="auth-card">
+      <div class="brand-mark">E</div><h1>Club Eruditos</h1><p>Tu lectura y tus compras ahora suman beneficios.</p>
+      <div class="auth-tabs"><button data-auth="login" class="active">Ingresar</button><button data-auth="registro">Crear cuenta</button><button data-auth="recuperar">Recuperar</button></div>
+      <form id="loginForm" data-panel="login"><label>Código de cliente<input id="loginCodigo" autocomplete="username" required></label><label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" minlength="8" required></label><button class="primary">Ingresar</button></form>
+      <form id="registroForm" data-panel="registro" hidden><label>Código de vinculación<input id="registroToken" inputmode="numeric" autocomplete="one-time-code" placeholder="5 dígitos" required></label><label>Crea una contraseña<input id="registroPassword" type="password" autocomplete="new-password" minlength="8" required></label><button class="primary">Activar mi Club</button><small>Solicita este código de 5 dígitos al personal de Eruditos o encuéntralo en tu comprobante.</small></form>
+      <form id="recuperarForm" data-panel="recuperar" hidden><label>Código de cliente<input id="recuperarCodigo" required></label><label>Código de recuperación<input id="recuperarToken" required></label><label>Nueva contraseña<input id="recuperarPassword" type="password" minlength="8" required></label><button class="primary">Cambiar contraseña</button></form>
+      <div id="authStatus" class="status" aria-live="polite"></div>
+    </section>
+
+    <section id="appView" hidden>
+      <header><div><span class="eyebrow">CLUB ERUDITOS</span><h1 id="saludo">Hola</h1></div><button id="logoutBtn" class="icon-btn" aria-label="Cerrar sesión">Salir</button></header>
+      <nav><button data-view="inicio" class="active">Inicio</button><button data-view="premios">Premios</button><button data-view="movimientos">Puntos</button><button data-view="canjes">Canjes</button></nav>
+      <div id="appStatus" class="status" aria-live="polite"></div>
+      <section id="inicioPanel" data-view-panel="inicio">
+        <article class="hero"><span>Saldo disponible</span><strong id="saldoDisponible">0</strong><small>puntos</small><div class="pending"><span id="saldoPendiente">0</span> pendientes</div></article>
+        <div id="vencimiento" class="notice" hidden></div><h2>Actividad reciente</h2><div id="resumenMovimientos" class="list"></div><h2>Noticias</h2><div id="notificaciones" class="list"></div><details id="terminosClub" class="notice" hidden><summary>Términos del Club</summary><p id="terminosClubTexto"></p></details>
+      </section>
+      <section id="premiosPanel" data-view-panel="premios" hidden><div class="section-head"><div><span class="eyebrow">BENEFICIOS</span><h2>Premios</h2></div></div><div id="premiosGrid" class="rewards"></div></section>
+      <section id="movimientosPanel" data-view-panel="movimientos" hidden><div class="section-head"><div><span class="eyebrow">TU HISTORIAL</span><h2>Movimientos</h2></div></div><div id="movimientosLista" class="list"></div></section>
+      <section id="canjesPanel" data-view-panel="canjes" hidden><div class="section-head"><div><span class="eyebrow">SOLICITUDES</span><h2>Mis canjes</h2></div></div><div id="canjesLista" class="list"></div></section>
+    </section>
+  </main>
+  <dialog id="recoveryDialog"><h2>Guarda tus códigos</h2><p>Son la única forma de recuperar tu cuenta sin correo. Cada código se usa una sola vez.</p><pre id="recoveryCodes"></pre><button id="copyRecovery" class="primary">Copiar códigos</button><button id="closeRecovery">Ya los guardé</button></dialog>
+  <dialog id="redeemDialog"><h2 id="redeemTitle">Canjear premio</h2><label>Sucursal de retiro<select id="redeemBranch"></select></label><div class="dialog-actions"><button id="cancelRedeem">Cancelar</button><button id="confirmRedeem" class="primary">Confirmar canje</button></div></dialog>
+  <script type="module" src="/club/app.js"></script>
+</body></html>

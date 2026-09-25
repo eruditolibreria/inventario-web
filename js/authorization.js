@@ -3,6 +3,7 @@ import { store } from './store.js';
 export const PERMISOS_POR_MODO = Object.freeze({
     VENTA: ['ventas.ver', 'ventas.crear'],
     CLIENTES: ['clientes.ver'],
+    CLUB: ['club.ver'],
     COMPRA: ['compras.ver', 'compras.crear'],
     GASTO: ['gastos.ver', 'gastos.crear'],
     CAJA: ['caja.ver', 'caja.abrir', 'caja.ingresar', 'caja.retirar'],

@@ -6,7 +6,6 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-        <!--- PWA --->
 <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#00e676">
         <meta name="mobile-web-app-capable" content="yes">
@@ -101,15 +100,13 @@
             }
         </script>
         <title>Sistema Inventario — Grupo Eruditos</title>
-        <!-- Estilos locales -->
         <link rel="stylesheet" href="/css/base.css">
         <link rel="stylesheet" href="/css/tema.css">
         <link rel="stylesheet" href="/css/layout.css">
         <link rel="stylesheet" href="/css/login.css">
         <link rel="stylesheet" href="/css/componentes.css">
-        <!-- Google Fonts -->
+        <link rel="stylesheet" href="/css/club.css">
         <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-        <!-- Font Awesome 6 para iconos vectoriales -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
         
     </head>
@@ -166,6 +163,7 @@
                             <span class="tab-icon"><i class="fa-solid fa-address-book"></i></span>
                             Clientes
                         </div>
+                        <div class="mode-tab" id="tab-CLUB" aria-label="Club Eruditos"><span class="tab-icon"><i class="fa-solid fa-star"></i></span>Club</div>
                         <div class="mode-tab" id="tab-COMPRA" aria-label="Compra">
                             <span class="tab-icon"><i class="fa-solid fa-cart-shopping"></i></span>
                             Compra
@@ -223,7 +221,6 @@
                             Usuarios
                         </div>
                     </div>
-                    <!-- VENTA -->
                     <div id="seccion-VENTA">
                         <div class="section-label">Registrar venta</div>
                         <div class="row-2 mb-12">
@@ -399,12 +396,14 @@
                             <div id="listaCotizaciones"></div>
                         </div>
                     </div>
-                    <!-- CLIENTES -->
                     <div id="seccion-CLIENTES" class="oculto">
                         <div id="clientesRoot"></div>
                     </div>
 
-                    <!-- COMPRA -->
+                    <div id="seccion-CLUB" class="oculto">
+                        <div id="clubRoot"></div>
+                    </div>
+
                     <div id="seccion-COMPRA" class="oculto">
                         <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;gap:12px">Registrar compra <button class="btn btn-ghost" type="button" onclick="abrirProveedores()" style="width:auto;min-width:0;padding:5px 10px">Proveedores</button></div>
                         <div class="field-group">
@@ -489,7 +488,6 @@
                         <div class="loader" id="loaderCompra"></div>
                         <button class="btn btn-green mt-8" onclick="registrarCompra()">✅ Registrar Compra</button>
                     </div>
-                    <!-- GASTO -->
                     <div id="seccion-GASTO" class="oculto">
                         <div class="section-label">Registrar gasto operativo</div>
                         <div class="field-group">
@@ -552,7 +550,6 @@
                         <div class="loader" id="loaderGasto"></div>
                         <button class="btn btn-primary mt-8" onclick="registrarGasto()">💸 Registrar Gasto</button>
                     </div>
-                    <!-- CAJA -->
                     <div id="seccion-CAJA" class="oculto">
                         <div class="section-label">Gestión de caja diaria</div>
                         <div id="cajaCards" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
@@ -623,7 +620,6 @@
                             <button class="btn btn-purple mt-8" onclick="registrarAporteRetiro()">💼 Registrar</button>
                         </div>
                     </div>
-                    <!-- CUENTAS -->
                     <div id="seccion-CUENTAS" class="oculto">
                         <div class="section-label">Cuentas diversas / por pagar</div>
                         <div class="sub-tabs">
@@ -760,7 +756,6 @@
                             </div>
                         </div>
 
-                    <!-- ARQUEO -->
                     <div id="seccion-ARQUEO" class="oculto">
                         <div class="section-label">Arqueo y cierre de caja</div>
                         <div class="arqueo-intro">Cuenta el efectivo físico por denominación. El sistema calcula el saldo esperado desde los movimientos registrados.</div>
@@ -788,7 +783,6 @@
                         <div id="tablaArqueos"></div>
                     </div>
 
-                    <!-- AUDITORIA -->
                     <div id="seccion-AUDITORIA" class="oculto">
                         <div class="section-label">Auditoría del sistema</div>
                         <div class="arqueo-intro">Consulta de solo lectura de las acciones registradas en el sistema.</div>
@@ -883,7 +877,6 @@
                             <button class="btn btn-blue mt-8" onclick="registrarCuentaPagar()">➕ Registrar cuenta</button>
                         </div>
                     </div>
-                    <!-- DEVOLUCIONES -->
                     <div id="seccion-DEVOLUCIONES" class="oculto">
                         <div class="section-label">Devoluciones</div>
                         <div class="sub-tabs">
@@ -989,7 +982,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- TRANSFERENCIAS -->
                     <div id="seccion-TRANSFERENCIAS" class="oculto">
                         <div class="section-label">Transferencia entre sucursales</div>
                         <div class="sub-tabs">
@@ -1069,7 +1061,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- REPORTES -->
                     <div id="seccion-REPORTES" class="oculto">
                         <div class="section-label">Reportes de ventas</div>
                         <div class="sub-tabs">
@@ -1339,7 +1330,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- BUSQUEDA -->
                     <div id="seccion-BUSQUEDA" class="oculto">
                         <div class="section-label">Búsqueda de producto</div>
                         <div class="field-group">
@@ -1361,7 +1351,6 @@
                                                     <div class="loader" id="loaderBusqueda"></div>
                         <div id="searchResultsList" class="search-results-list"></div>
                     </div>
-                    <!-- LÁMINAS -->
                     <div id="seccion-LAMINAS" class="oculto">
                         <div class="section-label">Gestión de láminas</div>
                         <div class="sub-tabs">
@@ -1437,7 +1426,6 @@
                             <button class="btn btn-primary mt-8" onclick="agregarLamina()">🖼️ Agregar Lámina</button>
                         </div>
                     </div>
-                    <!-- SERVICIOS -->
                     <div id="seccion-SERVICIOS" class="oculto">
                         <div class="section-label">Registrar servicio</div>
                         <!-- Sucursal global para servicios -->
@@ -1677,7 +1665,6 @@
                             <div id="srvTablaRegistros"></div>
                         </div>
                     </div>
-                    <!-- INVENTARIO ADMIN -->
                     <div id="seccion-INVENTARIO" class="oculto">
                         <div class="inventario-encabezado">
                             <div>
@@ -1710,7 +1697,6 @@
                             <button class="btn btn-ghost" onclick="cambiarPaginaInv(1)">Siguiente →</button>
                         </div>
                     </div>
-                    <!-- USUARIOS -->
                     <div id="seccion-USUARIOS" class="oculto">
                         <div class="section-label">Gestión de usuarios</div>
                         <button class="btn btn-ghost mb-12" onclick="cargarUsuarios()">🔄 Cargar usuarios</button>
