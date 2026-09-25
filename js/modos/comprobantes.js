@@ -85,7 +85,7 @@ export async function listarComprobantes(pg, termino) {
                 card.innerHTML = `
                     <div style="flex:1;min-width:0">
                         <div style="font-weight:600;color:var(--text);font-size:13px">N° ${c.numero} · ${c.cliente || "—"}</div>
-                        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.fecha} ${c.hora} · ${c.sucursalVisible || c.sucursal} · <b>Bs ${Number(c.total).toFixed(2)}</b></div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.fecha} ${c.hora} · ${_nombreSucursalVisible(c)} · <b>Bs ${Number(c.total).toFixed(2)}</b></div>
                     </div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                         <button class="btn btn-ghost btn-sm" data-accion="reimprimir" data-id="${c.id}">🖨️ Imprimir</button>
@@ -223,6 +223,15 @@ function _crearTicketHtml(c) {
         h += '<div class="t-fila t-total"><span>TOTAL</span><span>' + _fmtBs(totalRed) + '</span></div>';
     } else {
         h += '<div class="t-fila t-total"><span>TOTAL</span><span>' + _fmtBs(total) + '</span></div>';
+    }
+    if (c.club?.puntosVenta || c.club?.tokenVinculacion) {
+        h += '<div class="t-linea"></div>';
+        h += '<div class="t-pie"><strong>CLUB ERUDITOS</strong></div>';
+        if (c.club.puntosVenta) h += '<div class="t-meta">Puntos de esta compra: ' + Number(c.club.puntosVenta) + '</div>';
+        if (c.club.tokenVinculacion) {
+            h += '<div class="t-pie"><strong>Código para crear tu cuenta: ' + _escHtml(c.club.tokenVinculacion) + '</strong></div>';
+            h += '<div class="t-meta">Válido durante 72 horas en el portal Club Eruditos.</div>';
+        }
     }
     h += '<div class="t-linea"></div>';
     h += '<div class="t-pie">¡Gracias por su compra!</div>';
@@ -362,6 +371,15 @@ function _lineasDocumentoPdf(c) {
         lineas.push("TOTAL: " + _fmtBs(totalRedondeado));
     } else {
         lineas.push("TOTAL: " + _fmtBs(total));
+    }
+    if (!esCotizacion && (c.club?.puntosVenta || c.club?.tokenVinculacion)) {
+        lineas.push("--------------------------------");
+        lineas.push("CLUB ERUDITOS");
+        if (c.club.puntosVenta) lineas.push("Puntos de esta compra: " + Number(c.club.puntosVenta));
+        if (c.club.tokenVinculacion) {
+            lineas.push("Código para crear tu cuenta: " + c.club.tokenVinculacion);
+            lineas.push("Válido durante 72 horas.");
+        }
     }
     if (esCotizacion && c.observaciones) {
         lineas.push("--------------------------------");

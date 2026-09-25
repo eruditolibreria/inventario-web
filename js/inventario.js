@@ -24,6 +24,7 @@ import { api } from './api.js';
 import { mostrarMsg, normBusqueda, formatearBs } from './utils.js';
 import { manejarRespuesta, renderSearchCard, abrirModalImagen, confirmarEliminar } from './ui.js';
 import { can } from './authorization.js';
+import { nombreSucursalVisible } from './sucursales.js';
 
 // ── CALLBACKS ─────────────────────────────────────────────────
 let _cargarUsuarios = null;
@@ -60,7 +61,7 @@ export function construirAC(lista, items, onSelect) {
     items.slice(0, 8).forEach(p => {
         const div = document.createElement("div");
         div.className = "ac-item";
-        div.innerHTML = `<strong>${p.producto}</strong><small>Stock: ${p.stock} | ${formatearBs(p.precio)} | ${p.sucursal}</small>`;
+        div.innerHTML = `<strong>${p.producto}</strong><small>Stock: ${p.stock} | ${formatearBs(p.precio)} | ${nombreSucursalVisible(p.sucursal)}</small>`;
         div.onclick = () => {
             onSelect(p);
             lista.classList.remove("show");
@@ -147,7 +148,7 @@ export async function cargarInventarioAdmin() {
                   <div class="detalle">Costo: Bs ${p.precioUnidad?.toFixed(2) || '-'}</div>
                   <div class="detalle">Venta: Bs ${p.precioVenta?.toFixed(2) || '-'}</div>
                   <div class="detalle">Stock: <b style="color:var(--accent-text)">${p.stock}</b></div>
-                  <div class="detalle" style="color:var(--muted);font-size:10px">${p.sucursal}</div>
+                  <div class="detalle" style="color:var(--muted);font-size:10px">${nombreSucursalVisible(p.sucursal)}</div>
                 </div>
                 <div class="inventario-actions">
                   <button class="btn-xs btn-xs-edit" data-accion="imagen" data-producto="${p.producto}" data-sucursal="${p.sucursal}" data-imagen="${p.imagen || ''}">🖼️ Imagen</button>

@@ -10,7 +10,7 @@ import { listarProductos, buscarProductosPorCodigo, ajustarInventario, importarI
 import { validarEncabezadosImportacion, validarFilasImportacion } from '../importacion-inventario.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
-import { cargarSucursalesEnDropdowns, invalidarSucursalesCache, obtenerSucursalesCache, nombreSucursal, escaparSucursal } from '../sucursales.js';
+import { cargarSucursalesEnDropdowns, invalidarSucursalesCache, obtenerSucursalesCache, nombreSucursal, nombreSucursalVisible, escaparSucursal } from '../sucursales.js';
 
 let busquedaTimer = null;
 let _detalleSeq = 0;
@@ -257,7 +257,7 @@ function renderSugerenciasBusqueda(datos, lista) {
     datos.slice(0, 8).forEach(p => {
         const div = document.createElement("div");
         div.className = "ac-item";
-        div.innerHTML = `<strong>${p.producto}</strong><small>${p.sucursal} | Stock: ${p.stock}</small>`;
+        div.innerHTML = `<strong>${p.producto}</strong><small>${nombreSucursalVisible(p.sucursal)} | Stock: ${p.stock}</small>`;
         div.addEventListener("click", () => {
             clearTimeout(busquedaTimer);
             document.getElementById("busquedaInput").value = p.producto;
@@ -486,7 +486,7 @@ function renderInventarioEscritorio(datos, mostrarCostos) {
         fila.innerHTML = `<td>${crearMiniaturaInventario(producto)}</td>
             <td><strong>${escaparInventario(producto.producto)}</strong><small>${escaparInventario(producto.categoria || "Sin categoría")}</small></td>
             <td class="inventario-codigo">${escaparInventario(producto.codigoBarras || "—")}</td>
-            <td>${escaparInventario(producto.sucursal || "—")}</td><td><strong>${Number(producto.stock || 0)}</strong></td>
+            <td>${escaparInventario(nombreSucursalVisible(producto.sucursal))}</td><td><strong>${Number(producto.stock || 0)}</strong></td>
             ${mostrarCostos ? `<td>${producto.precioUnidad == null ? "—" : "Bs " + Number(producto.precioUnidad).toFixed(2)}</td>` : ""}
             <td>Bs ${Number(producto.precioVenta || 0).toFixed(2)}</td>
             <td><span class="inventario-estado inventario-estado-${estado.toLowerCase()}">${estado}</span></td>`;
@@ -514,7 +514,7 @@ function renderInventarioMovil(datos, mostrarCostos) {
         tarjeta.className = "inventario-tarjeta-movil";
         const estado = estadoInventario(producto);
         tarjeta.innerHTML = `<div class="inventario-tarjeta-cabecera">${crearMiniaturaInventario(producto)}
-            <div><h3>${escaparInventario(producto.producto)}</h3><p>${escaparInventario(producto.sucursal || "—")} · ${escaparInventario(producto.categoria || "Sin categoría")}</p></div>
+            <div><h3>${escaparInventario(producto.producto)}</h3><p>${escaparInventario(nombreSucursalVisible(producto.sucursal))} · ${escaparInventario(producto.categoria || "Sin categoría")}</p></div>
             <span class="inventario-estado inventario-estado-${estado.toLowerCase()}">${estado}</span></div>
             <div class="inventario-datos-movil"><span>Stock <strong>${Number(producto.stock || 0)}</strong></span>
             <span>Precio <strong>Bs ${Number(producto.precioVenta || 0).toFixed(2)}</strong></span>
@@ -615,7 +615,7 @@ function renderVistaPreviaImportacion(items, errores) {
 
     const lista = document.createElement("ul");
     lista.style.cssText = "max-height:180px;overflow:auto;margin:0;padding-left:20px;font-size:12px";
-    (errores.length ? errores : items.slice(0, 12).map(item => `${item.producto} · ${item.sucursal} · stock ${item.stockInicial}`))
+    (errores.length ? errores : items.slice(0, 12).map(item => `${item.producto} · ${nombreSucursalVisible(item.sucursal)} · stock ${item.stockInicial}`))
         .slice(0, 12)
         .forEach(texto => {
             const fila = document.createElement("li");
@@ -760,7 +760,7 @@ export async function cargarUsuarios() {
                     can("usuarios.cambiar_sucursales") || can("usuarios.cambiar_permisos") ? `<button class="btn-icon" data-accion="editar-acceso" data-id="${u.id}" title="Permisos individuales y sucursales">🛡️</button>` : '',
                     !esYo && puedeCambiarEstado ? `<button class="btn-icon danger" data-accion="toggle-estado" data-usuario="${u.usuario}" data-estado="${u.estado}" title="${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}">${u.estado === 'ACTIVO' ? '🚫' : '✅'}</button>` : '',
                 ].join('');
-                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}${u.protegido ? ' <span title="Cuenta protegida">🔒</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span><span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${cantidadSucursales} · principal: ${u.sucursal || 'ninguna'}</span></div><div class="u-actions">${acciones}</div>`;
+                card.innerHTML = `<div><div class="u-name">${u.usuario}${esYo ? ' <span style="font-size:10px;color:var(--muted)">(tú)</span>' : ''}${u.protegido ? ' <span title="Cuenta protegida">🔒</span>' : ''}</div><span class="rol-pill rol-${u.rol}" style="margin-top:4px;display:inline-block">${ROL_LABELS[u.rol] || u.rol}</span><span class="u-estado-${u.estado === 'ACTIVO' ? 'ok' : 'err'}" style="margin-left:8px">${u.estado === 'ACTIVO' ? '● Activo' : '● Inactivo'}</span><span style="margin-left:8px;font-size:11px;color:var(--muted)">🏪 ${cantidadSucursales} · principal: ${u.sucursal ? nombreSucursalVisible(u.sucursal) : 'ninguna'}</span></div><div class="u-actions">${acciones}</div>`;
                 lista.appendChild(card)
             });
             // Delegated listeners
@@ -1027,7 +1027,7 @@ export function abrirAjusteInventario(producto) {
     if (!can("inventario.ajustar")) return;
     _inventarioAjustando = producto;
     _ajusteIdempotencyKey = nuevaClaveAjuste();
-    document.getElementById("inventarioAjusteProducto").textContent = `${producto.producto} · ${producto.sucursal}`;
+    document.getElementById("inventarioAjusteProducto").textContent = `${producto.producto} · ${nombreSucursalVisible(producto.sucursal)}`;
     document.getElementById("inventarioAjusteStockActual").textContent = Number(producto.stock || 0);
     document.getElementById("inventarioAjusteTipo").value = "AUMENTAR";
     document.getElementById("inventarioAjusteCantidad").value = "";
@@ -1089,7 +1089,7 @@ export async function confirmarAjusteInventario() {
 export async function abrirHistorialInventario(producto) {
     if (!can("inventario.ver_movimientos")) return;
     const overlay = document.getElementById("inventarioHistorialOverlay");
-    document.getElementById("inventarioHistorialProducto").textContent = `${producto.producto} · ${producto.sucursal}`;
+    document.getElementById("inventarioHistorialProducto").textContent = `${producto.producto} · ${nombreSucursalVisible(producto.sucursal)}`;
     const lista = document.getElementById("inventarioHistorialLista");
     lista.innerHTML = "<div style=\"padding:14px;color:var(--text-light)\">Cargando movimientos…</div>";
     overlay.style.display = "flex";

@@ -8,15 +8,27 @@
  */
 
 import { channel } from './db.js';
-
 let _canal = null;
+let _notificaciones = null;
+
+function notificaciones() {
+    if (!_notificaciones) _notificaciones = import('./notificaciones.js');
+    return _notificaciones;
+}
 
 export function initRealtime() {
     if (_canal) return;
+    void notificaciones().then(modulo => modulo.initNotificaciones());
     _canal = channel("cambios-inventario")
         .on("postgres_changes", { event: "*", schema: "public", table: "inventario" }, (payload) => {
             try {
                 window.dispatchEvent(new CustomEvent("inventario:cambio", { detail: payload }));
+            } catch (_) {}
+        })
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "club_notificaciones_internas" }, (payload) => {
+            try {
+                window.dispatchEvent(new CustomEvent("club:notificacion", { detail: payload }));
+                void notificaciones().then(modulo => modulo.cargarNotificaciones());
             } catch (_) {}
         })
         .subscribe();

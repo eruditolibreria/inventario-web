@@ -8,7 +8,7 @@
  * Cada solicitud espera la renovación compartida y usa el token vigente.
  */
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from './config.js';
 import { store } from './store.js';
 import { renovarSesionSiNecesario } from './api.js';
 
@@ -43,6 +43,10 @@ export function channel(name) {
 
 const PRODUCTO_COLS = "id,producto,categoria,precio_unidad,precio_venta,proveedor,ubicacion,sucursal,stock,imagen,codigo_barras,clave";
 
+function _normalizarImagen(value) {
+    return typeof normalizarUrlPublica === 'function' ? normalizarUrlPublica(value) : String(value || '');
+}
+
 function _mapProducto(r) {
     return {
         id: r.id,
@@ -55,7 +59,7 @@ function _mapProducto(r) {
         ubicacion: r.ubicacion || "",
         sucursal: r.sucursal || "",
         stock: Number(r.stock || 0),
-        imagen: r.imagen || "",
+        imagen: _normalizarImagen(r.imagen),
         codigoBarras: r.codigo_barras || "",
         clave: r.clave || ""
     };

@@ -3,6 +3,7 @@ import { store, setMovPagina, setRptCache } from '../store.js';
 import { api } from '../api.js';
 import { mostrarMsg, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 const TABLAS_REPORTES_MOVIL = {
     tablaRepMas: { principal: 'Producto' },
@@ -230,7 +231,7 @@ export async function cargarStockAlertas() {
             var h = '<table><thead><tr><th class="col-prod">Producto</th><th>Categoria</th><th>Sucursal</th><th>Stock</th><th>Minimo</th><th>Precio</th><th>Ubicacion</th><th>Estado</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var estadoClase = d.estado === 'AGOTADO' ? 'estado-agotado' : (d.estado === 'BAJO' ? 'estado-bajo' : '');
-                h += '<tr><td class="col-prod">' + d.producto + '</td><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono)">' + d.stock + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + d.stock_minimo + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.precio_venta).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + d.ubicacion + '</td><td class="' + estadoClase + '" style="font-size:11px">' + d.estado + '</td></tr>';
+                h += '<tr><td class="col-prod">' + d.producto + '</td><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td style="font-family:var(--mono)">' + d.stock + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + d.stock_minimo + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.precio_venta).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + d.ubicacion + '</td><td class="' + estadoClase + '" style="font-size:11px">' + d.estado + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('alertas', data.datos, 'Alertas de Stock', null, 'btnPdfAlertas');
@@ -252,7 +253,7 @@ export async function cargarRotacionInventario() {
             var h = '<table><thead><tr><th class="col-prod">Producto</th><th>Categoria</th><th>Sucursal</th><th>Stock</th><th>Precio</th><th>Ultima venta</th><th>Dias sin venta</th><th>Rotacion</th></tr></thead><tbody>';
             data.datos.forEach(d => {
                 var rotClase = d.rotacion === "NUNCA VENDIDO" ? "stock-bajo" : (d.rotacion.indexOf("90") >= 0 ? "estado-pendiente" : "");
-                h += '<tr><td class="col-prod">' + d.producto + '</td><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono)">' + d.stock + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.precio_venta).toFixed(2) + '</td><td style="font-size:11px;color:var(--muted)">' + (d.ultima_venta || 'Nunca') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.dias_sin_venta + '</td><td class="' + rotClase + '" style="font-size:11px">' + d.rotacion + '</td></tr>';
+                h += '<tr><td class="col-prod">' + d.producto + '</td><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td style="font-family:var(--mono)">' + d.stock + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.precio_venta).toFixed(2) + '</td><td style="font-size:11px;color:var(--muted)">' + (d.ultima_venta || 'Nunca') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.dias_sin_venta + '</td><td class="' + rotClase + '" style="font-size:11px">' + d.rotacion + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('rotacion', data.datos, 'Rotación de Inventario', null, 'btnPdfRotacion');
@@ -275,7 +276,7 @@ export async function cargarValorizacionInventario() {
             var h = '<table><thead><tr><th>Categoria</th><th>Sucursal</th><th>Productos</th><th>Stock total</th><th>Costo total</th><th>Valor venta</th><th>Utilidad potencial</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 totalCosto += Number(d.costo_total) || 0; totalValor += Number(d.valor_venta_total) || 0; totalUtilidad += Number(d.utilidad_potencial) || 0; productos += Number(d.productos) || 0; stockTotal += Number(d.stock_total) || 0;
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono)">' + d.productos + '</td><td style="font-family:var(--mono)">' + d.stock_total + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo_total).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.valor_venta_total).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_potencial).toFixed(2) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + d.categoria + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td style="font-family:var(--mono)">' + d.productos + '</td><td style="font-family:var(--mono)">' + d.stock_total + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo_total).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.valor_venta_total).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_potencial).toFixed(2) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             tdiv.style.display = "grid"; tdiv.innerHTML = '<div class="reporte-total-card"><div class="rtc-label">Productos</div><div class="rtc-val">' + productos + '</div></div><div class="reporte-total-card"><div class="rtc-label">Stock total</div><div class="rtc-val">' + stockTotal + '</div></div><div class="reporte-total-card"><div class="rtc-label">Costo total</div><div class="rtc-val">Bs ' + totalCosto.toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Valor venta</div><div class="rtc-val">Bs ' + totalValor.toFixed(2) + '</div></div><div class="reporte-total-card"><div class="rtc-label">Utilidad potencial</div><div class="rtc-val">Bs ' + totalUtilidad.toFixed(2) + '</div></div>';
@@ -298,7 +299,7 @@ export async function cargarHistorialMovimientos(pg) {
             var h = '<table><thead><tr><th>Fecha</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Tipo</th><th>Origen</th><th>Cant</th><th>Monto</th><th>Usuario</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var fc = fechaBolivia(d.fecha), tipoClase = d.tipo_mov === "ENTRADA" ? "tipo-compra" : "tipo-venta";
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + fc + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td class="' + tipoClase + '" style="font-size:11px">' + d.tipo_mov + '</td><td style="font-size:10px;color:var(--muted)">' + (d.origen || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.monto).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + (d.usuario || '') + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + fc + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td class="col-prod">' + d.producto + '</td><td class="' + tipoClase + '" style="font-size:11px">' + d.tipo_mov + '</td><td style="font-size:10px;color:var(--muted)">' + (d.origen || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.monto).toFixed(2) + '</td><td style="font-size:10px;color:var(--muted)">' + (d.usuario || '') + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('movimientos', data.datos, 'Historial de Movimientos', null, 'btnPdfMovimientos');
@@ -324,7 +325,7 @@ export async function cargarVentasPeriodo() {
             var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Tipo</th><th>Metodo</th><th>Operaciones</th><th>Líneas históricas</th><th>Unidades</th><th>Total Bs</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var periodo = d.dia || d.semana || d.mes || '';
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-size:11px">' + (d.tipo || '') + '</td><td style="font-size:10px;color:var(--muted)">' + (d.metodo_pago || '') + '</td><td style="font-family:var(--mono)">' + d.operaciones + '</td><td style="font-family:var(--mono)">' + (d.lineas_legacy || 0) + '</td><td style="font-family:var(--mono)">' + d.unidades + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.total_bs).toFixed(2) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td style="font-size:11px">' + (d.tipo || '') + '</td><td style="font-size:10px;color:var(--muted)">' + (d.metodo_pago || '') + '</td><td style="font-family:var(--mono)">' + d.operaciones + '</td><td style="font-family:var(--mono)">' + (d.lineas_legacy || 0) + '</td><td style="font-family:var(--mono)">' + d.unidades + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.total_bs).toFixed(2) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('ventasPeriodo', data.datos, 'Ventas por Período', data.resumen || null, 'btnPdfVentas');
@@ -353,7 +354,7 @@ export async function cargarUtilidadBruta() {
             var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th class="col-prod">Producto</th><th>Cant</th><th>Ingresos</th><th>Costo</th><th>Utilidad</th><th>Sin costo</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var periodo = d.dia || d.semana || d.mes || '';
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td class="col-prod">' + d.producto + '</td><td style="font-family:var(--mono)">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.ingresos).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_bruta).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.unidades_sin_costo || 0) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td class="col-prod">' + d.producto + '</td><td style="font-family:var(--mono)">' + d.cantidad + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.ingresos).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.costo).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.utilidad_bruta).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.unidades_sin_costo || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('utilidad', data.datos, 'Utilidad Bruta', data.resumen || null, 'btnPdfUtilidad');
@@ -376,7 +377,7 @@ export async function cargarFlujoCajaReporte() {
             var h = '<table><thead><tr><th>Periodo</th><th>Sucursal</th><th>Método</th><th>Tipo</th><th>Entradas</th><th>Salidas</th><th>Saldo neto</th><th>Mov.</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
                 var periodo = d.dia || d.semana || d.mes || '';
-                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-family:var(--mono);font-size:10px">' + (d.metodo_pago || '') + '</td><td style="font-size:10px">' + (d.tipo || '') + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_entradas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_salidas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_neto).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.movimientos || 0) + '</td></tr>';
+                h += '<tr><td style="font-size:11px;color:var(--muted)">' + periodo + ' ' + (d.anio || '') + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td style="font-family:var(--mono);font-size:10px">' + (d.metodo_pago || '') + '</td><td style="font-size:10px">' + (d.tipo || '') + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_entradas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_salidas).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_neto).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + Number(d.movimientos || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('flujo', data.datos, 'Flujo de Caja', data.resumen || null, 'btnPdfFlujo');
@@ -398,7 +399,7 @@ export async function cargarArqueosReporte() {
         else {
             var h = '<table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Usuario</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th>Resultado</th><th>Estado</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
-                h += '<tr><td style="font-family:var(--mono);font-size:10px">' + d.fecha + '</td><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td>' + d.usuario + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_esperado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.efectivo_contado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.diferencia).toFixed(2) + '</td><td>' + d.resultado + '</td><td>' + d.estado + '</td></tr>';
+                h += '<tr><td style="font-family:var(--mono);font-size:10px">' + d.fecha + '</td><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td>' + d.usuario + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_esperado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.efectivo_contado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.diferencia).toFixed(2) + '</td><td>' + d.resultado + '</td><td>' + d.estado + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             setRptCache("arqueos", { datos: data.datos, cols: ['Fecha', 'Sucursal', 'Usuario', 'Esperado', 'Contado', 'Diferencia', 'Resultado', 'Estado'], title: 'Arqueos de Caja', resumen: data.resumen || null });
@@ -420,7 +421,7 @@ export async function cargarCuentasCobrarReporte() {
         else {
             var h = '<table><thead><tr><th>Sucursal</th><th>Cliente</th><th>Cuentas</th><th>Total adeudado</th><th>Total abonado</th><th>Saldo pendiente</th><th>Canceladas</th><th>Pendientes</th></tr></thead><tbody>';
             data.datos.forEach(function (d) {
-                h += '<tr><td style="font-family:var(--mono);font-size:11px">' + d.sucursal + '</td><td style="font-size:11px">' + d.cliente + '</td><td style="font-family:var(--mono)">' + d.cuentas + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_adeudado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_abonado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_pendiente).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + (d.canceladas || 0) + '</td><td style="font-family:var(--mono);font-size:11px">' + (d.pendientes || 0) + '</td></tr>';
+                h += '<tr><td style="font-family:var(--mono);font-size:11px">' + nombreSucursalVisible(d.sucursal) + '</td><td style="font-size:11px">' + d.cliente + '</td><td style="font-family:var(--mono)">' + d.cuentas + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--red-text)">Bs ' + Number(d.total_adeudado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal-text)">Bs ' + Number(d.total_abonado).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">Bs ' + Number(d.saldo_pendiente).toFixed(2) + '</td><td style="font-family:var(--mono);font-size:11px">' + (d.canceladas || 0) + '</td><td style="font-family:var(--mono);font-size:11px">' + (d.pendientes || 0) + '</td></tr>';
             });
             tabla.innerHTML = h + '</tbody></table>';
             guardarReportePdf('cobrar', data.datos, 'Cuentas por Cobrar', data.resumen || null, 'btnPdfCobrar');
@@ -441,6 +442,7 @@ export function imprimirReporte(reporte) {
     }
     const documento = {
         ...reporte,
+        datos: Array.isArray(reporte.datos) ? reporte.datos.map(fila => fila?.sucursal ? { ...fila, sucursal: nombreSucursalVisible(fila.sucursal) } : fila) : reporte.datos,
         fecha: new Date().toLocaleString("es-BO", { timeZone: "America/La_Paz", hour12: false }),
         usuario: store.sessionUser,
     };

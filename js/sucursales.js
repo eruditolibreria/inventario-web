@@ -11,8 +11,18 @@ let cargaSucursalesPromise = null;
 const CACHE_SUCURSALES_MS = 60 * 1000;
 
 export const escaparSucursal = valor => String(valor ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-export const nombreSucursal = sucursal => sucursal.nombre_visible || sucursal.nombre;
+export const nombreSucursal = sucursal => sucursal?.nombre_visible || sucursal?.nombreVisible || sucursal?.nombre || sucursal?.id || "";
 export const obtenerSucursalesCache = () => sucursalesCache;
+
+export function nombreSucursalVisible(referencia) {
+    const valor = String(referencia ?? "").trim();
+    if (!valor) return "—";
+    const normalizado = valor.toLocaleUpperCase("es");
+    const sucursal = [...sucursalesCache, ...(store.sessionSucursales || [])].find(item =>
+        [item.id, item.nombre].some(candidato => String(candidato ?? "").trim().toLocaleUpperCase("es") === normalizado)
+    );
+    return sucursal ? nombreSucursal(sucursal) : valor;
+}
 
 function renderSelectorSucursalActiva(sucursales) {
     const activas = sucursales.filter(sucursal => sucursal.estado === "ACTIVO");
@@ -50,7 +60,7 @@ function renderSelectorSucursalActiva(sucursales) {
                 if ([...selectModulo.options].some(opcion => opcion.value === store.sessionSucursal)) selectModulo.value = store.sessionSucursal;
             });
         window.dispatchEvent(new CustomEvent("eruditos:sucursal-cambiada", { detail: { sucursal: store.sessionSucursal } }));
-        mostrarMsg("Sucursal actual: " + store.sessionSucursal, "ok");
+        mostrarMsg("Sucursal actual: " + nombreSucursalVisible(store.sessionSucursal), "ok");
     };
     select.innerHTML = activas.map(sucursal => `<option value="${escaparSucursal(sucursal.nombre)}">${escaparSucursal(nombreSucursal(sucursal))}</option>`).join("");
     const seleccion = activas.some(sucursal => sucursal.nombre === store.sessionSucursal)

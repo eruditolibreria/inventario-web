@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { mostrarMsg, formatearBs } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { can } from '../authorization.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 let _pagina = 1;
 let _paginas = 1;
@@ -395,7 +396,7 @@ async function cargarTabPerfil(tab, pagina = 1) {
 function renderPerfilTab(tab) {
     const cont = document.getElementById('clienteTabContenido'), c = _perfil.cliente;
     if (tab === 'HISTORIAL') {
-        cont.innerHTML = tablaSimple(['Fecha','Sucursal','Método','Total','Estado'], _perfil.ventas.map(v => [fecha(v.fecha), esc(v.sucursal), esc(detalleMetodoVenta(v)), formatearBs(v.total), esc(v.estado)]));
+        cont.innerHTML = tablaSimple(['Fecha','Sucursal','Método','Total','Estado'], _perfil.ventas.map(v => [fecha(v.fecha), esc(nombreSucursalVisible(v.sucursal)), esc(detalleMetodoVenta(v)), formatearBs(v.total), esc(v.estado)]));
     } else if (tab === 'DEUDAS') {
         cont.innerHTML = tablaSimple(['Origen','Emisión','Vencimiento','Monto','Pagado','Devuelto','Saldo','Estado',''], _perfil.deudas.map(d => [esc(`${d.origen === 'SERVICIO' ? 'Servicio' : 'Venta'} ${String(d.referenciaId || d.ventaId).slice(0,8)}`), fecha(d.fechaEmision), fecha(d.fechaVencimiento), formatearBs(d.montoOriginal), formatearBs(d.montoPagado), formatearBs(d.montoAjustado), formatearBs(d.saldo), `<span class="cliente-estado ${d.estado === 'VENCIDA' ? 'vencida' : ''}">${esc(d.estado)}</span>`, Number(d.saldo) > 0 && d.estado !== 'ANULADA' ? `<button class="btn btn-primary btn-sm" data-pagar-cuenta="${esc(d.id)}">Pagar</button>` : '']));
         cont.querySelectorAll('[data-pagar-cuenta]').forEach(btn => btn.addEventListener('click', () => abrirPagoCliente(btn.dataset.pagarCuenta)));

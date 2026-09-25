@@ -24,6 +24,7 @@
 import { store, setModalImagenData } from './store.js';
 import { api } from './api.js';
 import { mostrarMsg, formatearBs } from './utils.js';
+import { nombreSucursalVisible } from './sucursales.js';
 
 // ── CALLBACKS (inyectados por initUI) ─────────────────────────
 let _cargarInventarioAdmin = null;
@@ -66,7 +67,7 @@ export function renderSearchCard(p) {
 <div class="sr-field sr-field--price"><div class="sr-key">Precio Venta</div><div class="sr-val sr-val--price">${formatearBs(p.precioVenta)}</div></div>
 <div class="sr-field sr-field--location"><div class="sr-key">Ubicación</div><div class="sr-val sr-val--location">${p.ubicacion || '—'}</div></div>
 <div class="sr-field ${sc === 'warn' ? 'red' : sc === 'orange' ? 'orange' : 'accent'}"><div class="sr-key">Stock Actual</div><div class="sr-val ${sc}">${p.stock} ud.  ${sl}</div></div>
-        <div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:var(--blue-text)">${p.sucursal ?? '—'}</div></div>
+        <div class="sr-field blue"><div class="sr-key">Sucursal</div><div class="sr-val" style="color:var(--blue-text)">${nombreSucursalVisible(p.sucursal)}</div></div>
 <div class="sr-field accent"><div class="sr-key">Precio Unidad</div><div class="sr-val ok">${formatearBs(p.precioUnidad)}</div></div>
 <div class="sr-field"><div class="sr-key">Proveedor</div><div class="sr-val">${p.proveedor || '—'}</div></div>
 </div>`;
@@ -87,7 +88,7 @@ export function abrirDetalleProducto(p) {
     infoDiv.innerHTML = `<div class="detalle-nombre">${p.producto}</div>
 <div class="detalle-item"><span class="detalle-key">Precio Venta</span><span class="detalle-val">${formatearBs(p.precioVenta)}</span></div>
 <div class="detalle-item"><span class="detalle-key">Stock</span><span class="detalle-val">${p.stock} ud.</span></div>
-<div class="detalle-item"><span class="detalle-key">Sucursal</span><span class="detalle-val">${p.sucursal || '—'}</span></div>
+<div class="detalle-item"><span class="detalle-key">Sucursal</span><span class="detalle-val">${nombreSucursalVisible(p.sucursal)}</span></div>
 <div class="detalle-item"><span class="detalle-key">Ubicación</span><span class="detalle-val">${p.ubicacion || '—'}</span></div>
 <div class="detalle-item"><span class="detalle-key">Proveedor</span><span class="detalle-val">${p.proveedor || '—'}</span></div>`;
     overlay.style.display = "flex";
@@ -204,7 +205,7 @@ function ocultarMsgModalImagen() {
 }
 
 // Redimensiona y comprime la imagen a JPEG para que quepa en el limite de la API
-function comprimirImagen(file, maxLado, calidad) {
+export function comprimirImagen(file, maxLado, calidad) {
     maxLado = maxLado || 900;
     calidad = calidad || 0.7;
     return new Promise((resolve, reject) => {

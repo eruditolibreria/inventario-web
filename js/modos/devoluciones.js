@@ -5,6 +5,7 @@ import { DEVOL_LIMITE, HOST } from '../config.js';
 import { mostrarMsg, formatearBs, mostrarValorInput, obtenerValorInput, fechaBolivia } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { iniciarEscanerCamara, detenerEscanerCamara, buscarPorCodigo } from '../escaner.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 let _verificarEstadoCaja = null;
 
@@ -106,7 +107,7 @@ export async function buscarTransaccionDevol() {
                 <div style="flex:1">
                     <div style="font-weight:600;color:var(--text);margin-bottom:4px">${t.producto}</div>
                     <div style="font-size:11px;color:var(--muted);line-height:1.4">
-                        ${personaDisplay} · ${t.cantidad} ud. · ${formatearBs(t.precio)} · ${t.sucursal}
+                        ${personaDisplay} · ${t.cantidad} ud. · ${formatearBs(t.precio)} · ${nombreSucursalVisible(t.sucursal)}
                     </div>
                 </div>
                 <div style="font-size:10px;color:var(--muted)">${fechaDisplay}</div>
@@ -229,7 +230,7 @@ export function seleccionarTransaccionDevol(transaccion) {
                 const ev = d.tipoDevolucion === "VENTA",
                     fc = fechaBolivia(d.fecha),
                     mc = d.motivo.replace(/_/g, " ");
-                h += `<tr><td class="col-prod">${d.producto}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${d.sucursal}</td><td class="${ev ? "tipo-venta" : "tipo-compra"}">${ev ? "↩ VENTA" : "↪ COMPRA"}</td><td style="font-family:var(--mono);font-size:11px">${d.cantidad} ud.<br>Bs ${Number(d.total).toFixed(2)}</td><td style="font-size:10px;color:var(--muted)">${mc}</td></tr>`;
+                h += `<tr><td class="col-prod">${d.producto}</td><td style="font-size:11px;color:var(--muted)">${fc}<br>${nombreSucursalVisible(d.sucursal)}</td><td class="${ev ? "tipo-venta" : "tipo-compra"}">${ev ? "↩ VENTA" : "↪ COMPRA"}</td><td style="font-family:var(--mono);font-size:11px">${d.cantidad} ud.<br>Bs ${Number(d.total).toFixed(2)}</td><td style="font-size:10px;color:var(--muted)">${mc}</td></tr>`;
             });
             tabla.innerHTML = h + `</tbody></table>`;
             if (data.paginas > 1) {

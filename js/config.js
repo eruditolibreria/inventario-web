@@ -10,6 +10,18 @@ export const HOST = LOCAL
 export const SUPABASE_URL = LOCAL
   ? "http://127.0.0.1:54321"
   : "https://nhysxuqxlkmvrpxdoate.supabase.co";
+
+export function normalizarUrlPublica(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    if (url.pathname.startsWith("/storage/v1/object/public/")) {
+      return `${SUPABASE_URL}${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch (_) {}
+  return raw;
+}
 export const SUPABASE_ANON_KEY = LOCAL
   ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
   : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeXN4dXF4bGttdnJweGRvYXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDE0MTAsImV4cCI6MjA4OTc3NzQxMH0.J1zXR6_mYMbamqhYpmvdzbFENaNLbUeTIGZNn0sXW28";

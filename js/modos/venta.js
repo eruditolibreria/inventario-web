@@ -32,6 +32,7 @@ import { construirAC } from '../inventario.js';
 import { buscarSugerenciasVenta, buscarProductoPorNombre, buscarProductoEscaneoVenta, reservarStockVenta } from '../db.js';
 import { iniciarEscanerCamara, iniciarEscanerContinuo, detenerEscanerCamara, onInputScanner, CODIGO_REGEX } from '../escaner.js';
 import { listarComprobantes } from './comprobantes.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 function _guardarCarritoDraft() {
     try {
@@ -269,7 +270,7 @@ function _mostrarDetalleCotizacion(cotizacion, cargando = false, error = "") {
     resumen.className = "cotizacion-detalle-resumen";
     resumen.append(
         _crearDatoDetalleCotizacion("Cliente", cotizacion?.cliente || "MOSTRADOR"),
-        _crearDatoDetalleCotizacion("Sucursal", cotizacion?.sucursal),
+        _crearDatoDetalleCotizacion("Sucursal", nombreSucursalVisible(cotizacion?.sucursal)),
         _crearDatoDetalleCotizacion("Vence", cotizacion?.vigenciaHasta || cotizacion?.vigencia_hasta)
     );
 
@@ -375,7 +376,7 @@ function _crearTarjetaCotizacion(cotizacion) {
     info.className = "cotizacion-card-meta";
     info.textContent = [
         cotizacion.fecha || "",
-        cotizacion.sucursal || "",
+        nombreSucursalVisible(cotizacion.sucursal),
         "Estado: " + (cotizacion.estado || "ABIERTA"),
         "Válida hasta: " + (cotizacion.vigenciaHasta || "—"),
         formatearBs(Number.isFinite(total) ? total : 0)

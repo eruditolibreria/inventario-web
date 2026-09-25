@@ -2,6 +2,7 @@ import { store } from '../store.js';
 import { api } from '../api.js';
 import { manejarRespuesta } from '../ui.js';
 import { formatearBs, mostrarMsg } from '../utils.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 const DENOMINACIONES = [200, 100, 50, 20, 10, 5, 2, 1, 0.50, 0.20, 0.10];
 let _arqueoId = null;
@@ -93,7 +94,7 @@ export async function cargarArqueo() {
         (data.cajas || []).forEach(caja => {
             const option = document.createElement('option');
             option.value = caja.cajaId;
-            option.textContent = `${caja.sucursal} · ${formato(caja.saldoActual)}`;
+            option.textContent = `${nombreSucursalVisible(caja.sucursal)} · ${formato(caja.saldoActual)}`;
             select.appendChild(option);
         });
         if (seleccionado && [...select.options].some(o => o.value === seleccionado)) select.value = seleccionado;
@@ -175,7 +176,7 @@ export async function listarArqueos(pagina = 1) {
         if (!manejarRespuesta(data)) return;
         _paginaHistorial = data.pagina || pagina;
         if (!(data.datos || []).length) { tabla.innerHTML = '<div class="empty-state">Sin arqueos registrados</div>'; return; }
-        tabla.innerHTML = `<div class="arqueo-tabla-wrap"><table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th>Resultado</th></tr></thead><tbody>${data.datos.map(a => `<tr data-id="${a.id}"><td>${new Date(a.fechaInicio).toLocaleString('es-BO')}</td><td>${a.sucursal}</td><td>${formato(a.saldoEsperado)}</td><td>${formato(a.efectivoContado)}</td><td>${a.diferencia > 0 ? '+' : ''}${formato(a.diferencia)}</td><td>${a.tipoDiferencia || a.estado}</td></tr>`).join('')}</tbody></table></div>`;
+        tabla.innerHTML = `<div class="arqueo-tabla-wrap"><table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th>Resultado</th></tr></thead><tbody>${data.datos.map(a => `<tr data-id="${a.id}"><td>${new Date(a.fechaInicio).toLocaleString('es-BO')}</td><td>${nombreSucursalVisible(a.sucursal)}</td><td>${formato(a.saldoEsperado)}</td><td>${formato(a.efectivoContado)}</td><td>${a.diferencia > 0 ? '+' : ''}${formato(a.diferencia)}</td><td>${a.tipoDiferencia || a.estado}</td></tr>`).join('')}</tbody></table></div>`;
         if (data.paginas > 1) tabla.innerHTML += `<div class="arqueo-paginacion"><button class="btn btn-ghost" ${_paginaHistorial <= 1 ? 'disabled' : ''} data-pagina="${_paginaHistorial - 1}">← Anterior</button><span>Pág. ${_paginaHistorial} de ${data.paginas}</span><button class="btn btn-ghost" ${_paginaHistorial >= data.paginas ? 'disabled' : ''} data-pagina="${_paginaHistorial + 1}">Siguiente →</button></div>`;
         tabla.querySelectorAll('tr[data-id]').forEach(row => row.addEventListener('click', () => verDetalleArqueo(row.dataset.id)));
         tabla.querySelectorAll('button[data-pagina]').forEach(button => button.addEventListener('click', () => listarArqueos(Number(button.dataset.pagina))));
@@ -189,7 +190,7 @@ export async function verDetalleArqueo(id) {
         const data = await api({ ACCION: 'DETALLE_ARQUEO', ARQUEO_ID: id, TOKEN: store.sessionToken });
         if (!manejarRespuesta(data) || !data.ok) return;
         const a = data.arqueo;
-        document.getElementById('arqueoDetalleContenido').innerHTML = `<div class="arqueo-detalle-grid"><div><span>Periodo</span><strong>${new Date(a.fechaInicio).toLocaleString('es-BO')} — ${new Date(a.fechaFin).toLocaleString('es-BO')}</strong></div><div><span>Caja / sucursal</span><strong>${a.cajaId} · ${a.sucursal}</strong></div><div><span>Saldo esperado</span><strong>${formato(a.saldoEsperado)}</strong></div><div><span>Contado</span><strong>${formato(a.efectivoContado)}</strong></div><div><span>Diferencia</span><strong>${a.diferencia > 0 ? '+' : ''}${formato(a.diferencia)} · ${a.tipoDiferencia}</strong></div><div><span>Movimientos</span><strong>Ventas ${formato(a.totalVentasEfectivo)} · Ingresos ${formato(a.totalIngresos)} · Gastos ${formato(a.totalGastos)} · Retiros ${formato(a.totalRetiros)}</strong></div></div><div class="arqueo-detalle-conteo">${a.conteos.map(c => `<span>Bs ${numero(c.denominacion).toFixed(numero(c.denominacion) < 1 ? 2 : 0)} × ${c.cantidad} = ${formato(c.subtotal)}</span>`).join('')}</div><p><strong>Observaciones:</strong> ${a.observaciones || '—'}</p>`;
+        document.getElementById('arqueoDetalleContenido').innerHTML = `<div class="arqueo-detalle-grid"><div><span>Periodo</span><strong>${new Date(a.fechaInicio).toLocaleString('es-BO')} — ${new Date(a.fechaFin).toLocaleString('es-BO')}</strong></div><div><span>Caja / sucursal</span><strong>${a.cajaId} · ${nombreSucursalVisible(a.sucursal)}</strong></div><div><span>Saldo esperado</span><strong>${formato(a.saldoEsperado)}</strong></div><div><span>Contado</span><strong>${formato(a.efectivoContado)}</strong></div><div><span>Diferencia</span><strong>${a.diferencia > 0 ? '+' : ''}${formato(a.diferencia)} · ${a.tipoDiferencia}</strong></div><div><span>Movimientos</span><strong>Ventas ${formato(a.totalVentasEfectivo)} · Ingresos ${formato(a.totalIngresos)} · Gastos ${formato(a.totalGastos)} · Retiros ${formato(a.totalRetiros)}</strong></div></div><div class="arqueo-detalle-conteo">${a.conteos.map(c => `<span>Bs ${numero(c.denominacion).toFixed(numero(c.denominacion) < 1 ? 2 : 0)} × ${c.cantidad} = ${formato(c.subtotal)}</span>`).join('')}</div><p><strong>Observaciones:</strong> ${a.observaciones || '—'}</p>`;
         document.getElementById('arqueoDetalleOverlay').style.display = 'flex';
     } catch (_) { mostrarMsg('No se pudo cargar el detalle', 'err'); }
 }

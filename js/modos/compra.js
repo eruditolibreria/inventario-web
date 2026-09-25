@@ -29,6 +29,7 @@ import { construirAC } from '../inventario.js';
 import { listarProductos, listarCategoriasInventario, buscarProductoPorCodigo, ultimaCompraProducto } from '../db.js';
 import { iniciarEscanerCamara, detenerEscanerCamara } from '../escaner.js';
 import { can } from '../authorization.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 let _categoriasCompra = [];
 let _categoriasCompraCargadas = false;
@@ -406,7 +407,7 @@ async function verProveedor(idProveedor) {
         const compras = data.compras || [], productos = data.productos || [];
         contenido.innerHTML = `<button id="btnVolverListaProveedores" class="btn btn-ghost" type="button" style="width:auto;min-width:0;padding:4px 9px;margin-bottom:12px">← Volver</button>
             <div style="padding-bottom:12px;border-bottom:1px solid var(--border)"><strong style="font-size:18px">${escaparProveedor(proveedor.nombre)}</strong><div style="font-size:13px;color:var(--text-light);margin-top:6px">NIT: ${escaparProveedor(proveedor.nit || "—")} · Contacto: ${escaparProveedor(proveedor.personaContacto || "—")}</div><div style="font-size:13px;color:var(--text-light);margin-top:3px">Celular: ${escaparProveedor(proveedor.telefono || "—")} · Dirección: ${escaparProveedor(proveedor.direccion || "—")}</div></div>
-            <div style="margin-top:14px"><strong>Productos actuales (${productos.length})</strong>${productos.length ? `<div style="margin-top:6px;font-size:13px">${productos.map(producto => `<div style="padding:6px 0;border-bottom:1px solid var(--border)">${escaparProveedor(producto.producto)} · ${escaparProveedor(producto.sucursal)} · Stock: ${Number(producto.stock)}</div>`).join("")}</div>` : "<div style=\"margin-top:6px;font-size:13px;color:var(--text-light)\">Sin productos asociados.</div>"}</div>
+            <div style="margin-top:14px"><strong>Productos actuales (${productos.length})</strong>${productos.length ? `<div style="margin-top:6px;font-size:13px">${productos.map(producto => `<div style="padding:6px 0;border-bottom:1px solid var(--border)">${escaparProveedor(producto.producto)} · ${escaparProveedor(nombreSucursalVisible(producto.sucursal))} · Stock: ${Number(producto.stock)}</div>`).join("")}</div>` : "<div style=\"margin-top:6px;font-size:13px;color:var(--text-light)\">Sin productos asociados.</div>"}</div>
             <div style="margin-top:16px"><strong>Compras registradas (${compras.length})</strong>${compras.length ? `<div style="margin-top:6px;font-size:13px">${compras.map(compra => `<div style="padding:6px 0;border-bottom:1px solid var(--border)">${escaparProveedor(compra.fecha)} · ${escaparProveedor(compra.producto)} · ${Number(compra.unidades)} unid. · Bs ${Number(compra.total).toFixed(2)}</div>`).join("")}</div>` : "<div style=\"margin-top:6px;font-size:13px;color:var(--text-light)\">Sin compras asociadas.</div>"}</div>`;
         document.getElementById("btnVolverListaProveedores").addEventListener("click", abrirProveedores);
     } catch (error) {
