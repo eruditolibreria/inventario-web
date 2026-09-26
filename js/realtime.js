@@ -25,7 +25,7 @@ export function initRealtime() {
                 window.dispatchEvent(new CustomEvent("inventario:cambio", { detail: payload }));
             } catch (_) {}
         })
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "club_notificaciones_internas" }, (payload) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "club_notificaciones_internas" }, (payload) => {
             try {
                 window.dispatchEvent(new CustomEvent("club:notificacion", { detail: payload }));
                 void notificaciones().then(modulo => modulo.cargarNotificaciones());

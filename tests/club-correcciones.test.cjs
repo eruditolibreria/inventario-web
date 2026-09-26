@@ -104,9 +104,9 @@ test('el portal conserva dos columnas y muestra la imagen completa en un cuadrad
   assert.match(portal, /\.reward-image img\{[^}]*object-fit:contain/);
 });
 
-test('el comprobante impreso y su PDF incluyen el código de creación de cuenta Club', () => {
+test('el comprobante impreso y su PDF incluyen el código de activación Club', () => {
   const comprobantes = leer('js/modos/comprobantes.js');
-  assert.match(comprobantes, /Código para crear tu cuenta:/);
+  assert.match(comprobantes, /Código para activar tu Club:/);
   assert.match(comprobantes, /c\.club\.tokenVinculacion/);
   assert.match(comprobantes, /Válido durante 72 horas/);
 });

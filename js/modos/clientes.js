@@ -406,8 +406,9 @@ function renderPerfilTab(tab) {
     } else if (tab === 'CLUB') {
         const club = _perfil.club || {};
         const cuenta = club.cuenta;
-        cont.innerHTML = `<div class="clientes-resumen"><div><span>Puntos disponibles</span><strong>${Number(cuenta?.saldo_disponible || 0).toLocaleString('es-BO')}</strong></div><div><span>Puntos pendientes</span><strong>${Number(cuenta?.saldo_pendiente || 0).toLocaleString('es-BO')}</strong></div><div><span>Total ganado</span><strong>${Number(cuenta?.total_ganado || 0).toLocaleString('es-BO')}</strong></div><div><span>Portal</span><strong>${club.vinculada ? 'Vinculado' : 'Sin vincular'}</strong></div></div>
-          <div class="row-2 mt-8">${can('club.generar_vinculacion') && !club.vinculada ? '<button id="clienteClubVincular" class="btn btn-primary">Generar código de acceso</button>' : ''}${can('club.recuperar_cuenta') && club.vinculada ? '<button id="clienteClubRecuperar" class="btn btn-ghost">Generar recuperación</button>' : ''}</div>
+        cont.innerHTML = `<div class="clientes-resumen"><div><span>Puntos disponibles</span><strong>${Number(cuenta?.saldo_disponible || 0).toLocaleString('es-BO')}</strong></div><div><span>Puntos pendientes</span><strong>${Number(cuenta?.saldo_pendiente || 0).toLocaleString('es-BO')}</strong></div><div><span>Total ganado</span><strong>${Number(cuenta?.total_ganado || 0).toLocaleString('es-BO')}</strong></div><div><span>Portal</span><strong>${cuenta?.estado === 'PENDIENTE_ACTIVACION' ? 'Pendiente de activación' : club.vinculada ? 'Vinculado' : 'Sin vincular'}</strong></div></div>
+          ${club.identidad?.nombre_usuario ? `<div class="muted mt-8">Usuario del portal: ${esc(club.identidad.nombre_usuario)}</div>` : ''}
+          <div class="row-2 mt-8">${can('club.generar_vinculacion') && (!club.vinculada || cuenta?.estado === 'PENDIENTE_ACTIVACION') ? '<button id="clienteClubVincular" class="btn btn-primary">Generar código de activación</button>' : ''}${can('club.recuperar_cuenta') && club.vinculada ? '<button id="clienteClubRecuperar" class="btn btn-ghost">Generar recuperación</button>' : ''}</div>
           ${can('club.ajustar_puntos') ? '<div class="row-2 mt-8"><input id="clienteClubPuntos" type="number" step="1" placeholder="Puntos (+ o -)"><input id="clienteClubMotivo" placeholder="Motivo del ajuste"><button id="clienteClubAjustar" class="btn btn-ghost">Aplicar ajuste</button></div>' : ''}
           <div id="clienteClubResultado" class="muted mt-8"></div>
           <h3 class="mt-8">Movimientos recientes</h3>${tablaSimple(['Fecha','Tipo','Disponibles','Pendientes','Descripción'], (club.movimientos || []).map(m => [fecha(m.creado_en), esc(m.tipo), Number(m.puntos_disponibles_delta || 0), Number(m.puntos_pendientes_delta || 0), esc(m.descripcion || '—')]))}`;
@@ -431,7 +432,7 @@ async function accionClubCliente(accion) {
     resultado.textContent = 'Procesando…';
     const data = await api(payload);
     if (!data.ok) { resultado.textContent = data.error || 'No se pudo completar.'; return; }
-    if (data.tokenVinculacion) resultado.textContent = `Código de vinculación: ${data.tokenVinculacion}`;
+    if (data.tokenVinculacion) resultado.textContent = `Código de activación: ${data.tokenVinculacion} (vence en 72 horas)`;
     else if (data.codigoRecuperacion) resultado.textContent = `Código de recuperación: ${data.codigoRecuperacion} (vence en 30 minutos)`;
     else {
         resultado.textContent = 'Ajuste aplicado.';

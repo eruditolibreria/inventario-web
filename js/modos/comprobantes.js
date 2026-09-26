@@ -229,7 +229,7 @@ function _crearTicketHtml(c) {
         h += '<div class="t-pie"><strong>CLUB ERUDITOS</strong></div>';
         if (c.club.puntosVenta) h += '<div class="t-meta">Puntos de esta compra: ' + Number(c.club.puntosVenta) + '</div>';
         if (c.club.tokenVinculacion) {
-            h += '<div class="t-pie"><strong>Código para crear tu cuenta: ' + _escHtml(c.club.tokenVinculacion) + '</strong></div>';
+            h += '<div class="t-pie"><strong>Código para activar tu Club: ' + _escHtml(c.club.tokenVinculacion) + '</strong></div>';
             h += '<div class="t-meta">Válido durante 72 horas en el portal Club Eruditos.</div>';
         }
     }
@@ -377,7 +377,7 @@ function _lineasDocumentoPdf(c) {
         lineas.push("CLUB ERUDITOS");
         if (c.club.puntosVenta) lineas.push("Puntos de esta compra: " + Number(c.club.puntosVenta));
         if (c.club.tokenVinculacion) {
-            lineas.push("Código para crear tu cuenta: " + c.club.tokenVinculacion);
+            lineas.push("Código para activar tu Club: " + c.club.tokenVinculacion);
             lineas.push("Válido durante 72 horas.");
         }
     }

@@ -6,6 +6,10 @@ const SESSION_KEY = 'club_eruditos_session';
 const CODES_KEY = 'club_eruditos_retiros';
 let session = readJson(SESSION_KEY, null);
 let premioSeleccionado = null;
+let clubPendiente = false;
+let usuarioTimer;
+let usuarioRevision = 0;
+let canjeParaCancelar = null;
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[c]);
@@ -19,7 +23,7 @@ function saveSession(value) {
 }
 function setStatus(id, message, error=false) { const el=$(id); el.textContent=message || ''; el.classList.toggle('error', error); }
 function mensajeError(code) {
-  return ({ CREDENCIALES_INVALIDAS:'Código o contraseña incorrectos.', CODIGO_VINCULACION_INVALIDO:'El código de vinculación no es válido o ya fue usado.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', CUENTA_YA_VINCULADA:'Esta cuenta ya fue activada.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
+  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
 }
 
 async function post(url, body, token) {
@@ -39,36 +43,104 @@ async function refreshIfNeeded() {
 
 async function clubApi(accion, body={}) { await refreshIfNeeded(); if (!session?.token) return {ok:false,error:'NO_AUTORIZADO'}; return post(PUBLIC_URL, { ACCION:accion, ...body }, session.token); }
 
-function showAuth() { $('authView').hidden=false; $('appView').hidden=true; }
-function showApp() { $('authView').hidden=true; $('appView').hidden=false; $('saludo').textContent=`Hola, ${session?.cliente?.nombre || 'Erudito'}`; void cargarInicio(); }
+function showAuth() {
+  document.querySelectorAll('form').forEach(form => form.reset());
+  document.querySelectorAll('form input').forEach(input => { input.value=''; });
+  document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+  clubPendiente=false;
+  premioSeleccionado=null;
+  canjeParaCancelar=null;
+  clearTimeout(usuarioTimer);
+  usuarioRevision++;
+  $('recoveryCodes').textContent='';
+  setStatus('usuarioDisponibilidad','');
+  $('usuarioDisponibilidad').classList.remove('available');
+  setStatus('usernameStatus','');
+  setStatus('appStatus','');
+  setStatus('canjesStatus','');
+  seleccionarPanel('login');
+  $('authView').hidden=false; $('appView').hidden=true;
+}
+function showApp() { $('authView').hidden=true; $('appView').hidden=false; document.querySelector('nav').hidden=true; $('saludo').textContent=`Hola, ${session?.cliente?.nombre || 'Erudito'}`; void cargarInicio(); if (session?.cliente?.usuario === null) $('usernameDialog').showModal(); }
+
+function seleccionarPanel(nombre) {
+  document.querySelectorAll('[data-auth]').forEach(b => b.classList.toggle('active', b.dataset.auth===nombre || nombre==='credenciales' && b.dataset.auth==='registro'));
+  document.querySelectorAll('[data-panel]').forEach(p => { p.hidden=p.dataset.panel!==nombre; });
+  setStatus('authStatus','');
+}
 
 document.querySelectorAll('[data-auth]').forEach(btn => btn.addEventListener('click', () => {
-  document.querySelectorAll('[data-auth]').forEach(b => b.classList.toggle('active', b===btn));
-  document.querySelectorAll('[data-panel]').forEach(p => { p.hidden=p.dataset.panel!==btn.dataset.auth; });
-  setStatus('authStatus','');
+  seleccionarPanel(btn.dataset.auth);
 }));
 
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Ingresando…');
-  const data=await post(AUTH_URL,{ACCION:'LOGIN',CODIGO_CLIENTE:$('loginCodigo').value,PASSWORD:$('loginPassword').value});
+  const data=await post(AUTH_URL,{ACCION:'LOGIN',USUARIO:$('loginUsuario').value,PASSWORD:$('loginPassword').value});
   if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} saveSession(data); showApp();
 });
 
 $('registroForm').addEventListener('submit', async e => {
-  e.preventDefault(); setStatus('authStatus','Activando tu cuenta…');
-  const data=await post(AUTH_URL,{ACCION:'REGISTRAR',TOKEN_VINCULACION:$('registroToken').value,PASSWORD:$('registroPassword').value});
-  if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} saveSession(data); $('recoveryCodes').textContent=(data.codigosRecuperacion||[]).join('\n'); $('recoveryDialog').showModal(); showApp();
+  e.preventDefault(); seleccionarPanel('credenciales'); $('registroUsuario').focus();
+});
+$('volverDatos').addEventListener('click', () => seleccionarPanel('registro'));
+
+$('registroUsuario').addEventListener('input', () => {
+  const input=$('registroUsuario');
+  const revision=++usuarioRevision;
+  clearTimeout(usuarioTimer);
+  $('usuarioDisponibilidad').classList.remove('available');
+  if (!input.validity.valid) { setStatus('usuarioDisponibilidad',''); return; }
+  const usuario=input.value.trim();
+  setStatus('usuarioDisponibilidad','Comprobando…');
+  usuarioTimer=setTimeout(async () => {
+    try {
+      const data=await post(AUTH_URL,{ACCION:'VERIFICAR_USUARIO',USUARIO:usuario});
+      if (revision!==usuarioRevision) return;
+      setStatus('usuarioDisponibilidad',data.ok ? data.disponible?'Disponible':'No disponible' : 'No se pudo comprobar',!data.ok||!data.disponible);
+      $('usuarioDisponibilidad').classList.toggle('available',data.ok&&data.disponible);
+    } catch (_) {
+      if (revision===usuarioRevision) setStatus('usuarioDisponibilidad','Sin conexión',true);
+    }
+  }, 350);
+});
+
+$('credencialesForm').addEventListener('submit', async e => {
+  e.preventDefault(); setStatus('authStatus','Creando tu cuenta…');
+  const data=await post(AUTH_URL,{ACCION:'REGISTRAR',NOMBRE:$('registroNombre').value,DOCUMENTO:$('registroDocumento').value,TELEFONO:$('registroTelefono').value,DIRECCION:$('registroDireccion').value,EMAIL:$('registroEmail').value,USUARIO:$('registroUsuario').value,PASSWORD:$('registroPassword').value,TOKEN_VINCULACION:$('registroToken').value});
+  if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;}
+  $('recoveryCodes').textContent=(data.codigosRecuperacion||[]).join('\n');
+  $('recoveryDialog').showModal();
+  if(data.token){saveSession(data);showApp();}
+  else {seleccionarPanel('login');setStatus('authStatus','Cuenta creada. Ingresa con tu usuario y contraseña.');}
 });
 
 $('recuperarForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Actualizando contraseña…');
-  const data=await post(AUTH_URL,{ACCION:'RECUPERAR',CODIGO_CLIENTE:$('recuperarCodigo').value,CODIGO_RECUPERACION:$('recuperarToken').value,PASSWORD:$('recuperarPassword').value});
+  const data=await post(AUTH_URL,{ACCION:'RECUPERAR',USUARIO:$('recuperarUsuario').value,CODIGO_RECUPERACION:$('recuperarToken').value,PASSWORD:$('recuperarPassword').value});
   if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} saveSession(data); showApp();
 });
 
 $('copyRecovery').addEventListener('click',()=>navigator.clipboard?.writeText($('recoveryCodes').textContent));
 $('closeRecovery').addEventListener('click',()=>$('recoveryDialog').close());
 $('logoutBtn').addEventListener('click',()=>{saveSession(null);showAuth();});
+$('activarCuentaBtn').addEventListener('click', mostrarActivacion);
+$('usernameDialog').addEventListener('cancel', e => e.preventDefault());
+$('usernameForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  await refreshIfNeeded();
+  const data=await post(AUTH_URL,{ACCION:'ELEGIR_USUARIO',USUARIO:$('legacyUsuario').value},session?.token);
+  if(!data.ok){setStatus('usernameStatus',mensajeError(data.error),true);return;}
+  saveSession({...session,cliente:{...session.cliente,usuario:data.usuario}});
+  $('usernameDialog').close();
+});
+
+$('activacionForm').addEventListener('submit', async e => {
+  e.preventDefault();setStatus('appStatus','Activando tu Club…');
+  await refreshIfNeeded();
+  const data=await post(AUTH_URL,{ACCION:'ACTIVAR',TOKEN_VINCULACION:$('activacionToken').value},session?.token);
+  if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
+  $('activacionToken').value='';await cargarInicio();setStatus('appStatus','Tu Club está activo. Ya puedes usar tus puntos.');
+});
 
 document.querySelectorAll('nav [data-view]').forEach(btn=>btn.addEventListener('click',async()=>{
   document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b===btn));
@@ -83,8 +155,21 @@ function movementItem(m) {
 
 async function cargarInicio(){
   setStatus('appStatus','Actualizando…'); const data=await clubApi('RESUMEN');
+  if (!session) return;
   if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
   session={...session,cliente:data.cliente}; saveSession(session); $('saludo').textContent=`Hola, ${data.cliente?.nombre||'Erudito'}`;
+  if(data.cliente?.usuario === null && !$('usernameDialog').open) $('usernameDialog').showModal();
+  const pendiente=data.cuenta?.estado==='PENDIENTE_ACTIVACION';
+  clubPendiente=pendiente;
+  $('activacionPanel').hidden=!pendiente;
+  document.querySelector('nav').classList.toggle('catalog-only',pendiente);
+  document.querySelectorAll('nav [data-view="movimientos"],nav [data-view="canjes"]').forEach(b=>{b.hidden=pendiente;});
+  document.querySelector('nav').hidden=false;
+  $('activarCuentaBtn').hidden=!pendiente;
+  document.querySelector('.hero').hidden=pendiente;
+  $('actividadTitulo').hidden=pendiente;
+  $('resumenMovimientos').hidden=pendiente;
+  if(pendiente){document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='inicio'));document.querySelectorAll('[data-view-panel]').forEach(p=>{p.hidden=p.dataset.viewPanel!=='inicio';});}
   $('saldoDisponible').textContent=Number(data.cuenta?.saldo_disponible||0).toLocaleString('es-BO'); $('saldoPendiente').textContent=Number(data.cuenta?.saldo_pendiente||0).toLocaleString('es-BO');
   const vence=data.proximoVencimiento; $('vencimiento').hidden=!vence; if(vence)$('vencimiento').textContent=`${Number(vence.puntos_disponibles).toLocaleString('es-BO')} puntos vencen el ${fecha(vence.vence_en)}.`;
   $('terminosClub').hidden=!data.terminos; $('terminosClubTexto').textContent=data.terminos||'';
@@ -96,8 +181,16 @@ async function cargarPremios(){
   setStatus('appStatus','Cargando premios…'); const data=await clubApi('PREMIOS');
   if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
   const saldo=Number($('saldoDisponible').textContent.replace(/\D/g,''))||0;
-  $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=saldo<Number(p.costo_puntos);return `<article class="reward"><div class="reward-image">${imagen?`<img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span>`:'<span>E</span>'}</div><span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p><div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
-  $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem))))); setStatus('appStatus','');
+  $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);return `<article class="reward"><div class="reward-image">${imagen?`<img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span>`:'<span>E</span>'}</div><span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p><div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
+  $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>clubPendiente?mostrarActivacion():abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem))))); setStatus('appStatus','');
+}
+
+function mostrarActivacion(){
+  document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='inicio'));
+  document.querySelectorAll('[data-view-panel]').forEach(p=>{p.hidden=p.dataset.viewPanel!=='inicio';});
+  setStatus('appStatus','Activa tu cuenta con el código de una compra de Bs 5,00 o más para canjear.');
+  $('activacionPanel').scrollIntoView({behavior:'smooth',block:'start'});
+  $('activacionToken').focus({preventScroll:true});
 }
 
 function abrirCanje(premio){ premioSeleccionado=premio; $('redeemTitle').textContent=`Canjear ${premio.nombre}`; const sucursales=premio.club_premios_sucursales||[]; $('redeemBranch').innerHTML=sucursales.map(s=>`<option value="${esc(s.sucursal_id)}">${esc(s.sucursal_nombre||s.sucursal_id)}</option>`).join(''); $('redeemDialog').showModal(); }
@@ -109,8 +202,34 @@ async function cargarMovimientos(){ const data=await clubApi('MOVIMIENTOS',{PAGI
 async function cargarCanjes(){
   const data=await clubApi('CANJES'); const codes=readJson(CODES_KEY,{});
   $('canjesLista').innerHTML=data.ok?(data.datos||[]).map(c=>{const p=Array.isArray(c.club_premios)?c.club_premios[0]:c.club_premios||{};const imagen=normalizarUrlPublica(p.imagen_url);const code=codes[c.id];const cancelable=c.estado==='SOLICITADO';return `<article class="list-item"><div class="list-product">${imagen?`<img class="list-thumb" src="${esc(imagen)}" alt="${esc(p.nombre||'Premio')}" loading="lazy">`:''}<div><strong>${esc(p.nombre||'Premio')}</strong><p>${esc(c.estado)} · ${esc(c.sucursal_nombre||c.sucursal_id)} · ${fecha(c.solicitado_en)}</p>${code?`<div class="code">${esc(code)}</div><small>Código de retiro</small>`:''}</div></div><div><span class="points negative">-${Number(c.puntos_total)} pts</span>${cancelable?`<button data-cancel="${c.id}">Cancelar</button>`:''}</div></article>`;}).join('')||'<div class="list-item">Aún no realizaste canjes.</div>':`<div class="list-item">${esc(mensajeError(data.error))}</div>`;
-  $('canjesLista').querySelectorAll('[data-cancel]').forEach(btn=>btn.addEventListener('click',async()=>{if(!confirm('¿Cancelar este canje y devolver los puntos?'))return;const res=await clubApi('CANCELAR_CANJE',{CANJE_ID:Number(btn.dataset.cancel),MOTIVO:'Cancelado por el cliente'});setStatus('appStatus',res.ok?'Canje cancelado.':mensajeError(res.error),!res.ok);if(res.ok)await cargarCanjes();}));
+  $('canjesLista').querySelectorAll('[data-cancel]').forEach(btn=>btn.addEventListener('click',()=>{
+    canjeParaCancelar=Number(btn.dataset.cancel);
+    setStatus('cancelStatus','');
+    $('cancelDialog').showModal();
+  }));
 }
+
+$('cancelDismiss').addEventListener('click',()=>$('cancelDialog').close());
+$('cancelDialog').addEventListener('close',()=>{canjeParaCancelar=null;});
+$('cancelConfirm').addEventListener('click',async()=>{
+  if (!canjeParaCancelar) return;
+  const canjeId=canjeParaCancelar;
+  $('cancelConfirm').disabled=true;
+  setStatus('cancelStatus','Cancelando y devolviendo puntos…');
+  try {
+    const res=await clubApi('CANCELAR_CANJE',{CANJE_ID:canjeId,MOTIVO:'Cancelado por el cliente'});
+    if (!res.ok) { setStatus('cancelStatus',mensajeError(res.error),true); return; }
+    const codes=readJson(CODES_KEY,{});
+    delete codes[canjeId];
+    localStorage.setItem(CODES_KEY,JSON.stringify(codes));
+    $('cancelDialog').close();
+    await Promise.all([cargarCanjes(),cargarInicio()]);
+    setStatus('canjesStatus','Canje cancelado. Tus puntos fueron devueltos.');
+    setStatus('appStatus','Canje cancelado. Tus puntos fueron devueltos.');
+  } catch (_) {
+    setStatus('cancelStatus','No se pudo cancelar el canje. Intenta nuevamente.',true);
+  } finally { $('cancelConfirm').disabled=false; }
+});
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
 if(session?.token)showApp();else showAuth();

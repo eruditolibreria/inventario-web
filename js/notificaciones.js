@@ -22,7 +22,7 @@ function crearCentro() {
     const centro = document.createElement('div');
     centro.id = 'clubNotificacionesCentro';
     centro.className = 'club-notification-center';
-    centro.innerHTML = `<button id="clubNotificacionesBtn" class="club-notification-bell" type="button" aria-label="Notificaciones de canjes" aria-expanded="false"><i class="fa-solid fa-bell"></i><span id="clubNotificacionesBadge" hidden>0</span></button><div id="clubNotificacionesPanel" class="club-notification-panel" hidden><div class="club-notification-head"><strong>Canjes nuevos</strong><button id="clubNotificacionesCerrar" type="button" aria-label="Cerrar">×</button></div><div id="clubNotificacionesLista" class="club-notification-list"><div class="muted">Cargando…</div></div></div>`;
+    centro.innerHTML = `<button id="clubNotificacionesBtn" class="club-notification-bell" type="button" aria-label="Notificaciones de canjes" aria-expanded="false"><i class="fa-solid fa-bell"></i><span id="clubNotificacionesBadge" hidden>0</span></button><div id="clubNotificacionesPanel" class="club-notification-panel" hidden><div class="club-notification-head"><strong>Notificaciones de canjes</strong><button id="clubNotificacionesCerrar" type="button" aria-label="Cerrar">×</button></div><div id="clubNotificacionesLista" class="club-notification-list"><div class="muted">Cargando…</div></div></div>`;
     cabecera.insertBefore(centro, usuario);
 }
 

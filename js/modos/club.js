@@ -544,6 +544,10 @@ window.addEventListener('club:abrir-canje', event => {
     cargarCanjes().catch(error => estado(error.message, true));
 });
 
+window.addEventListener('club:notificacion', () => {
+    if ($('clubCanjesPanel')) cargarCanjes().catch(error => estado(error.message, true));
+});
+
 export async function cargarClub() {
     initClub();
     const objetivoPendiente = Number(window.__clubCanjeObjetivo);
