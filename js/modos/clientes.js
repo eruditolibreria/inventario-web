@@ -6,6 +6,8 @@ import { manejarRespuesta } from '../ui.js';
 import { can } from '../authorization.js';
 import { nombreSucursalVisible } from '../sucursales.js';
 
+const nombresNivelClub = ['Mini erudito', 'Aprendiz de Erudito', 'Erudito Iniciado', 'Erudito Académico', 'Gran Erudito', 'Erudito Maestro', 'Erudito Superior', 'Archierudito', 'Erudito ancestral', 'Erudito Supremo'];
+
 let _pagina = 1;
 let _paginas = 1;
 let _clienteActual = null;
@@ -407,6 +409,7 @@ function renderPerfilTab(tab) {
         const club = _perfil.club || {};
         const cuenta = club.cuenta;
         cont.innerHTML = `<div class="clientes-resumen"><div><span>Puntos disponibles</span><strong>${Number(cuenta?.saldo_disponible || 0).toLocaleString('es-BO')}</strong></div><div><span>Puntos pendientes</span><strong>${Number(cuenta?.saldo_pendiente || 0).toLocaleString('es-BO')}</strong></div><div><span>Total ganado</span><strong>${Number(cuenta?.total_ganado || 0).toLocaleString('es-BO')}</strong></div><div><span>Portal</span><strong>${cuenta?.estado === 'PENDIENTE_ACTIVACION' ? 'Pendiente de activación' : club.vinculada ? 'Vinculado' : 'Sin vincular'}</strong></div></div>
+          ${cuenta ? `<div class="muted mt-8">Nivel Club: ${Number(cuenta.nivel_actual || 1)}. ${esc(nombresNivelClub[Number(cuenta.nivel_actual || 1) - 1] || nombresNivelClub[0])}</div>` : ''}
           ${club.identidad?.nombre_usuario ? `<div class="muted mt-8">Usuario del portal: ${esc(club.identidad.nombre_usuario)}</div>` : ''}
           <div class="row-2 mt-8">${can('club.generar_vinculacion') && (!club.vinculada || cuenta?.estado === 'PENDIENTE_ACTIVACION') ? '<button id="clienteClubVincular" class="btn btn-primary">Generar código de activación</button>' : ''}${can('club.recuperar_cuenta') && club.vinculada ? '<button id="clienteClubRecuperar" class="btn btn-ghost">Generar recuperación</button>' : ''}</div>
           ${can('club.ajustar_puntos') ? '<div class="row-2 mt-8"><input id="clienteClubPuntos" type="number" step="1" placeholder="Puntos (+ o -)"><input id="clienteClubMotivo" placeholder="Motivo del ajuste"><button id="clienteClubAjustar" class="btn btn-ghost">Aplicar ajuste</button></div>' : ''}

@@ -11,6 +11,8 @@ import { normalizarUrlPublica } from '../config.js';
 let inicializado = false;
 let premios = [];
 let noticias = [];
+let referidos = [];
+const NIVELES_CLUB = ['Mini erudito', 'Aprendiz de Erudito', 'Erudito Iniciado', 'Erudito Académico', 'Gran Erudito', 'Erudito Maestro', 'Erudito Superior', 'Archierudito', 'Erudito ancestral', 'Erudito Supremo'];
 let productoPremioSeleccionado = null;
 let productoBusquedaSecuencia = 0;
 let productoBusquedaControl = null;
@@ -36,10 +38,13 @@ function renderEstructura() {
       <div id="clubCanjesPanel" class="club-panel"><div class="club-heading"><h3>Canjes</h3><select id="clubFiltroCanjes"><option value="">Todos</option><option value="SOLICITADO">Solicitados</option><option value="PREPARANDO">Preparando</option><option value="LISTO">Listos</option><option value="ENTREGADO">Entregados</option><option value="CANCELADO">Cancelados</option></select></div><div id="clubCanjesLista"></div></div>
       <dialog id="clubEntregaDialog" class="club-entrega-dialog"><form method="dialog"><h3>Confirmar entrega</h3><p class="muted">Introduce el código de 4 caracteres que muestra el cliente.</p><input id="clubCodigoRetiro" maxlength="4" inputmode="text" autocomplete="one-time-code" aria-label="Código de retiro"><div id="clubCodigoRetiroError" class="club-codigo-error" aria-live="polite"></div><div class="row-2 mt-8"><button id="clubCerrarEntrega" class="btn btn-ghost" value="cancel">Cancelar</button><button id="clubConfirmarEntrega" class="btn btn-primary" type="button">Entregar</button></div></form></dialog>`;
     $('clubPremioProductoCampo').insertAdjacentHTML('afterend', `<div id="clubPremioImagenCampo" class="field-group"><label class="field-label">Imagen para el portal</label><div style="display:flex;align-items:center;gap:12px"><div style="display:grid;place-items:center;width:92px;height:92px;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface2)"><img id="clubPremioImagenPreview" alt="Vista previa del premio" hidden style="width:100%;height:100%;object-fit:cover"><span id="clubPremioImagenVacia" class="muted">Sin imagen</span></div><div id="clubPremioImagenAcciones" style="display:grid;gap:8px;flex:1"><div class="row-2"><button id="clubPremioTomarFoto" class="btn btn-ghost btn-sm" type="button">Tomar foto</button><button id="clubPremioElegirImagen" class="btn btn-ghost btn-sm" type="button">Elegir de galería</button></div><small>Disponible para premios que no pertenecen al inventario.</small></div></div><input id="clubPremioImagenUrl" type="hidden"><input id="clubPremioImagenCamara" type="file" accept="image/*" capture="environment" hidden><input id="clubPremioImagenGaleria" type="file" accept="image/*" hidden><small id="clubPremioImagenEstado">La imagen aparecerá en el portal del cliente.</small></div>`);
+    $('clubPremioStock').closest('.field-group').insertAdjacentHTML('afterend', `<div class="field-group"><label class="field-label">Nivel mínimo para canjear</label><select id="clubPremioNivel">${NIVELES_CLUB.map((nombre, indice) => `<option value="${indice + 1}">${indice + 1}. ${esc(nombre)}</option>`).join('')}</select><small>Los clientes de menor nivel podrán ver el premio, pero no canjearlo.</small></div>`);
     root.querySelector('.club-admin-grid').insertAdjacentHTML('afterend', `<div id="clubNoticiasPanel" class="club-panel"><div class="club-heading"><div><h3>Noticias del portal</h3><p class="muted">Publicaciones visibles para todos los clientes del Club.</p></div></div><form id="clubNoticiaForm"><input id="clubNoticiaId" type="hidden"><div class="field-group"><label class="field-label">Título</label><input id="clubNoticiaTitulo" maxlength="120" placeholder="Ej.: Semana del libro" required></div><div class="field-group"><label class="field-label">Mensaje</label><textarea id="clubNoticiaMensaje" maxlength="2000" rows="3" placeholder="Escribe la noticia que aparecerá en el portal." required></textarea></div><label class="check-row"><input id="clubNoticiaPublicada" type="checkbox" checked> Publicar inmediatamente</label><div class="row-2 mt-8"><button class="btn btn-primary" type="submit">Guardar noticia</button><button id="clubLimpiarNoticia" class="btn btn-ghost" type="button">Nueva</button></div></form><div id="clubNoticiasLista" class="mt-8"></div></div>`);
+    $('clubNoticiasPanel').insertAdjacentHTML('afterend', `<div id="clubReferidosPanel" class="club-panel"><h3>Referidos y niveles</h3><p class="muted">El invitador recibe 5 puntos cuando el nuevo cliente activa su cuenta, verifica su C.I. y alcanza Bs 50 pagados en sus primeros 30 días. El invitado solo recibe sus puntos de bienvenida configurados.</p><p class="muted">Los diez niveles avanzan cada Bs 200 de compras netas pagadas en 365 días. Cada ascenso nuevo otorga 3 puntos; el reto Hábito lector otorga 3 por trimestre.</p><button id="clubProcesarBeneficios" class="btn btn-ghost btn-sm" type="button">Procesar beneficios pendientes</button><div id="clubReferidosLista" class="mt-8"></div></div>`);
     prepararPanelPlegable('clubConfigForm', 'Configuración');
     prepararPanelPlegable('clubPremioForm', 'Premios');
     prepararPanelPlegable('clubNoticiasPanel', 'Noticias del portal');
+    prepararPanelPlegable('clubReferidosPanel', 'Referidos y niveles');
     prepararPanelPlegable('clubCatalogoPanel', 'Catálogo de premios');
     prepararPanelPlegable('clubCanjesPanel', 'Canjes');
 }
@@ -115,7 +120,7 @@ function renderPremios() {
         const imagen = normalizarUrlPublica(p.imagen_url);
         return `<article class="club-list-card">
             <div style="display:flex;gap:10px;align-items:center">${imagen ? `<img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" style="width:58px;height:58px;object-fit:cover;border-radius:10px">` : ''}<div><strong>${esc(p.nombre)}</strong><div class="muted">${esc(p.descripcion || 'Sin descripción')}</div><small>${esc(sucursales || 'Sin sucursal')}</small>${advertencia}</div></div>
-            <div class="club-list-actions"><strong>${Number(p.costo_puntos).toLocaleString('es-BO')} pts</strong><span class="rol-pill">Stock: ${Number(p.stock_disponible || 0)}</span><span class="rol-pill">${p.tipo_stock === 'INVENTARIO' ? 'INVENTARIO' : 'FUERA DE INVENTARIO'}</span>${can('club.gestionar_premios') ? `<button class="btn btn-ghost btn-sm" data-club-editar-premio="${p.id}">Editar</button>` : ''}</div>
+            <div class="club-list-actions"><strong>${Number(p.costo_puntos).toLocaleString('es-BO')} pts</strong><span class="rol-pill">Stock: ${Number(p.stock_disponible || 0)}</span><span class="rol-pill">Desde ${esc(NIVELES_CLUB[Number(p.nivel_minimo || 1) - 1])}</span><span class="rol-pill">${p.tipo_stock === 'INVENTARIO' ? 'INVENTARIO' : 'FUERA DE INVENTARIO'}</span>${can('club.gestionar_premios') ? `<button class="btn btn-ghost btn-sm" data-club-editar-premio="${p.id}">Editar</button>` : ''}</div>
         </article>`;
     }).join('');
     cont.querySelectorAll('[data-club-editar-premio]').forEach(btn => btn.addEventListener('click', () => editarPremio(Number(btn.dataset.clubEditarPremio))));
@@ -126,6 +131,29 @@ function renderNoticias() {
     if (!cont) return;
     cont.innerHTML = noticias.length ? noticias.map(noticia => `<article class="club-list-card"><div><strong>${esc(noticia.titulo)}</strong><div class="muted">${esc(noticia.mensaje)}</div><small>${fecha(noticia.publicada_en || noticia.creado_en)}</small></div><div class="club-list-actions"><span class="rol-pill">${noticia.publicada ? 'PUBLICADA' : 'BORRADOR'}</span><button class="btn btn-ghost btn-sm" type="button" data-club-editar-noticia="${noticia.id}">Editar</button></div></article>`).join('') : '<div class="empty-state">Aún no hay noticias creadas.</div>';
     cont.querySelectorAll('[data-club-editar-noticia]').forEach(btn => btn.addEventListener('click', () => editarNoticia(Number(btn.dataset.clubEditarNoticia))));
+}
+
+function renderReferidos() {
+    const cont = $('clubReferidosLista');
+    if (!cont) return;
+    cont.innerHTML = referidos.length ? referidos.map(r => {
+        const estadoReferido = Number(r.puntos_otorgados) === 5 ? '5 puntos otorgados'
+            : r.invitado_estado !== 'ACTIVA' ? 'Cuenta pendiente de activación'
+            : !r.documento_verificado_en ? 'C.I. por verificar'
+            : !r.califica_en ? 'Esperando Bs 50 pagados'
+            : 'En espera de 7 días';
+        return `<article class="club-list-card"><div><strong>${esc(r.invitado_nombre)}</strong><div class="muted">Invitado por ${esc(r.invitador_nombre)}</div><small>C.I.: ${esc(r.invitado_documento)} · ${fecha(r.creado_en)}</small></div><div class="club-list-actions"><span class="rol-pill">${esc(estadoReferido)}</span>${!r.documento_verificado_en ? `<button class="btn btn-ghost btn-sm" type="button" data-verificar-referido="${r.invitado_cuenta_id}">Verifiqué la C.I.</button>` : ''}</div></article>`;
+    }).join('') : '<div class="empty-state">Aún no hay clientes referidos.</div>';
+    cont.querySelectorAll('[data-verificar-referido]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!window.confirm('Confirma que revisaste la C.I. original del cliente y coincide con su ficha.')) return;
+        btn.disabled = true;
+        try {
+            const data = await api({ ACCION: 'CLUB_VERIFICAR_DOCUMENTO', CUENTA_ID: Number(btn.dataset.verificarReferido) });
+            if (!data.ok) throw new Error(data.error || 'No se pudo verificar la C.I.');
+            estado('C.I. verificada. El bono se otorgará cuando se cumplan las demás condiciones.');
+            await cargarReferidos();
+        } catch (error) { estado(error.message, true); btn.disabled = false; }
+    }));
 }
 
 function clienteCanje(canje) {
@@ -245,6 +273,22 @@ async function cargarNoticias() {
     renderNoticias();
 }
 
+async function cargarReferidos() {
+    if (!can('club.configurar')) return;
+    const data = await api({ ACCION: 'CLUB_LISTAR_REFERIDOS' });
+    if (!data.ok) throw new Error(data.error || 'No se pudieron cargar los referidos');
+    referidos = data.datos || [];
+    renderReferidos();
+}
+
+async function procesarBeneficios() {
+    estado('Revisando beneficios pendientes…');
+    const data = await api({ ACCION: 'CLUB_PROCESAR_BENEFICIOS' });
+    if (!data.ok) return estado(data.error || 'No se pudieron procesar los beneficios.', true);
+    estado(`${Number(data.cuentasProcesadas || 0)} cuenta(s) revisada(s).`);
+    await Promise.all([cargarResumen(), cargarReferidos()]);
+}
+
 async function cargarCanjes() {
     if (!can('club.ver_canjes')) {
         $('clubCanjesLista').innerHTML = '<div class="empty-state">Tu rol no gestiona canjes.</div>';
@@ -314,6 +358,7 @@ function limpiarPremio() {
     $('clubPremioDescripcion').value = '';
     $('clubPremioTipo').value = 'EXTERNO';
     $('clubPremioStock').value = '1';
+    $('clubPremioNivel').value = '1';
     $('clubPremioProducto').value = '';
     $('clubPremioImagenUrl').value = '';
     productoPremioSeleccionado = null;
@@ -333,6 +378,7 @@ function editarPremio(id) {
     $('clubPremioDescripcion').value = p.descripcion || '';
     $('clubPremioTipo').value = p.tipo_stock === 'INVENTARIO' ? 'INVENTARIO' : 'EXTERNO';
     $('clubPremioStock').value = Number(p.stock_disponible || 0);
+    $('clubPremioNivel').value = String(p.nivel_minimo || 1);
     $('clubPremioProducto').value = p.producto || '';
     $('clubPremioImagenUrl').value = p.imagen_url || '';
     const inventarios = (p.club_premios_sucursales || []).flatMap(s => {
@@ -392,6 +438,7 @@ async function guardarPremio(event) {
         COSTO_PUNTOS: Number($('clubPremioCosto').value), DESCRIPCION: $('clubPremioDescripcion').value,
         TIPO_STOCK: $('clubPremioTipo').value,
         STOCK: stockClub,
+        NIVEL_MINIMO: Number($('clubPremioNivel').value),
         IMAGEN_URL: $('clubPremioImagenUrl').value,
         ASIGNACIONES: asignaciones, ACTIVO: $('clubPremioActivo').checked,
     });
@@ -527,11 +574,13 @@ function initClub() {
     $('clubFiltroCanjes')?.addEventListener('change', () => cargarCanjes().catch(e => estado(e.message, true)));
     $('clubActualizar')?.addEventListener('click', () => cargarClub());
     $('clubExpirar')?.addEventListener('click', expirarPuntos);
+    $('clubProcesarBeneficios')?.addEventListener('click', procesarBeneficios);
     $('clubConfirmarEntrega')?.addEventListener('click', confirmarEntrega);
     $('clubCodigoRetiro')?.addEventListener('input', event => { event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); });
     $('clubCodigoRetiro')?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); confirmarEntrega(); } });
     $('clubConfigForm')?.classList.toggle('oculto', !can('club.configurar'));
     $('clubNoticiasPanel')?.classList.toggle('oculto', !can('club.configurar'));
+    $('clubReferidosPanel')?.classList.toggle('oculto', !can('club.configurar'));
     $('clubPremioForm')?.classList.toggle('oculto', !can('club.gestionar_premios'));
     actualizarTipoStock();
 }
@@ -560,10 +609,11 @@ export async function cargarClub() {
     renderSucursales();
     $('clubConfigForm')?.classList.toggle('oculto', !can('club.configurar'));
     $('clubNoticiasPanel')?.classList.toggle('oculto', !can('club.configurar'));
+    $('clubReferidosPanel')?.classList.toggle('oculto', !can('club.configurar'));
     $('clubPremioForm')?.classList.toggle('oculto', !can('club.gestionar_premios'));
     estado('Cargando Club Eruditos…');
     try {
-        await Promise.all([cargarResumen(), cargarNoticias(), cargarPremios(), cargarCanjes()]);
+        await Promise.all([cargarResumen(), cargarNoticias(), cargarPremios(), cargarCanjes(), cargarReferidos()]);
         estado('Información actualizada.');
     } catch (error) {
         estado(error.message || 'No se pudo cargar Club Eruditos.', true);

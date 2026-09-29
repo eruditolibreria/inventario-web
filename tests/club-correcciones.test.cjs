@@ -104,6 +104,27 @@ test('el portal conserva dos columnas y muestra la imagen completa en un cuadrad
   assert.match(portal, /\.reward-image img\{[^}]*object-fit:contain/);
 });
 
+test('el portal amplía imágenes y permite cerrarlas con Atrás', () => {
+  const portal = leer('club/app.js');
+  const html = leer('club/index.html');
+  assert.match(portal, /data-image="\$\{esc\(imagen\)\}"/);
+  assert.match(portal, /history\.pushState\(\{clubImageViewer:true\}/);
+  assert.match(portal, /addEventListener\('popstate'/);
+  assert.match(html, /id="imageDialog"/);
+});
+
+test('la activación aparece solo en Inicio y el tema se puede cambiar', () => {
+  const html = leer('club/index.html');
+  const portal = leer('club/app.js');
+  const inicio = html.indexOf('id="inicioPanel"');
+  const aviso = html.indexOf('id="activacionPanel"');
+  const premios = html.indexOf('id="premiosPanel"');
+  assert.ok(inicio < aviso && aviso < premios);
+  assert.match(html, /class="theme-toggle"/);
+  assert.match(portal, /club_eruditos_theme/);
+  assert.match(leer('club/styles.css'), /data-theme="dark"/);
+});
+
 test('el comprobante impreso y su PDF incluyen el código de activación Club', () => {
   const comprobantes = leer('js/modos/comprobantes.js');
   assert.match(comprobantes, /Código para activar tu Club:/);

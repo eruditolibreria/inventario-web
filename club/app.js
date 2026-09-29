@@ -4,12 +4,16 @@ const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
 const SESSION_KEY = 'club_eruditos_session';
 const CODES_KEY = 'club_eruditos_retiros';
+const THEME_KEY = 'club_eruditos_theme';
 let session = readJson(SESSION_KEY, null);
 let premioSeleccionado = null;
 let clubPendiente = false;
 let usuarioTimer;
 let usuarioRevision = 0;
 let canjeParaCancelar = null;
+let clubNivel = 1;
+let enlaceReferido = '';
+const NIVELES = ['Mini erudito','Aprendiz de Erudito','Erudito Iniciado','Erudito Académico','Gran Erudito','Erudito Maestro','Erudito Superior','Archierudito','Erudito ancestral','Erudito Supremo'];
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[c]);
@@ -22,8 +26,19 @@ function saveSession(value) {
   session ? localStorage.setItem(SESSION_KEY, JSON.stringify(session)) : localStorage.removeItem(SESSION_KEY);
 }
 function setStatus(id, message, error=false) { const el=$(id); el.textContent=message || ''; el.classList.toggle('error', error); }
+function aplicarTema(tema, guardar=false) {
+  document.documentElement.dataset.theme=tema;
+  document.querySelector('meta[name="theme-color"]').content=tema==='dark'?'#171126':'#25164a';
+  document.querySelectorAll('.theme-toggle').forEach(b=>{
+    b.textContent=tema==='dark'?'Modo claro':'Modo oscuro';
+    b.setAttribute('aria-pressed',String(tema==='dark'));
+  });
+  if (guardar) localStorage.setItem(THEME_KEY,tema);
+}
+document.querySelectorAll('.theme-toggle').forEach(b=>b.addEventListener('click',()=>aplicarTema(document.documentElement.dataset.theme==='dark'?'light':'dark',true)));
+aplicarTema(document.documentElement.dataset.theme||'light');
 function mensajeError(code) {
-  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
+  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
 }
 
 async function post(url, body, token) {
@@ -44,10 +59,13 @@ async function refreshIfNeeded() {
 async function clubApi(accion, body={}) { await refreshIfNeeded(); if (!session?.token) return {ok:false,error:'NO_AUTORIZADO'}; return post(PUBLIC_URL, { ACCION:accion, ...body }, session.token); }
 
 function showAuth() {
+  cerrarImagen();
   document.querySelectorAll('form').forEach(form => form.reset());
   document.querySelectorAll('form input').forEach(input => { input.value=''; });
   document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
   clubPendiente=false;
+  clubNivel=1;
+  enlaceReferido='';
   premioSeleccionado=null;
   canjeParaCancelar=null;
   clearTimeout(usuarioTimer);
@@ -106,7 +124,7 @@ $('registroUsuario').addEventListener('input', () => {
 
 $('credencialesForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Creando tu cuenta…');
-  const data=await post(AUTH_URL,{ACCION:'REGISTRAR',NOMBRE:$('registroNombre').value,DOCUMENTO:$('registroDocumento').value,TELEFONO:$('registroTelefono').value,DIRECCION:$('registroDireccion').value,EMAIL:$('registroEmail').value,USUARIO:$('registroUsuario').value,PASSWORD:$('registroPassword').value,TOKEN_VINCULACION:$('registroToken').value});
+  const data=await post(AUTH_URL,{ACCION:'REGISTRAR',NOMBRE:$('registroNombre').value,DOCUMENTO:$('registroDocumento').value,TELEFONO:$('registroTelefono').value,DIRECCION:$('registroDireccion').value,EMAIL:$('registroEmail').value,USUARIO:$('registroUsuario').value,PASSWORD:$('registroPassword').value,TOKEN_VINCULACION:$('registroToken').value,CODIGO_REFERIDO:$('registroReferido').value});
   if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;}
   $('recoveryCodes').textContent=(data.codigosRecuperacion||[]).join('\n');
   $('recoveryDialog').showModal();
@@ -153,6 +171,34 @@ function movementItem(m) {
   return `<article class="list-item"><div><strong>${esc(m.descripcion||m.tipo)}</strong><p>${esc(m.tipo)} · ${fecha(m.creado_en)}</p></div><span class="points ${delta<0?'negative':''}">${delta>0?'+':''}${delta}</span></article>`;
 }
 
+function renderProgreso(progreso) {
+  const nivel=Math.min(10,Math.max(1,Number(progreso?.nivel)||1));
+  const gasto=Number(progreso?.gasto365||0);
+  clubNivel=nivel;
+  $('clubProgreso').hidden=false;
+  $('nivelNombre').textContent=`${nivel}. ${NIVELES[nivel-1]}`;
+  $('nivelBeneficio').textContent=nivel===10?'1 punto extra por cada Bs 25 de futuras compras.':nivel>=7?'1 punto extra por cada Bs 50 de futuras compras.':nivel>=4?'1 punto extra por cada Bs 100 de futuras compras.':'Cada ascenso otorga 3 puntos; desde el nivel 4 también ganarás puntos extra en tus compras.';
+  $('nivelBarra').value=nivel===10?200:Math.max(0,Math.min(200,gasto-(nivel-1)*200));
+  $('nivelAvance').textContent=nivel===10?`Nivel máximo alcanzado · Bs ${gasto.toLocaleString('es-BO')} en 365 días`:`Bs ${gasto.toLocaleString('es-BO')} de Bs ${nivel*200} para ${NIVELES[nivel]}`;
+  $('nivelGracia').hidden=!progreso?.graciaHasta;
+  if(progreso?.graciaHasta)$('nivelGracia').textContent=`Período de gracia hasta ${fecha(progreso.graciaHasta)}.`;
+  $('nivelLista').innerHTML=NIVELES.map((nombre,i)=>`<li ${i+1===nivel?'class="current"':''}>${esc(nombre)} · Bs ${i*200}</li>`).join('');
+  const codigo=String(progreso?.codigoReferido||'');
+  $('referidoCodigo').textContent=codigo||'Código no disponible';
+  enlaceReferido=codigo?new URL(`/club/?ref=${encodeURIComponent(codigo)}`,location.origin).href:'';
+  $('copiarReferido').disabled=!enlaceReferido;
+  $('referidosResumen').textContent=`${Number(progreso?.referidos||0)} invitación(es) · ${Number(progreso?.referidosPremiados||0)} premiada(s)`;
+  $('retoBarra').value=Math.min(2,Number(progreso?.retoMeses||0));
+  $('retoAvance').textContent=Number(progreso?.retoPuntos||0)>0?'Reto completado: +3 puntos.':`${Number(progreso?.retoMeses||0)} de 2 meses con compra válida.`;
+  $('insigniasClub').innerHTML=[progreso?.insigniaPrimerCanje?'<span>🏅 Primer canje</span>':'',progreso?.insigniaAmigoLector?'<span>📚 Amigo lector</span>':''].filter(Boolean).join('');
+}
+
+$('copiarReferido').addEventListener('click',async()=>{
+  if(!enlaceReferido)return;
+  try{await navigator.clipboard.writeText(enlaceReferido);setStatus('referidoEstado','Enlace copiado.');}
+  catch(_){setStatus('referidoEstado','No se pudo copiar. Comparte el código mostrado.',true);}
+});
+
 async function cargarInicio(){
   setStatus('appStatus','Actualizando…'); const data=await clubApi('RESUMEN');
   if (!session) return;
@@ -161,6 +207,9 @@ async function cargarInicio(){
   if(data.cliente?.usuario === null && !$('usernameDialog').open) $('usernameDialog').showModal();
   const pendiente=data.cuenta?.estado==='PENDIENTE_ACTIVACION';
   clubPendiente=pendiente;
+  $('puntosBienvenidaReferido').textContent=Number(data.puntosBienvenida||0).toLocaleString('es-BO');
+  $('clubProgreso').hidden=pendiente||!data.progreso;
+  if(!pendiente&&data.progreso)renderProgreso(data.progreso);
   $('activacionPanel').hidden=!pendiente;
   document.querySelector('nav').classList.toggle('catalog-only',pendiente);
   document.querySelectorAll('nav [data-view="movimientos"],nav [data-view="canjes"]').forEach(b=>{b.hidden=pendiente;});
@@ -181,9 +230,26 @@ async function cargarPremios(){
   setStatus('appStatus','Cargando premios…'); const data=await clubApi('PREMIOS');
   if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
   const saldo=Number($('saldoDisponible').textContent.replace(/\D/g,''))||0;
-  $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);return `<article class="reward"><div class="reward-image">${imagen?`<img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span>`:'<span>E</span>'}</div><span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p><div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
+  $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);const nivelMinimo=Number(p.nivel_minimo||1);const sinNivel=!clubPendiente&&clubNivel<nivelMinimo;const foto=imagen?`<button type="button" class="reward-image" data-image="${esc(imagen)}" data-title="${esc(p.nombre)}" aria-label="Ampliar imagen de ${esc(p.nombre)}"><img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.parentElement.disabled=true;this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span></button>`:'<div class="reward-image"><span>E</span></div>';return `<article class="reward">${foto}<span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p>${nivelMinimo>1?`<small>Desde ${esc(NIVELES[nivelMinimo-1]||NIVELES[0])}</small>`:''}<div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||sinNivel||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinNivel?'Nivel insuficiente':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
+  $('premiosGrid').querySelectorAll('[data-image]').forEach(btn=>btn.addEventListener('click',()=>abrirImagen(btn.dataset.image,btn.dataset.title)));
   $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>clubPendiente?mostrarActivacion():abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem))))); setStatus('appStatus','');
 }
+
+function abrirImagen(src, titulo) {
+  $('imageFull').src=src;
+  $('imageFull').alt=titulo;
+  $('imageDialog').showModal();
+  history.pushState({clubImageViewer:true},'');
+}
+function cerrarImagen() {
+  if (!$('imageDialog').open) return;
+  $('imageDialog').close();
+  if (history.state?.clubImageViewer) history.back();
+}
+$('imageClose').addEventListener('click',cerrarImagen);
+$('imageDialog').addEventListener('click',e=>{if(e.target===$('imageDialog')||e.target===$('imageFull')) cerrarImagen();});
+$('imageDialog').addEventListener('cancel',e=>{e.preventDefault();cerrarImagen();});
+window.addEventListener('popstate',()=>{if($('imageDialog').open)$('imageDialog').close();});
 
 function mostrarActivacion(){
   document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='inicio'));
@@ -233,3 +299,5 @@ $('cancelConfirm').addEventListener('click',async()=>{
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
 if(session?.token)showApp();else showAuth();
+const referidoUrl=new URL(location.href).searchParams.get('ref');
+if(!session?.token&&referidoUrl)$('registroReferido').value=referidoUrl.slice(0,13).toUpperCase();
