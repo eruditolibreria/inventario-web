@@ -18,6 +18,7 @@ let productoBusquedaSecuencia = 0;
 let productoBusquedaControl = null;
 let canjeEntregaId = null;
 let canjeObjetivo = null;
+let avisoTimeout = null;
 
 const $ = (id) => document.getElementById(id);
 const esc = (valor) => String(valor ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c]);
@@ -30,6 +31,7 @@ function renderEstructura() {
       <div class="club-heading"><div><div class="section-label">Club Eruditos</div><p class="muted">Fidelización, premios y canjes conectados al inventario.</p></div><button id="clubActualizar" class="btn btn-ghost" type="button">Actualizar</button></div>
       <div class="club-metrics"><article><span>Cuentas</span><strong id="clubCuentas">0</strong></article><article><span>Canjes pendientes</span><strong id="clubCanjesPendientes">0</strong></article><article><span>Puntos disponibles</span><strong id="clubPuntosDisponibles">0</strong></article><article><span>Puntos pendientes</span><strong id="clubPuntosPendientes">0</strong></article></div>
       <div id="clubEstado" class="muted" aria-live="polite"></div>
+      <div id="clubAviso" class="club-aviso" aria-hidden="true" hidden></div>
       <div class="club-admin-grid">
         <form id="clubConfigForm" class="club-panel"><h3>Configuración</h3><div class="row-2"><div class="field-group"><label class="field-label">Bolivianos por punto</label><input id="clubMontoPunto" type="number" min="0.01" step="0.01" required></div><div class="field-group"><label class="field-label">Vigencia (meses)</label><input id="clubVigencia" type="number" min="1" max="120" required></div></div><div class="field-group"><label class="field-label">Puntos de bienvenida</label><input id="clubBienvenida" type="number" min="0" step="1" required></div><div class="field-group"><label class="field-label">Términos visibles</label><textarea id="clubTerminos" rows="3" placeholder="Ej.: Se obtiene 1 punto por cada Bs 5 pagados. Los puntos vencen a los 12 meses y no pueden cambiarse por dinero."></textarea><small>Estas condiciones se mostrarán al cliente en el portal.</small></div><label class="check-row"><input id="clubActivo" type="checkbox"> Programa activo</label><div class="row-2 mt-8"><button class="btn btn-primary" type="submit">Guardar configuración</button><button id="clubExpirar" class="btn btn-ghost" type="button">Procesar vencimientos</button></div></form>
         <form id="clubPremioForm" class="club-panel"><h3>Premio</h3><input id="clubPremioId" type="hidden"><div class="row-2"><div class="field-group"><label class="field-label">Nombre visible del premio</label><input id="clubPremioNombre" placeholder="Ej.: Cuaderno universitario" required><small>Es el título que verá el cliente en el catálogo.</small></div><div class="field-group"><label class="field-label">Código interno</label><input id="clubPremioCodigo" placeholder="Automático"><small>Sirve para identificarlo dentro del sistema.</small></div></div><div class="row-2"><div class="field-group"><label class="field-label">Costo en puntos</label><input id="clubPremioCosto" type="number" min="1" required></div><div class="field-group"><label class="field-label">Control de stock</label><select id="clubPremioTipo"><option value="EXTERNO">Stock fuera de Inventario</option><option value="INVENTARIO">Producto de Inventario</option></select></div></div><div class="field-group"><label class="field-label">Stock disponible para canjes</label><input id="clubPremioStock" type="number" min="1" step="1" value="1" required><small>Es la cantidad máxima que ofrecerás en el Club, aunque Inventario tenga más unidades.</small></div><div id="clubPremioProductoCampo" class="field-group oculto"><label class="field-label">Producto de inventario</label><input id="clubPremioProducto" placeholder="Escribe para buscar y elige una sugerencia" autocomplete="off"><div id="clubPremioProductoLista" class="autocomplete"></div><small id="clubPremioProductoInfo">Cada canje descuenta una unidad del cupo Club y una del Inventario.</small></div><div class="field-group"><label class="field-label">Descripción para el cliente</label><textarea id="clubPremioDescripcion" rows="2" placeholder="Ej.: Cuaderno de 100 hojas. Sujeto a disponibilidad de color."></textarea><small>Explica qué recibe el cliente y cualquier condición importante.</small></div><div class="field-group"><label class="field-label">Sucursales</label><div id="clubPremioSucursales" class="club-checks"></div></div><label class="check-row"><input id="clubPremioActivo" type="checkbox" checked> Premio activo</label><div class="row-2 mt-8"><button class="btn btn-primary" type="submit">Guardar premio</button><button id="clubLimpiarPremio" class="btn btn-ghost" type="button">Nuevo</button></div></form>
@@ -40,7 +42,22 @@ function renderEstructura() {
     $('clubPremioProductoCampo').insertAdjacentHTML('afterend', `<div id="clubPremioImagenCampo" class="field-group"><label class="field-label">Imagen para el portal</label><div style="display:flex;align-items:center;gap:12px"><div style="display:grid;place-items:center;width:92px;height:92px;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface2)"><img id="clubPremioImagenPreview" alt="Vista previa del premio" hidden style="width:100%;height:100%;object-fit:cover"><span id="clubPremioImagenVacia" class="muted">Sin imagen</span></div><div id="clubPremioImagenAcciones" style="display:grid;gap:8px;flex:1"><div class="row-2"><button id="clubPremioTomarFoto" class="btn btn-ghost btn-sm" type="button">Tomar foto</button><button id="clubPremioElegirImagen" class="btn btn-ghost btn-sm" type="button">Elegir de galería</button></div><small>Disponible para premios que no pertenecen al inventario.</small></div></div><input id="clubPremioImagenUrl" type="hidden"><input id="clubPremioImagenCamara" type="file" accept="image/*" capture="environment" hidden><input id="clubPremioImagenGaleria" type="file" accept="image/*" hidden><small id="clubPremioImagenEstado">La imagen aparecerá en el portal del cliente.</small></div>`);
     $('clubPremioStock').closest('.field-group').insertAdjacentHTML('afterend', `<div class="field-group"><label class="field-label">Nivel mínimo para canjear</label><select id="clubPremioNivel">${NIVELES_CLUB.map((nombre, indice) => `<option value="${indice + 1}">${indice + 1}. ${esc(nombre)}</option>`).join('')}</select><small>Los clientes de menor nivel podrán ver el premio, pero no canjearlo.</small></div>`);
     root.querySelector('.club-admin-grid').insertAdjacentHTML('afterend', `<div id="clubNoticiasPanel" class="club-panel"><div class="club-heading"><div><h3>Noticias del portal</h3><p class="muted">Publicaciones visibles para todos los clientes del Club.</p></div></div><form id="clubNoticiaForm"><input id="clubNoticiaId" type="hidden"><div class="field-group"><label class="field-label">Título</label><input id="clubNoticiaTitulo" maxlength="120" placeholder="Ej.: Semana del libro" required></div><div class="field-group"><label class="field-label">Mensaje</label><textarea id="clubNoticiaMensaje" maxlength="2000" rows="3" placeholder="Escribe la noticia que aparecerá en el portal." required></textarea></div><label class="check-row"><input id="clubNoticiaPublicada" type="checkbox" checked> Publicar inmediatamente</label><div class="row-2 mt-8"><button class="btn btn-primary" type="submit">Guardar noticia</button><button id="clubLimpiarNoticia" class="btn btn-ghost" type="button">Nueva</button></div></form><div id="clubNoticiasLista" class="mt-8"></div></div>`);
-    $('clubNoticiasPanel').insertAdjacentHTML('afterend', `<div id="clubReferidosPanel" class="club-panel"><h3>Referidos y niveles</h3><p class="muted">El invitador recibe 5 puntos cuando el nuevo cliente activa su cuenta, verifica su C.I. y alcanza Bs 50 pagados en sus primeros 30 días. El invitado solo recibe sus puntos de bienvenida configurados.</p><p class="muted">Los diez niveles avanzan cada Bs 200 de compras netas pagadas en 365 días. Cada ascenso nuevo otorga 3 puntos; el reto Hábito lector otorga 3 por trimestre.</p><button id="clubProcesarBeneficios" class="btn btn-ghost btn-sm" type="button">Procesar beneficios pendientes</button><div id="clubReferidosLista" class="mt-8"></div></div>`);
+    $('clubNoticiasPanel').insertAdjacentHTML('afterend', `<div id="clubReferidosPanel" class="club-panel"><h3>Referidos y niveles</h3><p class="muted">El invitador recibe 5 puntos cuando el nuevo cliente activa su cuenta, verifica su C.I. y alcanza Bs 50 pagados en sus primeros 30 días. El invitado solo recibe sus puntos de bienvenida configurados.</p><p class="muted">Los diez niveles avanzan cada Bs 200 de compras netas pagadas en 365 días. Cada ascenso nuevo otorga 3 puntos; el reto Compras constantes otorga 3 por trimestre.</p><button id="clubProcesarBeneficios" class="btn btn-ghost btn-sm" type="button">Procesar beneficios pendientes</button><div id="clubReferidosLista" class="mt-8"></div></div>`);
+    root.querySelectorAll('.field-group > .field-label').forEach(label => {
+        const control = label.parentElement.querySelector(':scope > input:not([type="hidden"]):not([hidden]), :scope > select, :scope > textarea');
+        if (control?.id) {
+            label.htmlFor = control.id;
+        } else {
+            const grupo = label.parentElement;
+            const titulo = document.createElement('div');
+            titulo.className = label.className;
+            titulo.textContent = label.textContent;
+            grupo.setAttribute('role', 'group');
+            grupo.setAttribute('aria-label', titulo.textContent.trim());
+            label.replaceWith(titulo);
+        }
+    });
+    $('clubFiltroCanjes').setAttribute('aria-label', 'Filtrar canjes por estado');
     prepararPanelPlegable('clubConfigForm', 'Configuración');
     prepararPanelPlegable('clubPremioForm', 'Premios');
     prepararPanelPlegable('clubNoticiasPanel', 'Noticias del portal');
@@ -54,32 +71,71 @@ function prepararPanelPlegable(id, titulo) {
     if (!panel || panel.dataset.plegable) return;
     panel.dataset.plegable = 'true';
     panel.querySelector('h3')?.remove();
+    const cabecera = document.createElement('h3');
+    cabecera.className = 'club-panel-title';
     const boton = document.createElement('button');
     boton.type = 'button';
     boton.className = 'btn btn-ghost club-panel-toggle';
-    boton.style.cssText = 'width:100%;display:flex;justify-content:space-between';
     boton.setAttribute('aria-expanded', 'false');
     boton.innerHTML = `<span>${esc(titulo)}</span><span aria-hidden="true">⌄</span>`;
     boton.addEventListener('click', () => alternarPanel(panel));
-    panel.prepend(boton);
+    cabecera.append(boton);
+    panel.prepend(cabecera);
     panel.classList.add('club-panel-contraido');
-    [...panel.children].forEach(hijo => { if (hijo !== boton) hijo.hidden = true; });
+    [...panel.children].forEach(hijo => { if (hijo !== cabecera) hijo.hidden = true; });
 }
 
 function alternarPanel(panel, abierto) {
     if (!panel) return;
     const expandir = abierto ?? panel.classList.contains('club-panel-contraido');
     panel.classList.toggle('club-panel-contraido', !expandir);
-    const boton = panel.querySelector(':scope > .club-panel-toggle');
+    const cabecera = panel.querySelector(':scope > .club-panel-title');
+    const boton = cabecera?.querySelector('.club-panel-toggle');
     boton?.setAttribute('aria-expanded', String(expandir));
-    [...panel.children].forEach(hijo => { if (hijo !== boton) hijo.hidden = !expandir; });
+    [...panel.children].forEach(hijo => { if (hijo !== cabecera) hijo.hidden = !expandir; });
 }
 
-function estado(texto, error = false) {
+function estado(texto, error = false, confirmado = false) {
     const el = $('clubEstado');
     if (!el) return;
     el.textContent = texto || '';
     el.style.color = error ? 'var(--red)' : 'var(--muted)';
+    el.dataset.tipo = error ? 'error' : confirmado ? 'ok' : 'info';
+    const aviso = $('clubAviso');
+    if (!error && !confirmado) {
+        clearTimeout(avisoTimeout);
+        aviso.hidden = true;
+        aviso.classList.remove('club-aviso-visible');
+        return;
+    }
+    clearTimeout(avisoTimeout);
+    aviso.textContent = texto;
+    aviso.dataset.tipo = el.dataset.tipo;
+    aviso.hidden = false;
+    aviso.classList.remove('club-aviso-visible');
+    void aviso.offsetWidth;
+    aviso.classList.add('club-aviso-visible');
+    avisoTimeout = setTimeout(() => {
+        aviso.hidden = true;
+        aviso.classList.remove('club-aviso-visible');
+    }, 3600);
+}
+
+async function conBotonOcupado(boton, tarea) {
+    if (boton) {
+        boton.disabled = true;
+        boton.setAttribute('aria-busy', 'true');
+    }
+    try {
+        return await tarea();
+    } catch (error) {
+        return { ok: false, error: error?.message || 'No se pudo completar la acción.' };
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.removeAttribute('aria-busy');
+        }
+    }
 }
 
 function sucursalesDisponibles() {
@@ -150,7 +206,7 @@ function renderReferidos() {
         try {
             const data = await api({ ACCION: 'CLUB_VERIFICAR_DOCUMENTO', CUENTA_ID: Number(btn.dataset.verificarReferido) });
             if (!data.ok) throw new Error(data.error || 'No se pudo verificar la C.I.');
-            estado('C.I. verificada. El bono se otorgará cuando se cumplan las demás condiciones.');
+            estado('C.I. verificada. El bono se otorgará cuando se cumplan las demás condiciones.', false, true);
             await cargarReferidos();
         } catch (error) { estado(error.message, true); btn.disabled = false; }
     }));
@@ -192,16 +248,16 @@ function renderCanjes(datos) {
             return;
         }
         estado('Actualizando canje…');
-        const data = await api({ ACCION: 'CLUB_ACTUALIZAR_CANJE', CANJE_ID: Number(sel.dataset.clubEstado), ESTADO: sel.value });
-        estado(data.ok ? 'Canje actualizado.' : (data.error || 'No se pudo actualizar.'), !data.ok);
+        const data = await conBotonOcupado(sel, () => api({ ACCION: 'CLUB_ACTUALIZAR_CANJE', CANJE_ID: Number(sel.dataset.clubEstado), ESTADO: sel.value }));
+        estado(data.ok ? 'Canje actualizado.' : (data.error || 'No se pudo actualizar.'), !data.ok, data.ok);
         if (data.ok) await cargarCanjes();
     }));
     cont.querySelectorAll('[data-club-cancelar]').forEach(btn => btn.addEventListener('click', async () => {
         const motivo = window.prompt('Motivo de la cancelación:');
         if (!motivo?.trim()) return;
         estado('Cancelando canje…');
-        const data = await api({ ACCION: 'CLUB_CANCELAR_CANJE', CANJE_ID: Number(btn.dataset.clubCancelar), MOTIVO: motivo.trim() });
-        estado(data.ok ? 'Canje cancelado y puntos devueltos.' : (data.error || 'No se pudo cancelar.'), !data.ok);
+        const data = await conBotonOcupado(btn, () => api({ ACCION: 'CLUB_CANCELAR_CANJE', CANJE_ID: Number(btn.dataset.clubCancelar), MOTIVO: motivo.trim() }));
+        estado(data.ok ? 'Canje cancelado y puntos devueltos.' : (data.error || 'No se pudo cancelar.'), !data.ok, data.ok);
         if (data.ok) await cargarCanjes();
     }));
     if (canjeObjetivo) {
@@ -239,16 +295,14 @@ async function confirmarEntrega() {
         input.focus();
         return;
     }
-    $('clubConfirmarEntrega').disabled = true;
-    const data = await api({ ACCION: 'CLUB_ACTUALIZAR_CANJE', CANJE_ID: canjeEntregaId, ESTADO: 'ENTREGADO', CODIGO_RETIRO: codigo });
-    $('clubConfirmarEntrega').disabled = false;
+    const data = await conBotonOcupado($('clubConfirmarEntrega'), () => api({ ACCION: 'CLUB_ACTUALIZAR_CANJE', CANJE_ID: canjeEntregaId, ESTADO: 'ENTREGADO', CODIGO_RETIRO: codigo }));
     if (!data.ok) {
         $('clubCodigoRetiroError').textContent = mensajeEntrega(data.error);
         input.select();
         return;
     }
     $('clubEntregaDialog').close();
-    estado('Canje entregado correctamente.');
+    estado('Canje entregado correctamente.', false, true);
     await cargarCanjes();
 }
 
@@ -283,9 +337,9 @@ async function cargarReferidos() {
 
 async function procesarBeneficios() {
     estado('Revisando beneficios pendientes…');
-    const data = await api({ ACCION: 'CLUB_PROCESAR_BENEFICIOS' });
+    const data = await conBotonOcupado($('clubProcesarBeneficios'), () => api({ ACCION: 'CLUB_PROCESAR_BENEFICIOS' }));
     if (!data.ok) return estado(data.error || 'No se pudieron procesar los beneficios.', true);
-    estado(`${Number(data.cuentasProcesadas || 0)} cuenta(s) revisada(s).`);
+    estado(`${Number(data.cuentasProcesadas || 0)} cuenta(s) revisada(s).`, false, true);
     await Promise.all([cargarResumen(), cargarReferidos()]);
 }
 
@@ -302,19 +356,19 @@ async function cargarCanjes() {
 async function guardarConfiguracion(event) {
     event.preventDefault();
     estado('Guardando configuración…');
-    const data = await api({
+    const data = await conBotonOcupado(event.submitter, () => api({
         ACCION: 'CLUB_ACTUALIZAR_CONFIG', MONTO_POR_PUNTO: Number($('clubMontoPunto').value),
         VIGENCIA_MESES: Number($('clubVigencia').value), PUNTOS_BIENVENIDA: Number($('clubBienvenida').value),
         TERMINOS: $('clubTerminos').value, ACTIVO: $('clubActivo').checked,
-    });
-    estado(data.ok ? 'Configuración guardada.' : (data.error || 'No se pudo guardar.'), !data.ok);
+    }));
+    estado(data.ok ? 'Configuración guardada.' : (data.error || 'No se pudo guardar.'), !data.ok, data.ok);
     if (data.ok) await cargarResumen();
 }
 
 async function expirarPuntos() {
     estado('Procesando puntos vencidos…');
-    const data = await api({ ACCION: 'CLUB_EXPIRAR_PUNTOS' });
-    estado(data.ok ? `${Number(data.lotesProcesados || 0)} lote(s) vencido(s) procesado(s).` : (data.error || 'No se pudo procesar.'), !data.ok);
+    const data = await conBotonOcupado($('clubExpirar'), () => api({ ACCION: 'CLUB_EXPIRAR_PUNTOS' }));
+    estado(data.ok ? `${Number(data.lotesProcesados || 0)} lote(s) vencido(s) procesado(s).` : (data.error || 'No se pudo procesar.'), !data.ok, data.ok);
     if (data.ok) await cargarResumen();
 }
 
@@ -339,14 +393,14 @@ function editarNoticia(id) {
 async function guardarNoticia(event) {
     event.preventDefault();
     estado('Guardando noticia…');
-    const data = await api({
+    const data = await conBotonOcupado(event.submitter, () => api({
         ACCION: 'CLUB_GUARDAR_NOTICIA',
         ID: Number($('clubNoticiaId').value) || undefined,
         TITULO: $('clubNoticiaTitulo').value,
         MENSAJE: $('clubNoticiaMensaje').value,
         PUBLICADA: $('clubNoticiaPublicada').checked,
-    });
-    estado(data.ok ? 'Noticia guardada.' : (data.error || 'No se pudo guardar la noticia.'), !data.ok);
+    }));
+    estado(data.ok ? 'Noticia guardada.' : (data.error || 'No se pudo guardar la noticia.'), !data.ok, data.ok);
     if (data.ok) { limpiarNoticia(); await cargarNoticias(); }
 }
 
@@ -432,7 +486,7 @@ async function guardarPremio(event) {
         }
     }
     estado('Guardando premio…');
-    const data = await api({
+    const data = await conBotonOcupado(event.submitter, () => api({
         ACCION: 'CLUB_GUARDAR_PREMIO', ID: Number($('clubPremioId').value) || undefined,
         NOMBRE: $('clubPremioNombre').value, CODIGO: $('clubPremioCodigo').value,
         COSTO_PUNTOS: Number($('clubPremioCosto').value), DESCRIPCION: $('clubPremioDescripcion').value,
@@ -441,8 +495,8 @@ async function guardarPremio(event) {
         NIVEL_MINIMO: Number($('clubPremioNivel').value),
         IMAGEN_URL: $('clubPremioImagenUrl').value,
         ASIGNACIONES: asignaciones, ACTIVO: $('clubPremioActivo').checked,
-    });
-    estado(data.ok ? 'Premio guardado.' : (data.error || 'No se pudo guardar.'), !data.ok);
+    }));
+    estado(data.ok ? 'Premio guardado.' : (data.error || 'No se pudo guardar.'), !data.ok, data.ok);
     if (data.ok) { limpiarPremio(); await cargarPremios(); }
 }
 
@@ -572,7 +626,7 @@ function initClub() {
     $('clubPremioImagenCamara')?.addEventListener('change', event => subirImagenPremio(event.target));
     $('clubPremioImagenGaleria')?.addEventListener('change', event => subirImagenPremio(event.target));
     $('clubFiltroCanjes')?.addEventListener('change', () => cargarCanjes().catch(e => estado(e.message, true)));
-    $('clubActualizar')?.addEventListener('click', () => cargarClub());
+    $('clubActualizar')?.addEventListener('click', () => conBotonOcupado($('clubActualizar'), () => cargarClub(true)));
     $('clubExpirar')?.addEventListener('click', expirarPuntos);
     $('clubProcesarBeneficios')?.addEventListener('click', procesarBeneficios);
     $('clubConfirmarEntrega')?.addEventListener('click', confirmarEntrega);
@@ -597,7 +651,7 @@ window.addEventListener('club:notificacion', () => {
     if ($('clubCanjesPanel')) cargarCanjes().catch(error => estado(error.message, true));
 });
 
-export async function cargarClub() {
+export async function cargarClub(mostrarConfirmacion = false) {
     initClub();
     const objetivoPendiente = Number(window.__clubCanjeObjetivo);
     if (objetivoPendiente) {
@@ -614,7 +668,7 @@ export async function cargarClub() {
     estado('Cargando Club Eruditos…');
     try {
         await Promise.all([cargarResumen(), cargarNoticias(), cargarPremios(), cargarCanjes(), cargarReferidos()]);
-        estado('Información actualizada.');
+        estado('Información actualizada.', false, mostrarConfirmacion);
     } catch (error) {
         estado(error.message || 'No se pudo cargar Club Eruditos.', true);
     }

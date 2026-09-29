@@ -1,11 +1,16 @@
 // Cambiar la versión al publicar una nueva entrega de recursos estáticos.
-const CACHE_NAME = 'eruditos-v112';
+const CACHE_NAME = 'eruditos-v115';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon192.png',
-  '/icon512.png'
+  '/icon512.png',
+  '/club/splash-eruditos.png',
+  '/mobile.html',
+  '/desktop.html',
+  '/css/pwa-shell.css',
+  '/js/pwa-shell.js'
 ];
 
 self.addEventListener('install', event => {
@@ -16,7 +21,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => Promise.all(
-      cacheNames.filter(cacheName => cacheName !== CACHE_NAME).map(cacheName => caches.delete(cacheName))
+      cacheNames.filter(cacheName => cacheName.startsWith('eruditos-v') && cacheName !== CACHE_NAME).map(cacheName => caches.delete(cacheName))
     ))
   );
   self.clients.claim();

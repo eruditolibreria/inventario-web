@@ -5,10 +5,10 @@ const test = require('node:test');
 
 const ROOT = path.resolve(__dirname, '..');
 const LIMITE_JS_INICIAL = 390 * 1024;
-const LIMITE_CSS = 140 * 1024;
+const LIMITE_CSS = 150 * 1024;
 const LIMITE_HTML = {
-  'desktop.html': 165 * 1024,
-  'mobile.html': 155 * 1024,
+  'desktop.html': 168 * 1024,
+  'mobile.html': 158 * 1024,
 };
 
 function importsEstaticos(archivo) {

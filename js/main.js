@@ -660,4 +660,8 @@ async function inicializarApp() {
 // ═══════════════════════════════════════════════════════════════
 // ARRANQUE
 // ═══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', inicializarApp);
+document.addEventListener('DOMContentLoaded', () => {
+    void inicializarApp()
+        .catch(error => console.error('[MAIN] No se pudo inicializar la aplicación:', error))
+        .finally(() => window.dispatchEvent(new Event('eruditos:ready')));
+});

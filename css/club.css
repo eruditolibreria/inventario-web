@@ -1,1 +1,57 @@
 .club-heading{display:flex;justify-content:space-between;gap:12px}.club-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.club-metrics article,.club-panel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px}.club-metrics span{color:var(--muted)}.club-metrics strong{display:block;font-size:24px}.club-admin-grid{display:grid;grid-template-columns:1fr;gap:0}.club-panel{margin:6px 0}.club-checks,.club-list-actions{display:flex;gap:8px;flex-wrap:wrap}.club-list-card{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding:12px 0}@media(max-width:760px){.club-metrics{grid-template-columns:1fr 1fr}.club-list-card{flex-direction:column}}
+
+#clubRoot [hidden]{display:none!important}
+#clubRoot{min-width:0}
+#clubRoot>.club-heading{align-items:center;flex-wrap:wrap;margin-bottom:18px}
+#clubRoot>.club-heading .section-label{margin-bottom:6px}
+#clubRoot>.club-heading p{margin:0}
+#clubActualizar{width:auto;min-width:112px;margin-left:auto}
+#clubRoot .club-metrics{margin-bottom:14px}
+#clubRoot .club-metrics article{min-width:0}
+#clubRoot .club-metrics strong{overflow-wrap:anywhere}
+#clubEstado{min-height:20px;margin:8px 0 14px;font-size:13px}
+#clubEstado[data-tipo="ok"]{color:var(--teal-text)!important}
+#clubEstado[data-tipo="error"]{color:var(--red-text)!important}
+#clubRoot .club-admin-grid{gap:8px}
+#clubRoot .club-panel{display:grid;gap:16px;min-width:0;padding:18px;margin:6px 0;transition:border-color .2s ease,box-shadow .2s ease}
+#clubRoot .club-panel:not(.club-panel-contraido){border-color:var(--accent);box-shadow:0 5px 18px var(--accent-dim)}
+#clubRoot .club-panel-title{margin:0;font-size:16px}
+#clubRoot .club-panel-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 14px;text-align:left;background:var(--surface3);color:var(--text);border-color:var(--border)}
+#clubRoot .club-panel-toggle:hover{background:var(--accent-dim);border-color:var(--accent);color:var(--accent-text)}
+#clubRoot .club-panel-toggle span:last-child{font-size:20px;line-height:1;transition:transform .2s ease}
+#clubRoot .club-panel-toggle[aria-expanded="true"] span:last-child{transform:rotate(180deg)}
+#clubRoot .club-panel-toggle:focus-visible,#clubRoot .btn:focus-visible,#clubRoot select:focus-visible,#clubRoot textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#clubRoot .club-panel>form{display:grid;gap:16px;min-width:0}
+#clubRoot .club-panel .row-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#clubRoot .club-panel .field-group{min-width:0;margin:0}
+#clubRoot .club-panel .field-group>small{display:block;margin-top:7px;color:var(--muted);line-height:1.45}
+#clubPremioImagenAcciones{min-width:0}
+#clubRoot .club-panel .field-label{margin-bottom:8px;line-height:1.4}
+#clubRoot .club-panel input:not([type="checkbox"]),#clubRoot .club-panel select,#clubRoot .club-panel textarea{min-width:0}
+#clubRoot .club-panel textarea{min-height:110px}
+#clubRoot .club-panel .check-row{display:inline-flex;align-items:center;gap:8px;line-height:1.35;cursor:pointer}
+#clubRoot .club-panel .check-row input{flex:0 0 auto}
+#clubRoot .club-checks{gap:9px}
+#clubRoot .club-checks .check-row{padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface3)}
+#clubRoot .club-panel .btn-primary{box-shadow:0 2px 8px var(--accent-dim)}
+#clubRoot .club-panel .btn-primary:hover{box-shadow:0 4px 14px var(--accent-dim);transform:translateY(-1px)}
+#clubRoot .club-panel .btn-ghost:hover{background:var(--accent-dim)}
+#clubRoot .btn[aria-busy="true"]{cursor:progress;opacity:.7}
+#clubRoot .club-list-card{align-items:flex-start;gap:16px}
+#clubRoot .club-list-card>div:first-child{min-width:0;overflow-wrap:anywhere;line-height:1.45}
+#clubRoot .club-list-card small{display:block;margin-top:5px;color:var(--muted)}
+#clubRoot .club-list-actions{align-items:center;justify-content:flex-end;min-width:0}
+#clubRoot .club-list-actions select{width:auto;min-width:170px}
+#clubRoot .club-heading select{width:auto;min-width:170px}
+#clubRoot .club-config-warning{display:inline-block;margin-top:6px;color:var(--red-text);font-size:12px;font-weight:700}
+#clubRoot .club-canje-destacado{outline:2px solid var(--accent);outline-offset:2px;background:var(--accent-dim);animation:club-destacar .9s ease-out 2}
+#clubRoot .club-codigo-error{min-height:20px;color:var(--red-text);font-size:13px}
+#clubRoot .club-panel:not(.club-panel-contraido)>:not(.club-panel-title):not([hidden]){animation:club-aparecer .2s ease-out both}
+.club-aviso{position:fixed;right:20px;bottom:max(20px,env(safe-area-inset-bottom));z-index:1000;width:max-content;max-width:min(420px,calc(100vw - 32px));padding:12px 16px;border:1px solid var(--border);border-left:4px solid var(--teal-text);border-radius:11px;background:var(--surface3);color:var(--text);box-shadow:0 12px 32px #0004;font-size:13px;line-height:1.4}
+.club-aviso[data-tipo="error"]{border-left-color:var(--red-text)}
+.club-aviso-visible{animation:club-aviso-entrada .23s ease-out both}
+@keyframes club-aparecer{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes club-aviso-entrada{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes club-destacar{50%{box-shadow:0 0 0 8px var(--accent-dim)}}
+@media(max-width:760px){#clubRoot .club-panel .row-2{grid-template-columns:minmax(0,1fr)}#clubRoot .club-panel{padding:15px}#clubRoot .club-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}#clubRoot .club-list-actions{justify-content:flex-start}#clubRoot .club-heading{flex-wrap:wrap}#clubRoot .club-heading select{width:100%}#clubRoot .club-list-actions select{width:100%}.club-aviso{right:16px;bottom:max(16px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){#clubRoot .club-panel,#clubRoot .club-panel-toggle span:last-child,#clubRoot .club-panel:not(.club-panel-contraido)>:not(.club-panel-title):not([hidden]),#clubRoot .club-canje-destacado,.club-aviso-visible{animation:none!important;transition:none!important}#clubRoot .club-panel .btn-primary:hover{transform:none}}

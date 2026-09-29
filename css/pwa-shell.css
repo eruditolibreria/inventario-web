@@ -1,0 +1,89 @@
+.pwa-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f8f5fd;
+  color: #25164a;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .35s ease, visibility 0s linear 0s;
+}
+
+.pwa-splash.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .35s ease, visibility 0s linear .35s;
+}
+
+.pwa-splash-content {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.pwa-splash-content img {
+  display: block;
+  width: min(64vw, 260px);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.pwa-splash-content span {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.pwa-install-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--accent-text);
+  cursor: pointer;
+  transition: border-color .2s ease, transform .2s ease;
+}
+
+.pwa-install-button[hidden] { display: none !important; }
+.pwa-install-button:hover { border-color: var(--accent); transform: scale(1.08); }
+.pwa-install-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.pwa-install-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.app-header .pwa-install-button { margin-right: 4px; }
+
+#loginScreen { position: relative; }
+.pwa-install-login { position: absolute; top: 16px; right: 16px; z-index: 2; }
+.desktop-login-card .pwa-install-login { top: 16px; right: 16px; }
+
+.pwa-install-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 80px #0007;
+}
+
+.pwa-install-dialog::backdrop { background: #080b0fb3; }
+.pwa-install-dialog h2 { margin: 0 0 12px; font-size: 20px; }
+.pwa-install-dialog p { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }
+.pwa-install-dialog .btn { width: 100%; }
+
+@media (min-width: 1024px) {
+  .pwa-install-button { width: 42px; height: 42px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwa-splash, .pwa-splash.is-hidden, .pwa-install-button { transition: none; }
+}

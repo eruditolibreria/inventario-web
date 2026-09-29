@@ -105,16 +105,21 @@
     <link rel="stylesheet" href="/css/componentes.css">
     <link rel="stylesheet" href="/css/club.css">
     <link rel="stylesheet" href="/css/desktop-layout.css">
+    <link rel="stylesheet" href="/css/pwa-shell.css">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script defer src="/js/pwa-shell.js"></script>
 </head>
 <body class="desktop">
+<div id="pwaSplash" class="pwa-splash" role="status" aria-live="polite"><div class="pwa-splash-content"><img src="/club/splash-eruditos.png" alt=""><span>Cargando sistema Eruditos…</span></div></div>
+<dialog id="pwaInstallDialog" class="pwa-install-dialog" aria-labelledby="pwaInstallTitle"><h2 id="pwaInstallTitle">Instalar sistema Eruditos</h2><p id="pwaInstallInstructions"></p><button id="pwaInstallClose" class="btn btn-primary" type="button">Entendido</button></dialog>
 
 <!-- ═══════════════════════════════════════════════════════════
      LOGIN - fullscreen centrado
      ═══════════════════════════════════════════════════════════ -->
 <div id="loginScreen" class="desktop-login-wrapper">
     <div class="desktop-login-card">
+        <button class="pwa-install-button pwa-install-login" type="button" aria-label="Instalar sistema Eruditos" title="Instalar sistema Eruditos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
         <div class="login-logo">
             <span class="logo-icon">📦</span>
             <h2>Grupo Eruditos</h2>
@@ -147,6 +152,7 @@
                 <small>INVENTARIO v3.0</small>
             </div>
             <div class="desktop-header-right">
+                <button class="pwa-install-button" type="button" aria-label="Instalar sistema Eruditos" title="Instalar sistema Eruditos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
                 <button class="theme-toggle" id="themeToggleBtn" title="Cambiar tema claro/oscuro" onclick="toggleTheme()">
                     <span class="theme-toggle-icon" id="themeIcon"><i class="fa-solid fa-moon"></i></span>
                 </button>
