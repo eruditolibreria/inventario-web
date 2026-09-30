@@ -78,6 +78,16 @@
 @media(max-width:560px){.hero:after{right:9px;bottom:5px;width:155px;height:130px}}
 @media(prefers-reduced-motion:reduce){.club-splash,.club-splash.is-hidden{transition:none}}
 
+.session-transfer-dialog{max-width:420px;padding:28px;background:#fff;color:#241b35}
+.session-transfer-dialog h2{margin:0 0 12px;line-height:1.25}
+.session-transfer-dialog p{margin:0;color:var(--muted);line-height:1.5}
+.session-transfer-dialog .dialog-actions{margin-top:24px;flex-wrap:wrap}
+.session-transfer-dialog .dialog-actions button{flex:1 1 145px;min-height:46px}
+.session-transfer-dialog .dialog-actions button:not(.primary){background:#f3eefc;color:#38245f}
+.session-transfer-dialog .dialog-actions button:focus-visible{outline:3px solid #d79727;outline-offset:3px}
+@media(max-width:400px){.session-transfer-dialog .dialog-actions{flex-direction:column}.session-transfer-dialog .dialog-actions button{flex-basis:auto}}
+:root[data-theme="dark"] .session-transfer-dialog .dialog-actions button:not(.primary){background:#3a2b50;color:#f2edfa}
+
 .auth-header-actions{position:absolute;top:20px;right:20px;display:flex;gap:8px}
 .install-button,#logoutBtn{display:grid;place-items:center;width:40px;height:40px;padding:0;color:var(--purple)}
 .install-button svg,#logoutBtn svg{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

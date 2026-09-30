@@ -3,9 +3,18 @@ import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from '../
 const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
 const SESSION_KEY = 'club_eruditos_session';
+const DEVICE_KEY = 'club_eruditos_device_id';
 const CODES_KEY = 'club_eruditos_retiros';
 const THEME_KEY = 'club_eruditos_theme';
 let session = readJson(SESSION_KEY, null);
+let refreshing = null;
+const deviceId = (() => {
+  const saved = localStorage.getItem(DEVICE_KEY);
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved || '')) return saved;
+  const id = crypto.randomUUID();
+  localStorage.setItem(DEVICE_KEY, id);
+  return id;
+})();
 let premioSeleccionado = null;
 let clubPendiente = false;
 let usuarioTimer;
@@ -93,22 +102,30 @@ document.querySelectorAll('.install-button').forEach(boton=>boton.addEventListen
 $('cerrarInstalacion').addEventListener('click',()=>$('installDialog').close());
 actualizarBotonesInstalacion();
 function mensajeError(code) {
-  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
+  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', SESION_TRASLADADA:'Tu sesión se trasladó a otro dispositivo. Ingresa nuevamente si quieres usarla aquí.', DISPOSITIVO_INVALIDO:'No se pudo identificar este dispositivo. Recarga la página.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
 }
 
 async function post(url, body, token) {
   const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token || SUPABASE_ANON_KEY}` }, body:JSON.stringify(body) });
   const data = await res.json().catch(() => ({ ok:false, error:'RESPUESTA_INVALIDA' }));
-  if (data.error === 'NO_AUTORIZADO' && token) { saveSession(null); showAuth(); }
+  if ((data.error === 'NO_AUTORIZADO' || data.error === 'SESION_TRASLADADA') && token && session?.token===token) {
+    saveSession(null); showAuth(); setStatus('authStatus',mensajeError(data.error),true);
+  }
   return data;
 }
 
 async function refreshIfNeeded() {
+  if (refreshing) return refreshing;
   if (!session?.refreshToken || !session.expiresAt || session.expiresAt - Date.now()/1000 > 120) return;
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method:'POST', headers:{ apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json' }, body:JSON.stringify({ refresh_token:session.refreshToken }) });
-  if (!res.ok) { saveSession(null); return; }
-  const data = await res.json();
-  saveSession({ ...session, token:data.access_token, refreshToken:data.refresh_token, expiresAt:data.expires_at || Math.floor(Date.now()/1000)+Number(data.expires_in || 3600) });
+  const oldToken=session.refreshToken;
+  refreshing=(async()=>{
+    const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method:'POST', headers:{ apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json' }, body:JSON.stringify({ refresh_token:oldToken }) });
+    if(session?.refreshToken!==oldToken)return;
+    if (!res.ok) { saveSession(null); showAuth(); setStatus('authStatus',mensajeError('NO_AUTORIZADO'),true); return; }
+    const data=await res.json();
+    if(session?.refreshToken===oldToken)saveSession({ ...session, token:data.access_token, refreshToken:data.refresh_token, expiresAt:data.expires_at || Math.floor(Date.now()/1000)+Number(data.expires_in || 3600) });
+  })();
+  try { await refreshing; } finally { refreshing=null; }
 }
 
 async function clubApi(accion, body={}) { await refreshIfNeeded(); if (!session?.token) return {ok:false,error:'NO_AUTORIZADO'}; return post(PUBLIC_URL, { ACCION:accion, ...body }, session.token); }
@@ -150,8 +167,26 @@ document.querySelectorAll('[data-auth]').forEach(btn => btn.addEventListener('cl
 
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Ingresando…');
-  const data=await post(AUTH_URL,{ACCION:'LOGIN',USUARIO:$('loginUsuario').value,PASSWORD:$('loginPassword').value});
-  if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} saveSession(data); showApp();
+  const button=e.submitter;
+  if(button)button.disabled=true;
+  const credentials={ACCION:'LOGIN',USUARIO:$('loginUsuario').value,PASSWORD:$('loginPassword').value,DISPOSITIVO_ID:deviceId};
+  try {
+    let data=await post(AUTH_URL,credentials);
+    if(data.error==='SESION_EN_OTRO_DISPOSITIVO') {
+      const confirmado=await new Promise(resolve=>{
+        const dialog=$('sessionTransferDialog');
+        dialog.addEventListener('close',()=>resolve(dialog.returnValue==='yes'),{once:true});
+        dialog.showModal();
+      });
+      if(!confirmado){$('loginPassword').value='';setStatus('authStatus','Inicio de sesión cancelado.');return;}
+      setStatus('authStatus','Trasladando sesión…');
+      data=await post(AUTH_URL,{...credentials,FORZAR_SESION:true});
+    }
+    if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;}
+    $('loginPassword').value='';
+    saveSession(data); showApp();
+  } catch (_) { setStatus('authStatus','No se pudo iniciar sesión. Comprueba tu conexión.',true); }
+  finally { if(button)button.disabled=false; }
 });
 
 $('registroForm').addEventListener('submit', async e => {
@@ -181,7 +216,7 @@ $('registroUsuario').addEventListener('input', () => {
 
 $('credencialesForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Creando tu cuenta…');
-  const data=await post(AUTH_URL,{ACCION:'REGISTRAR',NOMBRE:$('registroNombre').value,DOCUMENTO:$('registroDocumento').value,TELEFONO:$('registroTelefono').value,DIRECCION:$('registroDireccion').value,EMAIL:$('registroEmail').value,USUARIO:$('registroUsuario').value,PASSWORD:$('registroPassword').value,TOKEN_VINCULACION:$('registroToken').value,CODIGO_REFERIDO:$('registroReferido').value});
+  const data=await post(AUTH_URL,{ACCION:'REGISTRAR',DISPOSITIVO_ID:deviceId,NOMBRE:$('registroNombre').value,DOCUMENTO:$('registroDocumento').value,TELEFONO:$('registroTelefono').value,DIRECCION:$('registroDireccion').value,EMAIL:$('registroEmail').value,USUARIO:$('registroUsuario').value,PASSWORD:$('registroPassword').value,TOKEN_VINCULACION:$('registroToken').value,CODIGO_REFERIDO:$('registroReferido').value});
   if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;}
   $('recoveryCodes').textContent=(data.codigosRecuperacion||[]).join('\n');
   $('recoveryDialog').showModal();
@@ -191,13 +226,18 @@ $('credencialesForm').addEventListener('submit', async e => {
 
 $('recuperarForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Actualizando contraseña…');
-  const data=await post(AUTH_URL,{ACCION:'RECUPERAR',USUARIO:$('recuperarUsuario').value,CODIGO_RECUPERACION:$('recuperarToken').value,PASSWORD:$('recuperarPassword').value});
+  const data=await post(AUTH_URL,{ACCION:'RECUPERAR',DISPOSITIVO_ID:deviceId,USUARIO:$('recuperarUsuario').value,CODIGO_RECUPERACION:$('recuperarToken').value,PASSWORD:$('recuperarPassword').value});
   if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} saveSession(data); showApp();
 });
 
 $('copyRecovery').addEventListener('click',()=>navigator.clipboard?.writeText($('recoveryCodes').textContent));
 $('closeRecovery').addEventListener('click',()=>$('recoveryDialog').close());
-$('logoutBtn').addEventListener('click',()=>{saveSession(null);showAuth();});
+$('logoutBtn').addEventListener('click',async()=>{
+  await refreshIfNeeded().catch(()=>{});
+  const token=session?.token;
+  saveSession(null);showAuth();
+  if(token)void fetch(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({ACCION:'SALIR'})}).catch(()=>{});
+});
 $('activarCuentaBtn').addEventListener('click', mostrarActivacion);
 $('usernameDialog').addEventListener('cancel', e => e.preventDefault());
 $('usernameForm').addEventListener('submit', async e => {
@@ -495,6 +535,8 @@ $('cancelConfirm').addEventListener('click',async()=>{
 });
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
+window.addEventListener('storage',e=>{if(e.key!==SESSION_KEY)return;session=readJson(SESSION_KEY,null);if(session?.token)showApp();else showAuth();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session?.token)void cargarInicio().catch(()=>{});});
 if(session?.token)showApp();else {showAuth();ocultarSplash();}
 setTimeout(ocultarSplash,7000);
 const referidoUrl=new URL(location.href).searchParams.get('ref');
