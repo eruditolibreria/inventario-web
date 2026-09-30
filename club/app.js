@@ -61,10 +61,9 @@ const modoInstalado=matchMedia('(display-mode: standalone)');
 const esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 let solicitudInstalacion=null;
 let instalacionConfirmada=false;
-let instalacionIntentada=false;
 function actualizarBotonesInstalacion() {
   const instalado=instalacionConfirmada||modoInstalado.matches||navigator.standalone===true;
-  document.querySelectorAll('.install-button').forEach(boton=>boton.hidden=instalado||(!solicitudInstalacion&&!esIOS&&!instalacionIntentada));
+  document.querySelectorAll('.install-button').forEach(boton=>boton.hidden=instalado);
 }
 window.addEventListener('beforeinstallprompt',evento=>{
   evento.preventDefault();
@@ -82,7 +81,6 @@ document.querySelectorAll('.install-button').forEach(boton=>boton.addEventListen
   if(solicitudInstalacion){
     const solicitud=solicitudInstalacion;
     solicitudInstalacion=null;
-    instalacionIntentada=true;
     actualizarBotonesInstalacion();
     try{await solicitud.prompt();}catch(_){}
   }else{
