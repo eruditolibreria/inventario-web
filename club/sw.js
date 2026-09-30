@@ -1,1 +1,41 @@
-const CACHE='club-eruditos-v19';const FILES=['/club/','/club/index.html','/club/styles.css','/club/app.js','/club/camino-erudito.png','/club/logo-blanco.png','/club/launchericon-192x192.png','/club/launchericon-512x512.png','/club/splash-eruditos.png','/club/manifest.json','/js/config.js'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('club-eruditos-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/club/'))))});
+const CACHE = 'club-eruditos-v20';
+const SHELL = [
+  '/club/index.html', '/club/styles.css', '/club/app.js', '/js/config.js',
+  '/club/splash-eruditos.png', '/club/launchericon-192x192.png', '/club/manifest.json',
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(
+    keys.filter(key => key.startsWith('club-eruditos-') && key !== CACHE).map(key => caches.delete(key))
+  )).then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin ||
+      !(url.pathname.startsWith('/club/') || url.pathname === '/js/config.js')) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(fetch(request).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(cache => cache.put('/club/index.html', copy)));
+      }
+      return response;
+    }).catch(() => caches.match('/club/index.html')));
+    return;
+  }
+
+  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
+    if (response.ok) {
+      const copy = response.clone();
+      event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
+    }
+    return response;
+  })));
+});

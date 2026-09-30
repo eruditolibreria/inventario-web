@@ -50,7 +50,10 @@ test('el camino muestra las diez estancias y se cierra con botón o Atrás', () 
   assert.match(app, /NIVELES\.map\(\(nombre,i\)=>/);
   assert.match(app, /history\.pushState\(\{clubPath:true\}/);
   assert.match(app, /history\.state\?\.clubPath/);
-  assert.match(css, /camino-erudito\.png/);
+  assert.match(css, /camino-erudito\.webp/);
+  const optimizada = fs.readFileSync('club/camino-erudito.webp');
+  assert.equal(optimizada.subarray(0, 4).toString(), 'RIFF');
+  assert.ok(optimizada.length < 500_000, 'la imagen del camino no debe volver a bloquear la carga');
   const imagen = fs.readFileSync('club/camino-erudito.png');
   assert.equal(imagen.readUInt32BE(16), 793);
   assert.equal(imagen.readUInt32BE(20), 1983);

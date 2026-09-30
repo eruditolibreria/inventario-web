@@ -8,6 +8,10 @@ const CODES_KEY = 'club_eruditos_retiros';
 const THEME_KEY = 'club_eruditos_theme';
 let session = readJson(SESSION_KEY, null);
 let refreshing = null;
+const readCache = new Map();
+const readPending = new Map();
+let viewEpoch = 0;
+let prefetchEpoch = -1;
 const deviceId = (() => {
   const saved = localStorage.getItem(DEVICE_KEY);
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved || '')) return saved;
@@ -20,6 +24,8 @@ let clubPendiente = false;
 let usuarioTimer;
 let usuarioRevision = 0;
 let canjeParaCancelar = null;
+let movimientosPagina = 1;
+let canjesPagina = 1;
 let clubNivel = 1;
 let clubGasto365 = 0;
 let enlaceReferido = '';
@@ -36,9 +42,14 @@ const fecha = value => value ? new Intl.DateTimeFormat('es-BO', { dateStyle:'med
 const idempotencia = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch (_) { return fallback; } }
+function resetReadCache() { readCache.clear(); readPending.clear(); viewEpoch++; }
 function saveSession(value) {
+  if (!value) resetReadCache();
   session = value ? { token:value.token, refreshToken:value.refreshToken, expiresAt:value.expiresAt, cliente:value.cliente || null } : null;
-  session ? localStorage.setItem(SESSION_KEY, JSON.stringify(session)) : localStorage.removeItem(SESSION_KEY);
+  if(session){
+    const serialized=JSON.stringify(session);
+    if(localStorage.getItem(SESSION_KEY)!==serialized)localStorage.setItem(SESSION_KEY,serialized);
+  }else localStorage.removeItem(SESSION_KEY);
 }
 function setStatus(id, message, error=false) { const el=$(id); el.textContent=message || ''; el.classList.toggle('error', error); }
 function ocultarSplash() {
@@ -130,6 +141,50 @@ async function refreshIfNeeded() {
 
 async function clubApi(accion, body={}) { await refreshIfNeeded(); if (!session?.token) return {ok:false,error:'NO_AUTORIZADO'}; return post(PUBLIC_URL, { ACCION:accion, ...body }, session.token); }
 
+const readKey = (accion, body={}) => `${accion}:${JSON.stringify(body)}`;
+function requestRead(accion, body={}, ttl=30000) {
+  const key=readKey(accion,body);
+  const cached=readCache.get(key);
+  if(cached && Date.now()-cached.at<ttl)return Promise.resolve(cached.data);
+  if(readPending.has(key))return readPending.get(key);
+  const epoch=viewEpoch;
+  const pending=clubApi(accion,body).then(data=>{
+    if(data.ok && epoch===viewEpoch)readCache.set(key,{data,at:Date.now()});
+    return data;
+  }).finally(()=>{if(readPending.get(key)===pending)readPending.delete(key);});
+  readPending.set(key,pending);
+  return pending;
+}
+async function loadRead(accion, body, ttl, render, status) {
+  const cached=readCache.get(readKey(accion,body));
+  if(cached)render(cached.data);
+  if(cached && Date.now()-cached.at<ttl){setStatus('appStatus','');return cached.data;}
+  if(!cached)setStatus('appStatus',status);
+  const epoch=viewEpoch;
+  try {
+    const data=await requestRead(accion,body,ttl);
+    if(epoch!==viewEpoch)return data;
+    if(data.ok){render(data);setStatus('appStatus','');}
+    else if(!cached)setStatus('appStatus',mensajeError(data.error),true);
+    return data;
+  } catch (_) {
+    if(epoch===viewEpoch)setStatus('appStatus',cached?'Sin conexión. Mostrando datos recientes.':'No se pudo cargar. Intenta nuevamente.',true);
+    return cached?.data || {ok:false,error:'SIN_CONEXION'};
+  }
+}
+function prefetchTabs() {
+  if(prefetchEpoch===viewEpoch || !session?.token)return;
+  const epoch=viewEpoch;
+  prefetchEpoch=epoch;
+  const start=()=>{
+    if(epoch!==viewEpoch || document.hidden)return;
+    const tabs=[['PREMIOS',{},60000]];
+    if(!clubPendiente)tabs.push(['MOVIMIENTOS',{PAGINA:1,LIMITE:20},30000],['CANJES',{PAGINA:1,LIMITE:20},15000]);
+    void Promise.allSettled(tabs.map(([accion,body,ttl])=>requestRead(accion,body,ttl)));
+  };
+  if('requestIdleCallback'in window)requestIdleCallback(start,{timeout:1800});else setTimeout(start,900);
+}
+
 function showAuth() {
   cerrarImagen();
   cerrarCamino();
@@ -153,7 +208,16 @@ function showAuth() {
   seleccionarPanel('login');
   $('authView').hidden=false; $('appView').hidden=true;
 }
-function showApp() { $('authView').hidden=true; $('appView').hidden=false; document.querySelector('nav').hidden=true; $('saludo').textContent=`Hola, ${session?.cliente?.nombre || 'Erudito'}`; void cargarInicio().catch(()=>setStatus('appStatus','No se pudo actualizar Club. Intenta recargar la página.',true)).finally(ocultarSplash); if (session?.cliente?.usuario === null) $('usernameDialog').showModal(); }
+function showApp() {
+  $('authView').hidden=true; $('appView').hidden=false;
+  document.querySelector('nav').hidden=false;
+  $('appView').setAttribute('aria-busy','true');
+  $('saludo').textContent=`Hola, ${session?.cliente?.nombre || 'Erudito'}`;
+  setStatus('appStatus','Cargando tu Club…');
+  ocultarSplash();
+  void cargarInicio().then(data=>{if(data?.ok)prefetchTabs();}).finally(()=>$('appView').setAttribute('aria-busy','false'));
+  if (session?.cliente?.usuario === null) $('usernameDialog').showModal();
+}
 
 function seleccionarPanel(nombre) {
   document.querySelectorAll('[data-auth]').forEach(b => b.classList.toggle('active', b.dataset.auth===nombre || nombre==='credenciales' && b.dataset.auth==='registro'));
@@ -184,7 +248,7 @@ $('loginForm').addEventListener('submit', async e => {
     }
     if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;}
     $('loginPassword').value='';
-    saveSession(data); showApp();
+    resetReadCache(); saveSession(data); showApp();
   } catch (_) { setStatus('authStatus','No se pudo iniciar sesión. Comprueba tu conexión.',true); }
   finally { if(button)button.disabled=false; }
 });
@@ -220,14 +284,14 @@ $('credencialesForm').addEventListener('submit', async e => {
   if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;}
   $('recoveryCodes').textContent=(data.codigosRecuperacion||[]).join('\n');
   $('recoveryDialog').showModal();
-  if(data.token){saveSession(data);showApp();}
+  if(data.token){resetReadCache();saveSession(data);showApp();}
   else {seleccionarPanel('login');setStatus('authStatus','Cuenta creada. Ingresa con tu usuario y contraseña.');}
 });
 
 $('recuperarForm').addEventListener('submit', async e => {
   e.preventDefault(); setStatus('authStatus','Actualizando contraseña…');
   const data=await post(AUTH_URL,{ACCION:'RECUPERAR',DISPOSITIVO_ID:deviceId,USUARIO:$('recuperarUsuario').value,CODIGO_RECUPERACION:$('recuperarToken').value,PASSWORD:$('recuperarPassword').value});
-  if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} saveSession(data); showApp();
+  if(!data.ok){setStatus('authStatus',mensajeError(data.error),true);return;} resetReadCache(); saveSession(data); showApp();
 });
 
 $('copyRecovery').addEventListener('click',()=>navigator.clipboard?.writeText($('recoveryCodes').textContent));
@@ -245,6 +309,7 @@ $('usernameForm').addEventListener('submit', async e => {
   await refreshIfNeeded();
   const data=await post(AUTH_URL,{ACCION:'ELEGIR_USUARIO',USUARIO:$('legacyUsuario').value},session?.token);
   if(!data.ok){setStatus('usernameStatus',mensajeError(data.error),true);return;}
+  resetReadCache();
   saveSession({...session,cliente:{...session.cliente,usuario:data.usuario}});
   $('usernameDialog').close();
 });
@@ -254,7 +319,7 @@ $('activacionForm').addEventListener('submit', async e => {
   await refreshIfNeeded();
   const data=await post(AUTH_URL,{ACCION:'ACTIVAR',TOKEN_VINCULACION:$('activacionToken').value},session?.token);
   if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
-  $('activacionToken').value='';await cargarInicio();setStatus('appStatus','Tu Club está activo. Ya puedes usar tus puntos.');
+  $('activacionToken').value='';resetReadCache();await cargarInicio();setStatus('appStatus','Tu Club está activo. Ya puedes usar tus puntos.');
 });
 
 document.querySelectorAll('nav [data-view]').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -440,9 +505,10 @@ $('copiarMensaje').addEventListener('click',async()=>{
 });
 
 async function cargarInicio(){
-  setStatus('appStatus','Actualizando…'); const data=await clubApi('RESUMEN');
+  return loadRead('RESUMEN',{},30000,renderInicio,'Cargando tu Club…');
+}
+function renderInicio(data){
   if (!session) return;
-  if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
   session={...session,cliente:data.cliente}; saveSession(session); $('saludo').textContent=`Hola, ${data.cliente?.nombre||'Erudito'}`;
   if(data.cliente?.usuario === null && !$('usernameDialog').open) $('usernameDialog').showModal();
   const pendiente=data.cuenta?.estado==='PENDIENTE_ACTIVACION';
@@ -460,16 +526,17 @@ async function cargarInicio(){
   $('saldoDisponible').textContent=Number(data.cuenta?.saldo_disponible||0).toLocaleString('es-BO'); $('saldoPendiente').textContent=Number(data.cuenta?.saldo_pendiente||0).toLocaleString('es-BO');
   const vence=data.proximoVencimiento; $('vencimiento').hidden=!vence; if(vence)$('vencimiento').textContent=`${Number(vence.puntos_disponibles).toLocaleString('es-BO')} puntos vencen el ${fecha(vence.vence_en)}.`;
   $('terminosClub').hidden=!data.terminos; $('terminosClubTexto').textContent=data.terminos||'';
-  $('notificaciones').innerHTML=(data.notificaciones||[]).map(n=>`<article class="list-item"><div><strong>${esc(n.titulo)}</strong><p>${esc(n.mensaje)}</p></div></article>`).join('')||'<div class="list-item">No hay novedades.</div>'; setStatus('appStatus','');
+  $('notificaciones').innerHTML=(data.notificaciones||[]).map(n=>`<article class="list-item"><div><strong>${esc(n.titulo)}</strong><p>${esc(n.mensaje)}</p></div></article>`).join('')||'<div class="list-item">No hay novedades.</div>';
 }
 
 async function cargarPremios(){
-  setStatus('appStatus','Cargando premios…'); const data=await clubApi('PREMIOS');
-  if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
+  return loadRead('PREMIOS',{},60000,renderPremios,'Cargando premios…');
+}
+function renderPremios(data){
   const saldo=Number($('saldoDisponible').textContent.replace(/\D/g,''))||0;
   $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);const nivelMinimo=Number(p.nivel_minimo||1);const sinNivel=!clubPendiente&&clubNivel<nivelMinimo;const foto=imagen?`<button type="button" class="reward-image" data-image="${esc(imagen)}" data-title="${esc(p.nombre)}" aria-label="Ampliar imagen de ${esc(p.nombre)}"><img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.parentElement.disabled=true;this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span></button>`:'<div class="reward-image"><span>E</span></div>';return `<article class="reward">${foto}<span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p>${nivelMinimo>1?`<small>Desde ${esc(NIVELES[nivelMinimo-1]||NIVELES[0])}</small>`:''}<div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||sinNivel||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinNivel?'Nivel insuficiente':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
   $('premiosGrid').querySelectorAll('[data-image]').forEach(btn=>btn.addEventListener('click',()=>abrirImagen(btn.dataset.image,btn.dataset.title)));
-  $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>clubPendiente?mostrarActivacion():abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem))))); setStatus('appStatus','');
+  $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>clubPendiente?mostrarActivacion():abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem)))));
 }
 
 function abrirImagen(src, titulo) {
@@ -498,19 +565,61 @@ function mostrarActivacion(){
 
 function abrirCanje(premio){ premioSeleccionado=premio; $('redeemTitle').textContent=`Canjear ${premio.nombre}`; const sucursales=premio.club_premios_sucursales||[]; $('redeemBranch').innerHTML=sucursales.map(s=>`<option value="${esc(s.sucursal_id)}">${esc(s.sucursal_nombre||s.sucursal_id)}</option>`).join(''); $('redeemDialog').showModal(); }
 $('cancelRedeem').addEventListener('click',()=>$('redeemDialog').close());
-$('confirmRedeem').addEventListener('click',async()=>{ if(!premioSeleccionado)return; $('confirmRedeem').disabled=true; const data=await clubApi('CREAR_CANJE',{PREMIO_ID:premioSeleccionado.id,SUCURSAL_ID:$('redeemBranch').value,IDEMPOTENCY_KEY:idempotencia()}); $('confirmRedeem').disabled=false; if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;} if(data.codigoRetiro){const codes=readJson(CODES_KEY,{});codes[data.canjeId||data.id]=data.codigoRetiro;localStorage.setItem(CODES_KEY,JSON.stringify(codes));} $('redeemDialog').close(); setStatus('appStatus','Canje solicitado. Guarda tu código de retiro.'); document.querySelector('nav [data-view="canjes"]').click(); });
+$('confirmRedeem').addEventListener('click',async()=>{ if(!premioSeleccionado)return; $('confirmRedeem').disabled=true; const data=await clubApi('CREAR_CANJE',{PREMIO_ID:premioSeleccionado.id,SUCURSAL_ID:$('redeemBranch').value,IDEMPOTENCY_KEY:idempotencia()}); $('confirmRedeem').disabled=false; if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;} if(data.codigoRetiro){const codes=readJson(CODES_KEY,{});codes[data.canjeId||data.id]=data.codigoRetiro;localStorage.setItem(CODES_KEY,JSON.stringify(codes));} resetReadCache(); $('redeemDialog').close(); setStatus('appStatus','Canje solicitado. Guarda tu código de retiro.'); document.querySelector('nav [data-view="canjes"]').click(); });
 
-async function cargarMovimientos(){ const data=await clubApi('MOVIMIENTOS',{PAGINA:1,LIMITE:50}); $('movimientosLista').innerHTML=data.ok?(data.datos||[]).map(movementItem).join('')||'<div class="list-item">Sin movimientos.</div>':`<div class="list-item">${esc(mensajeError(data.error))}</div>`; }
+async function cargarMovimientos(){
+  return loadRead('MOVIMIENTOS',{PAGINA:1,LIMITE:20},30000,data=>renderMovimientos(data,1),'Cargando movimientos…');
+}
+function renderMovimientos(data,pagina){
+  const html=(data.datos||[]).map(movementItem).join('');
+  if(pagina===1)$('movimientosLista').innerHTML=html||'<div class="list-item">Sin movimientos.</div>';
+  else $('movimientosLista').insertAdjacentHTML('beforeend',html);
+  movimientosPagina=pagina;
+  $('movimientosMas').hidden=pagina>=Number(data.paginas||1);
+}
+$('movimientosMas').addEventListener('click',async()=>{
+  const button=$('movimientosMas');
+  button.disabled=true;
+  const epoch=viewEpoch;
+  try {
+    const pagina=movimientosPagina+1;
+    const data=await requestRead('MOVIMIENTOS',{PAGINA:pagina,LIMITE:20},30000);
+    if(epoch!==viewEpoch)return;
+    if(data.ok)renderMovimientos(data,pagina);else setStatus('appStatus',mensajeError(data.error),true);
+  } catch (_) { if(epoch===viewEpoch)setStatus('appStatus','No se pudieron cargar más movimientos.',true); }
+  finally { button.disabled=false; }
+});
 
 async function cargarCanjes(){
-  const data=await clubApi('CANJES'); const codes=readJson(CODES_KEY,{});
-  $('canjesLista').innerHTML=data.ok?(data.datos||[]).map(c=>{const p=Array.isArray(c.club_premios)?c.club_premios[0]:c.club_premios||{};const imagen=normalizarUrlPublica(p.imagen_url);const code=codes[c.id];const cancelable=c.estado==='SOLICITADO';return `<article class="list-item"><div class="list-product">${imagen?`<img class="list-thumb" src="${esc(imagen)}" alt="${esc(p.nombre||'Premio')}" loading="lazy">`:''}<div><strong>${esc(p.nombre||'Premio')}</strong><p>${esc(c.estado)} · ${esc(c.sucursal_nombre||c.sucursal_id)} · ${fecha(c.solicitado_en)}</p>${code?`<div class="code">${esc(code)}</div><small>Código de retiro</small>`:''}</div></div><div><span class="points negative">-${Number(c.puntos_total)} pts</span>${cancelable?`<button data-cancel="${c.id}">Cancelar</button>`:''}</div></article>`;}).join('')||'<div class="list-item">Aún no realizaste canjes.</div>':`<div class="list-item">${esc(mensajeError(data.error))}</div>`;
-  $('canjesLista').querySelectorAll('[data-cancel]').forEach(btn=>btn.addEventListener('click',()=>{
-    canjeParaCancelar=Number(btn.dataset.cancel);
-    setStatus('cancelStatus','');
-    $('cancelDialog').showModal();
-  }));
+  return loadRead('CANJES',{PAGINA:1,LIMITE:20},15000,data=>renderCanjes(data,1),'Cargando canjes…');
 }
+function renderCanjes(data,pagina){
+  const codes=readJson(CODES_KEY,{});
+  const html=(data.datos||[]).map(c=>{const p=Array.isArray(c.club_premios)?c.club_premios[0]:c.club_premios||{};const imagen=normalizarUrlPublica(p.imagen_url);const code=codes[c.id];const cancelable=c.estado==='SOLICITADO';return `<article class="list-item"><div class="list-product">${imagen?`<img class="list-thumb" src="${esc(imagen)}" alt="${esc(p.nombre||'Premio')}" loading="lazy">`:''}<div><strong>${esc(p.nombre||'Premio')}</strong><p>${esc(c.estado)} · ${esc(c.sucursal_nombre||c.sucursal_id)} · ${fecha(c.solicitado_en)}</p>${code?`<div class="code">${esc(code)}</div><small>Código de retiro</small>`:''}</div></div><div><span class="points negative">-${Number(c.puntos_total)} pts</span>${cancelable?`<button data-cancel="${c.id}">Cancelar</button>`:''}</div></article>`;}).join('');
+  if(pagina===1)$('canjesLista').innerHTML=html||'<div class="list-item">Aún no realizaste canjes.</div>';
+  else $('canjesLista').insertAdjacentHTML('beforeend',html);
+  canjesPagina=pagina;
+  $('canjesMas').hidden=!data.mas;
+}
+$('canjesLista').addEventListener('click',e=>{
+  const button=e.target.closest('[data-cancel]');
+  if(!button)return;
+  canjeParaCancelar=Number(button.dataset.cancel);
+  setStatus('cancelStatus','');
+  $('cancelDialog').showModal();
+});
+$('canjesMas').addEventListener('click',async()=>{
+  const button=$('canjesMas');
+  button.disabled=true;
+  const epoch=viewEpoch;
+  try {
+    const pagina=canjesPagina+1;
+    const data=await requestRead('CANJES',{PAGINA:pagina,LIMITE:20},15000);
+    if(epoch!==viewEpoch)return;
+    if(data.ok)renderCanjes(data,pagina);else setStatus('canjesStatus',mensajeError(data.error),true);
+  } catch (_) { if(epoch===viewEpoch)setStatus('canjesStatus','No se pudieron cargar más canjes.',true); }
+  finally { button.disabled=false; }
+});
 
 $('cancelDismiss').addEventListener('click',()=>$('cancelDialog').close());
 $('cancelDialog').addEventListener('close',()=>{canjeParaCancelar=null;});
@@ -526,6 +635,7 @@ $('cancelConfirm').addEventListener('click',async()=>{
     delete codes[canjeId];
     localStorage.setItem(CODES_KEY,JSON.stringify(codes));
     $('cancelDialog').close();
+    resetReadCache();
     await Promise.all([cargarCanjes(),cargarInicio()]);
     setStatus('canjesStatus','Canje cancelado. Tus puntos fueron devueltos.');
     setStatus('appStatus','Canje cancelado. Tus puntos fueron devueltos.');
@@ -534,8 +644,11 @@ $('cancelConfirm').addEventListener('click',async()=>{
   } finally { $('cancelConfirm').disabled=false; }
 });
 
-if('serviceWorker'in navigator)navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
-window.addEventListener('storage',e=>{if(e.key!==SESSION_KEY)return;session=readJson(SESSION_KEY,null);if(session?.token)showApp();else showAuth();});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>{
+  const register=()=>navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
+  if('requestIdleCallback'in window)requestIdleCallback(register,{timeout:3000});else setTimeout(register,1200);
+});
+window.addEventListener('storage',e=>{if(e.key!==SESSION_KEY)return;resetReadCache();session=readJson(SESSION_KEY,null);if(session?.token)showApp();else showAuth();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session?.token)void cargarInicio().catch(()=>{});});
 if(session?.token)showApp();else {showAuth();ocultarSplash();}
 setTimeout(ocultarSplash,7000);
