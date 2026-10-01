@@ -1,5 +1,5 @@
 // Las tarjetas usan sus nodos originales: no duplicamos formularios ni sus eventos.
-export function createClubNavigation({ viewport, buttons, panels, load, canSwipe }) {
+export function createClubNavigation({ viewport, gestureTarget = viewport, buttons, panels, load, canSwipe }) {
   const views = panels.map(panel => panel.dataset.viewPanel);
   const scrollPositions = new Map();
   let current = views[0];
@@ -7,6 +7,7 @@ export function createClubNavigation({ viewport, buttons, panels, load, canSwipe
   let revision = 0;
   let animations = [];
   let suppressClickUntil = 0;
+  let windowWidth = window.innerWidth;
   const panelFor = view => panels.find(panel => panel.dataset.viewPanel === view);
   const available = () => views.filter(view => buttons.some(button => button.dataset.view === view && !button.hidden && !button.disabled));
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -103,12 +104,12 @@ export function createClubNavigation({ viewport, buttons, panels, load, canSwipe
   }
 
   buttons.forEach(button => button.addEventListener('click', () => show(button.dataset.view)));
-  viewport.addEventListener('pointerdown', event => {
+  gestureTarget.addEventListener('pointerdown', event => {
     if (!event.isPrimary || event.button !== 0 || animations.length || !canSwipe() || available().length < 2) return;
     if (event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
     gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, dx: 0, view: null, direction: 0 };
   });
-  viewport.addEventListener('pointermove', event => {
+  gestureTarget.addEventListener('pointermove', event => {
     if (!gesture || event.pointerId !== gesture.id) return;
     const dx = event.clientX - gesture.x;
     const dy = event.clientY - gesture.y;
@@ -142,13 +143,19 @@ export function createClubNavigation({ viewport, buttons, panels, load, canSwipe
     const commit = !cancelled && Math.abs(drag.dx) >= viewport.clientWidth * 0.3;
     void settle(drag.view, drag.direction, drag.dx, commit);
   }
-  viewport.addEventListener('pointerup', event => end(event));
-  viewport.addEventListener('pointercancel', event => end(event, true));
-  viewport.addEventListener('lostpointercapture', event => end(event, true));
-  viewport.addEventListener('click', event => {
+  gestureTarget.addEventListener('pointerup', event => end(event));
+  gestureTarget.addEventListener('pointercancel', event => end(event, true));
+  // En pantallas táctiles la captura inicial pertenece a la tarjeta. Su pérdida
+  // burbujea al contenedor cuando este toma la captura y no termina el arrastre.
+  viewport.addEventListener('lostpointercapture', event => { if (event.target === viewport) end(event, true); });
+  gestureTarget.addEventListener('click', event => {
     if (performance.now() < suppressClickUntil) { event.preventDefault(); event.stopPropagation(); }
   }, true);
-  window.addEventListener('resize', refresh);
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === windowWidth) return;
+    windowWidth = window.innerWidth;
+    refresh();
+  });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && gesture) refresh(); });
   clean();
   return { show, reset, refresh };

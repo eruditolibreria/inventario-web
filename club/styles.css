@@ -128,6 +128,8 @@
 :root[data-theme="dark"] .customer-level[data-level="9"]{--level-color:#eac376;--level-light:#ffe0a4}
 :root[data-theme="dark"] .customer-level[data-level="10"]{--level-color:#efb940;--level-light:#fff1b0}
 .club-pages{position:relative;overflow-x:clip;overflow-y:visible;touch-action:pan-y pinch-zoom;isolation:isolate}
+body.club-active{touch-action:pan-y pinch-zoom}
+#appView>header,#appView>nav{user-select:none;-webkit-user-select:none}
 .club-pages>[data-view-panel]{width:100%;display:flow-root;backface-visibility:hidden}
 .club-pages.is-dragging{user-select:none;cursor:grabbing}
 .club-pages.is-dragging>[data-view-panel]{will-change:transform}

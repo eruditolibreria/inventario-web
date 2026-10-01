@@ -1,6 +1,6 @@
-const CACHE = 'club-eruditos-v24';
+const CACHE = 'club-eruditos-v28';
 const SHELL = [
-  '/club/index.html', '/club/styles.css', '/club/app.js', '/club/navigation.js', '/js/config.js',
+  '/club/index.html', '/club/styles.css', '/club/app.js', '/club/navigation.js', '/club/session.js', '/js/config.js', '/js/vendor/supabase-umd.js',
   '/club/splash-eruditos.png', '/club/launchericon-192x192.png', '/club/manifest.json',
 ];
 
@@ -18,7 +18,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin ||
-      !(url.pathname.startsWith('/club/') || url.pathname === '/js/config.js')) return;
+      !(url.pathname.startsWith('/club/') || url.pathname === '/js/config.js' || url.pathname === '/js/vendor/supabase-umd.js')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).then(response => {

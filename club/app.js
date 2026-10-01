@@ -1,5 +1,6 @@
 import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from '../js/config.js';
 import { createClubNavigation } from './navigation.js';
+import { createClubSessionWatcher } from './session.js';
 
 const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
@@ -82,9 +83,13 @@ const modoInstalado=matchMedia('(display-mode: standalone)');
 const esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 let solicitudInstalacion=null;
 let instalacionConfirmada=false;
+let instalacionEnCurso=false;
 function actualizarBotonesInstalacion() {
   const instalado=instalacionConfirmada||modoInstalado.matches||navigator.standalone===true;
-  document.querySelectorAll('.install-button').forEach(boton=>boton.hidden=instalado);
+  document.querySelectorAll('.install-button').forEach(boton=>{
+    boton.hidden=instalado||(!solicitudInstalacion&&!esIOS);
+    boton.disabled=instalacionEnCurso;
+  });
 }
 window.addEventListener('beforeinstallprompt',evento=>{
   evento.preventDefault();
@@ -98,12 +103,24 @@ window.addEventListener('appinstalled',()=>{
 });
 modoInstalado.addEventListener?.('change',actualizarBotonesInstalacion);
 document.querySelectorAll('.install-button').forEach(boton=>boton.addEventListener('click',async()=>{
-  if(modoInstalado.matches||navigator.standalone===true)return;
+  if(instalacionConfirmada||instalacionEnCurso||modoInstalado.matches||navigator.standalone===true)return;
   if(solicitudInstalacion){
     const solicitud=solicitudInstalacion;
     solicitudInstalacion=null;
+    instalacionEnCurso=true;
     actualizarBotonesInstalacion();
-    try{await solicitud.prompt();}catch(_){}
+    try {
+      // prompt() se llama dentro del toque, antes de esperar cualquier otra tarea.
+      await solicitud.prompt();
+      const eleccion=await solicitud.userChoice;
+      if(eleccion.outcome==='accepted')instalacionConfirmada=true;
+    } catch (_) {
+      $('installInstructions').textContent='No se pudo abrir la instalación. En Chrome, abre el menú ⋮ y elige «Instalar aplicación».';
+      $('installDialog').showModal();
+    } finally {
+      instalacionEnCurso=false;
+      actualizarBotonesInstalacion();
+    }
   }else{
     $('installInstructions').textContent=esIOS
       ?'En tu iPhone o iPad, abre el menú Compartir del navegador y elige «Añadir a pantalla de inicio». Después toca «Añadir».'
@@ -118,8 +135,14 @@ function mensajeError(code) {
 }
 
 async function post(url, body, token) {
-  const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token || SUPABASE_ANON_KEY}` }, body:JSON.stringify(body) });
-  const data = await res.json().catch(() => ({ ok:false, error:'RESPUESTA_INVALIDA' }));
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),30000);
+  let res,data;
+  try {
+    res = await fetch(url, { method:'POST', signal:controller.signal, headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token || SUPABASE_ANON_KEY}` }, body:JSON.stringify(body) });
+    data = await res.json().catch(() => ({ ok:false, error:'RESPUESTA_INVALIDA' }));
+  } finally { clearTimeout(timeout); }
+  data.httpStatus=res.status;
   if ((data.error === 'NO_AUTORIZADO' || data.error === 'SESION_TRASLADADA') && token && session?.token===token) {
     saveSession(null); showAuth(); setStatus('authStatus',mensajeError(data.error),true);
   }
@@ -192,6 +215,8 @@ function prefetchTabs() {
 }
 
 function showAuth() {
+  sessionWatcher.stop();
+  document.body.classList.remove('club-active');
   navigation.reset();
   ['premiosGrid','movimientosLista','canjesLista'].forEach(id=>$(id).replaceChildren());
   document.querySelectorAll('[data-card-loading]').forEach(state=>{state.hidden=false;state.textContent='Cargando…';});
@@ -218,6 +243,8 @@ function showAuth() {
   $('authView').hidden=false; $('appView').hidden=true;
 }
 function showApp() {
+  sessionWatcher.start();
+  document.body.classList.add('club-active');
   navigation.reset();
   $('authView').hidden=true; $('appView').hidden=false;
   document.querySelector('nav').hidden=false;
@@ -225,7 +252,7 @@ function showApp() {
   renderCabecera(session?.cliente);
   setStatus('appStatus','Cargando tu Club…');
   ocultarSplash();
-  void cargarInicio().then(data=>{if(data?.ok)prefetchTabs();}).finally(()=>$('appView').setAttribute('aria-busy','false'));
+  void cargarPrimeraVista();
   if (session?.cliente?.usuario === null) $('usernameDialog').showModal();
 }
 
@@ -335,6 +362,7 @@ $('activacionForm').addEventListener('submit', async e => {
 
 const navigation=createClubNavigation({
   viewport:$('clubPages'),
+  gestureTarget:document,
   buttons:[...document.querySelectorAll('nav [data-view]')],
   panels:[...document.querySelectorAll('[data-view-panel]')],
   load:loadVista,
@@ -570,8 +598,35 @@ $('copiarMensaje').addEventListener('click',async()=>{
 async function cargarInicio(){
   return loadRead('RESUMEN',{},30000,renderInicio,'Cargando tu Club…');
 }
+async function cargarPrimeraVista() {
+  const epoch=viewEpoch;
+  $('appView').setAttribute('aria-busy','true');
+  $('inicioCarga').hidden=false;
+  $('inicioCargaTexto').textContent='Cargando tu Club…';
+  $('reintentarInicio').hidden=true;
+  document.querySelector('.hero').hidden=true;
+  $('clubProgreso').hidden=true;
+  let data=await cargarInicio();
+  if(epoch!==viewEpoch||!session?.token)return;
+  if(!data?.ok&&(data?.error==='SIN_CONEXION'||data?.error==='RESPUESTA_INVALIDA'||data?.httpStatus>=500)) {
+    $('inicioCargaTexto').textContent='Reintentando la conexión…';
+    setStatus('appStatus','');
+    await new Promise(resolve=>setTimeout(resolve,600));
+    if(epoch!==viewEpoch||!session?.token)return;
+    data=await cargarInicio();
+  }
+  if(epoch!==viewEpoch||!session?.token)return;
+  $('appView').setAttribute('aria-busy','false');
+  $('inicioCarga').hidden=Boolean(data?.ok);
+  $('reintentarInicio').hidden=Boolean(data?.ok);
+  if(data?.ok)prefetchTabs();
+  else $('inicioCargaTexto').textContent='No se pudo cargar tu Club. Toca Reintentar para volver a conectar.';
+}
+$('reintentarInicio').addEventListener('click',()=>{void cargarPrimeraVista();});
 function renderInicio(data){
   if (!session) return;
+  $('inicioCarga').hidden=true;
+  $('reintentarInicio').hidden=true;
   session={...session,cliente:data.cliente}; saveSession(session);
   if(data.cliente?.usuario === null && !$('usernameDialog').open) $('usernameDialog').showModal();
   const pendiente=data.cuenta?.estado==='PENDIENTE_ACTIVACION';
@@ -711,10 +766,15 @@ $('cancelConfirm').addEventListener('click',async()=>{
   } finally { $('cancelConfirm').disabled=false; }
 });
 
-if('serviceWorker'in navigator)window.addEventListener('load',()=>{
-  const register=()=>navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
-  if('requestIdleCallback'in window)requestIdleCallback(register,{timeout:3000});else setTimeout(register,1200);
+const sessionWatcher=createClubSessionWatcher({
+  createClient:()=>globalThis.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
+    accessToken:async()=>{await refreshIfNeeded();return session?.token||SUPABASE_ANON_KEY;},
+  }),
+  getSession:()=>session,
+  verify:async()=>{await refreshIfNeeded();if(!session?.token)return {ok:false,error:'NO_AUTORIZADO'};return post(AUTH_URL,{ACCION:'SESION'},session.token);},
+  onTransferred:()=>{saveSession(null);showAuth();setStatus('authStatus',mensajeError('SESION_TRASLADADA'),true);},
 });
+if('serviceWorker'in navigator)void navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
 window.addEventListener('storage',e=>{if(e.key!==SESSION_KEY)return;resetReadCache();session=readJson(SESSION_KEY,null);if(session?.token)showApp();else showAuth();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session?.token)void cargarInicio().catch(()=>{});});
 if(session?.token)showApp();else {showAuth();ocultarSplash();}

@@ -10,7 +10,7 @@ if (dirname(outputDir) !== resolve(projectDir) || basename(outputDir) !== 'dist'
   throw new Error('La carpeta de salida debe estar dentro de club-standalone.');
 }
 
-const textFiles = ['index.html', 'app.js', 'navigation.js', 'styles.css', 'manifest.json', 'sw.js'];
+const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'styles.css', 'manifest.json', 'sw.js'];
 const imageFiles = [
   'camino-erudito.webp',
   'logo-blanco.webp',
@@ -42,4 +42,6 @@ for (const file of imageFiles) {
 }
 
 await copyFile(join(sourceDir, 'js', 'config.js'), join(outputDir, 'js', 'config.js'));
+await mkdir(join(outputDir, 'js', 'vendor'), {recursive:true});
+await copyFile(join(sourceDir, 'js', 'vendor', 'supabase-umd.js'), join(outputDir, 'js', 'vendor', 'supabase-umd.js'));
 console.log('Portal Club independiente listo en club-standalone/dist.');

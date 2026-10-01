@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-async function setup({ pending = false, reduced = false } = {}) {
+async function setup({ pending = false, reduced = false, wholeScreen = false } = {}) {
   const events = () => ({
     handlers: {},
     addEventListener(name, handler) { this.handlers[name] = handler; },
@@ -31,15 +31,16 @@ async function setup({ pending = false, reduced = false } = {}) {
     hasPointerCapture(id) { return this.captures.has(id); },
     releasePointerCapture(id) { this.captures.delete(id); },
   };
-  global.window = { ...events(), scrollY: 0, scrollTo({ top }) { this.scrollY = top; } };
+  global.window = { ...events(), innerWidth:1000, scrollY: 0, scrollTo({ top }) { this.scrollY = top; } };
   global.document = events();
   global.matchMedia = () => ({ matches: reduced });
   const source = fs.readFileSync('club/navigation.js', 'utf8');
   const { createClubNavigation } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
   const loaded = [];
   let allowed = true;
-  const navigation = createClubNavigation({ viewport, buttons, panels, load: view => { loaded.push(view); return Promise.resolve(); }, canSwipe: () => allowed });
-  const pointer = (name, x, y = 0, interactive = false) => viewport.handlers[name]({
+  const gestureTarget=wholeScreen?document:viewport;
+  const navigation = createClubNavigation({ viewport, gestureTarget, buttons, panels, load: view => { loaded.push(view); return Promise.resolve(); }, canSwipe: () => allowed });
+  const pointer = (name, x, y = 0, interactive = false) => gestureTarget.handlers[name]({
     isPrimary: true, button: 0, pointerId: 1, clientX: x, clientY: y,
     target: { closest: () => interactive ? {} : null }, preventDefault() {},
   });
@@ -50,6 +51,60 @@ async function setup({ pending = false, reduced = false } = {}) {
   const active = () => panels.find(panel => !panel.hidden).dataset.viewPanel;
   return { navigation, viewport, panels, buttons, loaded, pointer, drag, active, block: () => { allowed = false; } };
 }
+
+test('perder la captura implicita de una tarjeta tactil no cancela la captura del contenedor',async()=>{
+  const f=await setup();
+  f.pointer('pointerdown',500); f.pointer('pointermove',350);
+  f.viewport.handlers.lostpointercapture({pointerId:1,target:{}});
+  f.pointer('pointermove',100); f.pointer('pointerup',100);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.active(),'premios');
+});
+
+test('ocultar la barra de Android cambia la altura pero mantiene el gesto',async()=>{
+  const f=await setup();
+  f.pointer('pointerdown',500); f.pointer('pointermove',350);
+  window.handlers.resize();
+  f.pointer('pointermove',100); f.pointer('pointerup',100);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.active(),'premios');
+});
+
+test('la barra de scroll cambia el ancho del contenido sin cancelar el gesto',async()=>{
+  const f=await setup();
+  f.pointer('pointerdown',500); f.pointer('pointermove',350);
+  f.viewport.clientWidth=985;window.handlers.resize();
+  f.pointer('pointermove',100);f.pointer('pointerup',100);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.active(),'premios');
+});
+
+test('el deslizamiento puede empezar en el encabezado o fuera de las tarjetas',async()=>{
+  const f=await setup({wholeScreen:true});
+  await f.drag(-400);
+  assert.equal(f.active(),'premios');
+  let prevented=false;
+  document.handlers.click({preventDefault(){prevented=true;},stopPropagation(){}});
+  assert.equal(prevented,true,'un arrastre sobre un boton del encabezado no ejecuta su clic');
+});
+
+test('perder la captura del contenedor si cancela el gesto',async()=>{
+  const f=await setup();
+  f.pointer('pointerdown',500);f.pointer('pointermove',100);
+  f.viewport.handlers.lostpointercapture({pointerId:1,target:f.viewport});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.active(),'inicio');
+});
+
+test('un cambio de ancho cancela el gesto y deja las tarjetas consistentes',async()=>{
+  const f=await setup();
+  f.pointer('pointerdown',500); f.pointer('pointermove',100);
+  f.viewport.clientWidth=500;window.innerWidth=500; window.handlers.resize();
+  f.pointer('pointerup',100);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.active(),'inicio');
+  assert.equal(f.panels[0].style.transform,'');
+});
 
 test('un arrastre muestra el contenido real de la vecina y prepara sus datos', async () => {
   const f = await setup();
