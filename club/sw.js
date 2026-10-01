@@ -1,6 +1,6 @@
-const CACHE = 'club-eruditos-v20';
+const CACHE = 'club-eruditos-v24';
 const SHELL = [
-  '/club/index.html', '/club/styles.css', '/club/app.js', '/js/config.js',
+  '/club/index.html', '/club/styles.css', '/club/app.js', '/club/navigation.js', '/js/config.js',
   '/club/splash-eruditos.png', '/club/launchericon-192x192.png', '/club/manifest.json',
 ];
 

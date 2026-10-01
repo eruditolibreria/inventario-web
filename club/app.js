@@ -1,4 +1,5 @@
 import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from '../js/config.js';
+import { createClubNavigation } from './navigation.js';
 
 const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
@@ -180,12 +181,20 @@ function prefetchTabs() {
     if(epoch!==viewEpoch || document.hidden)return;
     const tabs=[['PREMIOS',{},60000]];
     if(!clubPendiente)tabs.push(['MOVIMIENTOS',{PAGINA:1,LIMITE:20},30000],['CANJES',{PAGINA:1,LIMITE:20},15000]);
-    void Promise.allSettled(tabs.map(([accion,body,ttl])=>requestRead(accion,body,ttl)));
+    void Promise.allSettled(tabs.map(([accion,body,ttl])=>requestRead(accion,body,ttl).then(data=>{
+      if(epoch!==viewEpoch || !data.ok)return;
+      if(accion==='PREMIOS')renderPremios(data);
+      if(accion==='MOVIMIENTOS')renderMovimientos(data,1);
+      if(accion==='CANJES')renderCanjes(data,1);
+    })));
   };
   if('requestIdleCallback'in window)requestIdleCallback(start,{timeout:1800});else setTimeout(start,900);
 }
 
 function showAuth() {
+  navigation.reset();
+  ['premiosGrid','movimientosLista','canjesLista'].forEach(id=>$(id).replaceChildren());
+  document.querySelectorAll('[data-card-loading]').forEach(state=>{state.hidden=false;state.textContent='Cargando…';});
   cerrarImagen();
   cerrarCamino();
   document.querySelectorAll('form').forEach(form => form.reset());
@@ -209,10 +218,11 @@ function showAuth() {
   $('authView').hidden=false; $('appView').hidden=true;
 }
 function showApp() {
+  navigation.reset();
   $('authView').hidden=true; $('appView').hidden=false;
   document.querySelector('nav').hidden=false;
   $('appView').setAttribute('aria-busy','true');
-  $('saludo').textContent=`Hola, ${session?.cliente?.nombre || 'Erudito'}`;
+  renderCabecera(session?.cliente);
   setStatus('appStatus','Cargando tu Club…');
   ocultarSplash();
   void cargarInicio().then(data=>{if(data?.ok)prefetchTabs();}).finally(()=>$('appView').setAttribute('aria-busy','false'));
@@ -311,6 +321,7 @@ $('usernameForm').addEventListener('submit', async e => {
   if(!data.ok){setStatus('usernameStatus',mensajeError(data.error),true);return;}
   resetReadCache();
   saveSession({...session,cliente:{...session.cliente,usuario:data.usuario}});
+  renderCabecera(session.cliente,clubPendiente?null:clubNivel,clubPendiente);
   $('usernameDialog').close();
 });
 
@@ -322,11 +333,32 @@ $('activacionForm').addEventListener('submit', async e => {
   $('activacionToken').value='';resetReadCache();await cargarInicio();setStatus('appStatus','Tu Club está activo. Ya puedes usar tus puntos.');
 });
 
-document.querySelectorAll('nav [data-view]').forEach(btn=>btn.addEventListener('click',async()=>{
-  document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b===btn));
-  document.querySelectorAll('[data-view-panel]').forEach(p=>{p.hidden=p.dataset.viewPanel!==btn.dataset.view;});
-  if(btn.dataset.view==='inicio')await cargarInicio(); if(btn.dataset.view==='premios')await cargarPremios(); if(btn.dataset.view==='movimientos')await cargarMovimientos(); if(btn.dataset.view==='canjes')await cargarCanjes();
-}));
+const navigation=createClubNavigation({
+  viewport:$('clubPages'),
+  buttons:[...document.querySelectorAll('nav [data-view]')],
+  panels:[...document.querySelectorAll('[data-view-panel]')],
+  load:loadVista,
+  canSwipe:()=>Boolean(session?.token&&!$('appView').hidden&&!document.querySelector('dialog[open]')),
+});
+async function loadVista(view) {
+  const epoch=viewEpoch;
+  const loaders={inicio:cargarInicio,premios:cargarPremios,movimientos:cargarMovimientos,canjes:cargarCanjes};
+  const panel=document.querySelector(`[data-view-panel="${view}"]`);
+  const state=panel.querySelector('[data-card-loading]');
+  const data=await loaders[view]();
+  if(epoch!==viewEpoch)return data;
+  if(state){state.hidden=Boolean(data?.ok);if(!data?.ok)state.textContent='No se pudo cargar esta pantalla. Toca su pestaña para reintentar.';}
+  return data;
+}
+function renderCabecera(cliente,nivel=null,pendiente=false) {
+  $('saludo').textContent=`Hola, ${cliente?.nombre||'Erudito'}`;
+  $('clienteUsuario').textContent=cliente?.usuario?`@${cliente.usuario}`:'';
+  $('clienteUsuario').hidden=!cliente?.usuario;
+  const label=$('clienteNivel');
+  label.hidden=!pendiente&&!nivel;
+  label.dataset.level=pendiente?'pending':String(nivel||1);
+  label.textContent=pendiente?'Pendiente de activación':NIVELES[(nivel||1)-1];
+}
 
 function movementItem(m) {
   const delta=Number(m.puntos_disponibles_delta||0)+Number(m.puntos_pendientes_delta||0);
@@ -334,7 +366,38 @@ function movementItem(m) {
 }
 
 function beneficioNivel(nivel) {
-  return nivel===10?'1 punto extra por cada Bs 25 de futuras compras.':nivel>=7?'1 punto extra por cada Bs 50 de futuras compras.':nivel>=4?'1 punto extra por cada Bs 100 de futuras compras.':'Cada ascenso otorga 3 puntos; desde el nivel 4 también ganarás puntos extra en tus compras.';
+  return nivel>=3?`1 punto extra por cada Bs ${130-nivel*10} de futuras compras.`:'Los puntos extra por compra comienzan en el nivel 3.';
+}
+
+function retoCard(reto) {
+  const avance=Math.max(0,Number(reto.avance)||0);
+  const meta=Number(reto.meta);
+  const premiado=Number(reto.puntosOtorgados)>0;
+  const estado=premiado?'Premiado':reto.calificaEn?'Pendiente':'En progreso';
+  const frecuencia=reto.periodicidad==='week'?'semanalmente':'mensualmente';
+  const descripcion={
+    SEMANAL:'Compra al menos Bs 50 en una semana y gana 1 punto tras 2 días.',
+    MENSUAL:'Compra al menos Bs 250 en un mes y gana 5 puntos tras 7 días.',
+    MAYORISTA:'Compra al menos 10 unidades de un mismo producto con precio neto por unidad mayor a Bs 5 en una sola compra y gana 5 puntos tras 7 días.',
+    AMIGO_FIEL:'Consigue al menos 10 amigos nuevos referidos, activos y verificados en un mes y gana 10 puntos tras 7 días.',
+  }[reto.codigo];
+  const numero=value=>Number(value).toLocaleString('es-BO',{maximumFractionDigits:2});
+  const dia=value=>new Intl.DateTimeFormat('es-BO',{dateStyle:'medium',timeZone:'America/La_Paz'}).format(new Date(`${value}T12:00:00Z`));
+  const momento=value=>new Intl.DateTimeFormat('es-BO',{dateStyle:'medium',timeStyle:'short',hourCycle:'h23',timeZone:'America/La_Paz'}).format(new Date(value));
+  const progreso=reto.unidad==='Bs'?`Bs ${numero(avance)} de Bs ${numero(meta)}`:`${numero(avance)} de ${numero(meta)} ${reto.unidad}`;
+  const premio=premiado?`Ganaste ${reto.puntosOtorgados} punto${Number(reto.puntosOtorgados)===1?'':'s'}.`:reto.liberaEn?`Se libera el ${momento(reto.liberaEn)}.`:'';
+  const anteriores=(reto.pendientes||[]).map(p=>`<small>Periodo anterior: +${esc(p.puntos)} punto${Number(p.puntos)===1?' pendiente':'s pendientes'} hasta ${esc(momento(p.liberaEn))}.</small>`).join('');
+  return `<article class="club-progress-card challenge-card" data-reto="${esc(reto.codigo)}"><span class="eyebrow">${esc(reto.etiqueta)}</span><h2>${esc(reto.nombre)}</h2><p>${esc(descripcion)}</p><small>Reto disponible ${frecuencia} · una recompensa por periodo.</small>${reto.inicioPeriodo&&reto.finPeriodo?`<small>${dia(reto.inicioPeriodo)} – ${dia(reto.finPeriodo)}</small>`:''}<progress max="${meta}" value="${Math.min(meta,avance)}" aria-label="Avance de ${esc(reto.nombre)}"></progress><div class="challenge-status"><strong>${esc(progreso)}</strong><span data-estado="${estado}">${estado}</span></div>${premio?`<small>${esc(premio)}</small>`:''}${anteriores}</article>`;
+}
+
+function renderRetos(retos=[]) {
+  const base=[
+    {codigo:'SEMANAL',nombre:'Erudito constante',etiqueta:'RETO SEMANAL',meta:50,unidad:'Bs',periodicidad:'week'},
+    {codigo:'MENSUAL',nombre:'Erudito diligente',etiqueta:'RETO MENSUAL',meta:250,unidad:'Bs',periodicidad:'month'},
+    {codigo:'MAYORISTA',nombre:'Erudito Comedido',etiqueta:'RETO MAYORISTA',meta:10,unidad:'unidades',periodicidad:'week'},
+    {codigo:'AMIGO_FIEL',nombre:'Erudito Amiguero',etiqueta:'RETO AMIGO FIEL',meta:10,unidad:'amigos',periodicidad:'month'},
+  ];
+  $('retosClub').innerHTML=base.map(reto=>retoCard({...reto,...retos.find(r=>r.codigo===reto.codigo)})).join('');
 }
 
 function renderProgreso(progreso) {
@@ -345,6 +408,7 @@ function renderProgreso(progreso) {
   const tramo=nivel===10?200:Math.max(0,Math.min(200,gasto-desde));
   const porcentaje=Math.round(tramo/2);
   clubNivel=nivel;
+  renderCabecera(session?.cliente,nivel);
   clubGasto365=gasto;
   $('clubProgreso').hidden=false;
   $('nivelNombre').textContent=`${nivel}. ${NIVELES[nivel-1]}`;
@@ -360,7 +424,7 @@ function renderProgreso(progreso) {
   $('nivelDesde').textContent=`Bs ${desde.toLocaleString('es-BO')}`;
   $('nivelHasta').textContent=nivel===10?'Nivel máximo':`Bs ${hasta.toLocaleString('es-BO')}`;
   $('nivelAvance').textContent=nivel===10?`Nivel máximo alcanzado · Bs ${gasto.toLocaleString('es-BO')} en 365 días`:`Bs ${tramo.toLocaleString('es-BO')} de Bs 200 en este tramo · Bs ${gasto.toLocaleString('es-BO')} acumulados`;
-  $('nivelFaltante').textContent=nivel===10?'Ya recorriste los 10 niveles.':`Faltan Bs ${Math.max(0,hasta-gasto).toLocaleString('es-BO')} para ${NIVELES[nivel]} · próximo ascenso: +3 puntos tras 7 días.`;
+  $('nivelFaltante').textContent=nivel===10?'Ya recorriste los 10 niveles.':`Faltan Bs ${Math.max(0,hasta-gasto).toLocaleString('es-BO')} para ${NIVELES[nivel]} · próximo ascenso: +${nivel+1} puntos tras 7 días.`;
   $('nivelGracia').hidden=!progreso?.graciaHasta;
   if(progreso?.graciaHasta)$('nivelGracia').textContent=`Período de gracia hasta ${fecha(progreso.graciaHasta)}.`;
   const codigo=String(progreso?.codigoReferido||'');
@@ -369,8 +433,7 @@ function renderProgreso(progreso) {
   $('copiarReferido').disabled=!enlaceReferido;
   $('compartirReferido').disabled=!enlaceReferido;
   $('referidosResumen').textContent=`${Number(progreso?.referidos||0)} invitación(es) · ${Number(progreso?.referidosPremiados||0)} premiada(s)`;
-  $('retoBarra').value=Math.min(2,Number(progreso?.retoMeses||0));
-  $('retoAvance').textContent=Number(progreso?.retoPuntos||0)>0?'Reto completado: +3 puntos.':`${Number(progreso?.retoMeses||0)} de 2 meses con compra válida.`;
+  renderRetos(progreso?.retos);
   $('insigniasClub').innerHTML=[progreso?.insigniaPrimerCanje?'<span>🏅 Primer canje</span>':'',progreso?.insigniaAmigoLector?'<span>📚 Amigo lector</span>':''].filter(Boolean).join('');
 }
 
@@ -413,7 +476,7 @@ function abrirCamino() {
   $('caminoBarra').setAttribute('aria-valuetext',`Bs ${avance.toLocaleString('es-BO')} de Bs 1.800 de gasto neto`);
   $('caminoBarraRelleno').style.height='0px';
   $('caminoHitos').innerHTML=NIVELES.map((nombre,i)=>`<button type="button" class="path-milestone ${i+1===clubNivel?'current':i+1<clubNivel?'reached':''}" aria-label="Ver nivel ${i+1}: ${esc(nombre)}" aria-current="${i+1===clubNivel?'step':'false'}" data-nivel="${i+1}">${i+1}</button>`).join('');
-  $('caminoSiguiente').textContent=clubNivel===10?'Llegaste a Erudito Supremo.':`Faltan Bs ${Math.max(0,clubNivel*200-clubGasto365).toLocaleString('es-BO')} para ${NIVELES[clubNivel]}. El ascenso otorga 3 puntos tras 7 días.`;
+  $('caminoSiguiente').textContent=clubNivel===10?'Llegaste a Erudito Supremo.':`Faltan Bs ${Math.max(0,clubNivel*200-clubGasto365).toLocaleString('es-BO')} para ${NIVELES[clubNivel]}. El ascenso otorga ${clubNivel+1} puntos tras 7 días.`;
   $('caminoNiveles').innerHTML=NIVELES.map((nombre,i)=>{
     const nivel=i+1;
     const umbral=i*200;
@@ -425,8 +488,8 @@ function abrirCamino() {
     const altura=fin-inicio;
     const posicionY=(inicio/(1983-altura)*100).toFixed(2);
     const proporcion=(793/2/altura).toFixed(3);
-    const beneficio=nivel<=3?'Los puntos extra por compra comienzan en el nivel 4.':beneficioNivel(nivel);
-    return `<li class="path-level ${nivel<clubNivel?'reached':nivel===clubNivel?'current':'future'}" data-nivel="${nivel}"><button type="button" aria-expanded="false" aria-controls="detalleNivel${nivel}" aria-label="Ver nivel ${nivel}: ${esc(nombre)}"><span class="path-art" style="--art-x:${i%2*100}%;--art-y:${posicionY}%;--art-ratio:${proporcion}" aria-hidden="true"></span><span class="path-card-copy"><span class="path-status">${estado}</span></span></button><div id="detalleNivel${nivel}" class="path-detail" hidden><p><strong>${nivel}. ${esc(nombre)}</strong> · desde Bs ${umbral.toLocaleString('es-BO')} de gasto neto pagado en 365 días.</p><p>${esc(beneficio)}</p><p>Cada nuevo ascenso da 3 puntos tras 7 días, una vez por nivel.</p><p>${avance}</p></div></li>`;
+    const beneficio=beneficioNivel(nivel);
+    return `<li class="path-level ${nivel<clubNivel?'reached':nivel===clubNivel?'current':'future'}" data-nivel="${nivel}"><button type="button" aria-expanded="false" aria-controls="detalleNivel${nivel}" aria-label="Ver nivel ${nivel}: ${esc(nombre)}"><span class="path-art" style="--art-x:${i%2*100}%;--art-y:${posicionY}%;--art-ratio:${proporcion}" aria-hidden="true"></span><span class="path-card-copy"><span class="path-status">${estado}</span></span></button><div id="detalleNivel${nivel}" class="path-detail" hidden><p><strong>${nivel}. ${esc(nombre)}</strong> · desde Bs ${umbral.toLocaleString('es-BO')} de gasto neto pagado en 365 días.</p><p>${esc(beneficio)}</p><p>${nivel===1?'Comienza tu camino con los puntos de bienvenida.':`Este ascenso da ${nivel} puntos tras 7 días, una vez por nivel.`}</p><p>${avance}</p></div></li>`;
   }).join('');
   $('caminoNiveles').querySelectorAll('.path-level button').forEach(button=>button.addEventListener('click',()=>mostrarNivelCamino(Number(button.parentElement.dataset.nivel))));
   $('caminoHitos').querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>mostrarNivelCamino(Number(button.dataset.nivel))));
@@ -509,10 +572,12 @@ async function cargarInicio(){
 }
 function renderInicio(data){
   if (!session) return;
-  session={...session,cliente:data.cliente}; saveSession(session); $('saludo').textContent=`Hola, ${data.cliente?.nombre||'Erudito'}`;
+  session={...session,cliente:data.cliente}; saveSession(session);
   if(data.cliente?.usuario === null && !$('usernameDialog').open) $('usernameDialog').showModal();
   const pendiente=data.cuenta?.estado==='PENDIENTE_ACTIVACION';
+  const cambioActivacion=clubPendiente!==pendiente;
   clubPendiente=pendiente;
+  renderCabecera(data.cliente,pendiente?null:Number(data.progreso?.nivel||1),pendiente);
   $('puntosBienvenidaReferido').textContent=Number(data.puntosBienvenida||0).toLocaleString('es-BO');
   $('clubProgreso').hidden=pendiente||!data.progreso;
   if(!pendiente&&data.progreso)renderProgreso(data.progreso);
@@ -522,7 +587,7 @@ function renderInicio(data){
   document.querySelector('nav').hidden=false;
   $('activarCuentaBtn').hidden=!pendiente;
   document.querySelector('.hero').hidden=pendiente;
-  if(pendiente){document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='inicio'));document.querySelectorAll('[data-view-panel]').forEach(p=>{p.hidden=p.dataset.viewPanel!=='inicio';});}
+  if(cambioActivacion)navigation.refresh();
   $('saldoDisponible').textContent=Number(data.cuenta?.saldo_disponible||0).toLocaleString('es-BO'); $('saldoPendiente').textContent=Number(data.cuenta?.saldo_pendiente||0).toLocaleString('es-BO');
   const vence=data.proximoVencimiento; $('vencimiento').hidden=!vence; if(vence)$('vencimiento').textContent=`${Number(vence.puntos_disponibles).toLocaleString('es-BO')} puntos vencen el ${fecha(vence.vence_en)}.`;
   $('terminosClub').hidden=!data.terminos; $('terminosClubTexto').textContent=data.terminos||'';
@@ -537,6 +602,7 @@ function renderPremios(data){
   $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);const nivelMinimo=Number(p.nivel_minimo||1);const sinNivel=!clubPendiente&&clubNivel<nivelMinimo;const foto=imagen?`<button type="button" class="reward-image" data-image="${esc(imagen)}" data-title="${esc(p.nombre)}" aria-label="Ampliar imagen de ${esc(p.nombre)}"><img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.parentElement.disabled=true;this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span></button>`:'<div class="reward-image"><span>E</span></div>';return `<article class="reward">${foto}<span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p>${nivelMinimo>1?`<small>Desde ${esc(NIVELES[nivelMinimo-1]||NIVELES[0])}</small>`:''}<div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||sinNivel||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinNivel?'Nivel insuficiente':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
   $('premiosGrid').querySelectorAll('[data-image]').forEach(btn=>btn.addEventListener('click',()=>abrirImagen(btn.dataset.image,btn.dataset.title)));
   $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>clubPendiente?mostrarActivacion():abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem)))));
+  document.querySelector('[data-view-panel="premios"] [data-card-loading]').hidden=true;
 }
 
 function abrirImagen(src, titulo) {
@@ -556,8 +622,7 @@ $('imageDialog').addEventListener('cancel',e=>{e.preventDefault();cerrarImagen()
 window.addEventListener('popstate',()=>{if($('imageDialog').open)$('imageDialog').close();});
 
 function mostrarActivacion(){
-  document.querySelectorAll('nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='inicio'));
-  document.querySelectorAll('[data-view-panel]').forEach(p=>{p.hidden=p.dataset.viewPanel!=='inicio';});
+  navigation.show('inicio',{animate:false});
   setStatus('appStatus','Activa tu cuenta con el código de una compra de Bs 5,00 o más para canjear.');
   $('activacionPanel').scrollIntoView({behavior:'smooth',block:'start'});
   $('activacionToken').focus({preventScroll:true});
@@ -575,6 +640,7 @@ function renderMovimientos(data,pagina){
   if(pagina===1)$('movimientosLista').innerHTML=html||'<div class="list-item">Sin movimientos.</div>';
   else $('movimientosLista').insertAdjacentHTML('beforeend',html);
   movimientosPagina=pagina;
+  document.querySelector('[data-view-panel="movimientos"] [data-card-loading]').hidden=true;
   $('movimientosMas').hidden=pagina>=Number(data.paginas||1);
 }
 $('movimientosMas').addEventListener('click',async()=>{
@@ -599,6 +665,7 @@ function renderCanjes(data,pagina){
   if(pagina===1)$('canjesLista').innerHTML=html||'<div class="list-item">Aún no realizaste canjes.</div>';
   else $('canjesLista').insertAdjacentHTML('beforeend',html);
   canjesPagina=pagina;
+  document.querySelector('[data-view-panel="canjes"] [data-card-loading]').hidden=true;
   $('canjesMas').hidden=!data.mas;
 }
 $('canjesLista').addEventListener('click',e=>{

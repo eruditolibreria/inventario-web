@@ -10,14 +10,16 @@ test('el registro permite un código de referido sin cambiar la bienvenida', () 
   assert.match(leer('club/index.html'), /Ganas 5 puntos/);
 });
 
-test('el portal muestra diez niveles, reto trimestral y enlace compartible', () => {
+test('el portal muestra diez niveles, cuatro retos y enlace compartible', () => {
   const app = leer('club/app.js');
   const html = leer('club/index.html');
   assert.match(app, /const NIVELES = \[/);
   assert.match(app, /'Erudito Supremo'/);
   assert.match(app, /referidosPremiados/);
   assert.match(html, /id="nivelBarra"/);
-  assert.match(html, /id="retoBarra"/);
+  assert.match(html, /id="retosClub"/);
+  for(const codigo of ['SEMANAL','MENSUAL','MAYORISTA','AMIGO_FIEL']) assert.ok(app.includes(`codigo:'${codigo}'`));
+  assert.doesNotMatch(html, /RETO DEL TRIMESTRE/);
   assert.match(html, /id="copiarReferido"/);
 });
 
@@ -66,7 +68,7 @@ test('el avance del nivel usa el gasto neto y muestra porcentaje, meta y puntos 
   assert.match(html, /id="nivelFaltante"/);
   assert.match(html, /id="caminoHitos"/);
   assert.match(app, /gasto-desde/);
-  assert.match(app, /próximo ascenso: \+3 puntos/);
+  assert.ok(app.includes('próximo ascenso: +${nivel+1} puntos'));
   assert.match(app, /FILAS_CAMINO/);
 });
 
