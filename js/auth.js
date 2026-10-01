@@ -219,6 +219,7 @@ export async function cerrarSesion() {
     document.getElementById("loginScreen").classList.remove("oculto");
     const cajaBadge = document.getElementById("cajaBadge");
     if (cajaBadge) cajaBadge.style.display = "none";
+    window.dispatchEvent(new Event('eruditos:logout'));
 }
 
 

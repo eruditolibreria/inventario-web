@@ -245,6 +245,18 @@ let exitToast = null;
 function setupBackHandler() {
     window.addEventListener('popstate', function(e) {
         e.preventDefault();
+        const dialogo = document.querySelector('dialog[open]');
+        if (dialogo) {
+            dialogo.close();
+            history.pushState(null, null, location.href);
+            return;
+        }
+        const resumenCaja = document.getElementById('mobileCashInfo');
+        if (resumenCaja?.matches(':popover-open')) {
+            resumenCaja.hidePopover();
+            history.pushState(null, null, location.href);
+            return;
+        }
         // Si hay un overlay abierto, cerrarlo en vez de salir
         var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "laminaEditOverlay", "laminaDetalleOverlay", "cajaDetalleOverlay", "imagenZoomOverlay", "escanerModal"];
         for (var i = 0; i < overlays.length; i++) {
@@ -615,6 +627,7 @@ async function inicializarApp() {
     }
     togglePagoServicio();
 
+    iniciarIntervalos(verificarEstadoCaja);
     if (sesionValidada) {
         const rol = store.sessionRol || "VENDEDOR";
         document.getElementById("badgeUser").textContent = store.sessionUser;
@@ -645,7 +658,6 @@ async function inicializarApp() {
         restaurarCarritoGuardado();
 
         // Intervalo de caja + suscripcion realtime al inventario
-        iniciarIntervalos(verificarEstadoCaja);
         initRealtime();
     }
 

@@ -22,11 +22,103 @@ import { manejarRespuesta } from '../ui.js';
 
 var _cajasCache = [];
 var _sucursalesCajaCache = [];
+let _consultaCaja = false;
+let _recargarCaja = false;
+let _versionCaja = 0;
+let _cajaDetalleId = null;
+let _cajaResumenId = null;
+const _grupoCaja = document.getElementById('mobileCashIndicators') || document.getElementById('desktopCashIndicators');
+const _resumenCaja = document.getElementById('mobileCashInfo') || document.getElementById('desktopCashInfo');
+const _nombreCaja = document.getElementById('mobileCashName') || document.getElementById('desktopCashName');
+const _montoCaja = document.getElementById('mobileCashAmount') || document.getElementById('desktopCashAmount');
+const _desktopCaja = _grupoCaja?.id === 'desktopCashIndicators';
+if (_desktopCaja) {
+    const estilos = document.createElement('style');
+    estilos.textContent = '#desktopCashIndicators{display:flex;align-items:center;gap:4px;min-width:0;max-width:clamp(64px,calc(100vw - 900px),480px);overflow-x:auto;scrollbar-width:thin}#desktopCashIndicators[hidden]{display:none}.desktop-cash-button{display:flex;align-items:center;gap:6px;flex:none;min-height:36px;max-width:180px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:var(--text);font:600 12px var(--font);cursor:pointer}.desktop-cash-button span{flex:none;font-size:12px;animation:desktop-cash-pulse 1.8s ease-in-out infinite}.desktop-cash-button b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.desktop-cash-button:hover{background:var(--surface2)}.desktop-cash-button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}@keyframes desktop-cash-pulse{50%{opacity:.45;transform:scale(.9)}}@media(prefers-reduced-motion:reduce){.desktop-cash-button span{animation:none}}';
+    document.head.appendChild(estilos);
+}
+
+function actualizarResumenCaja(caja) {
+    const nombre = nombreSucursalCaja(caja.sucursal);
+    const linea = _nombreCaja;
+    linea.textContent = nombre;
+    linea.title = nombre;
+    _montoCaja.textContent = formatearBs(caja.saldoActual);
+}
+
+function mostrarResumenCaja(caja, boton) {
+    const panel = _resumenCaja;
+    _cajaResumenId = String(caja.cajaId || caja.sucursal);
+    actualizarResumenCaja(caja);
+    const posicion = boton.getBoundingClientRect();
+    panel.style.setProperty('--cash-info-top', (posicion.bottom + 8) + 'px');
+    if (_desktopCaja) panel.style.setProperty('--cash-info-left', Math.max(12, Math.min(posicion.left, innerWidth - 312)) + 'px');
+    _grupoCaja.querySelectorAll('button').forEach(item => item.setAttribute('aria-expanded', String(item === boton)));
+    panel.showPopover();
+    boton.setAttribute('aria-expanded', 'true');
+}
+
+_resumenCaja?.addEventListener('toggle', event => {
+    if (event.newState === 'closed') {
+        _cajaResumenId = null;
+        _grupoCaja.querySelectorAll('button').forEach(boton => boton.setAttribute('aria-expanded', 'false'));
+    }
+});
 
 function nombreSucursalCaja(codigo) {
-    var sucursal = _sucursalesCajaCache.find(function(s) { return s.nombre === codigo; });
+    var sucursal = _sucursalesCajaCache.find(function(s) { return s.nombre === codigo || s.id === codigo; });
     return sucursal ? (sucursal.nombre_visible || sucursal.nombre) : codigo;
 }
+
+function renderIndicadoresCaja() {
+    const grupo = _grupoCaja;
+    if (!grupo) return;
+    const anteriores = new Map([...grupo.children].map(boton => [boton.dataset.cajaId, boton]));
+    const foco = document.activeElement?.dataset.cajaId;
+    const desplazamiento = grupo.scrollLeft;
+    const botones = _cajasCache.map(caja => {
+        const id = String(caja.cajaId || caja.sucursal);
+        let boton = anteriores.get(id);
+        if (!boton) {
+            boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = _desktopCaja ? 'desktop-cash-button' : 'mobile-cash-button';
+            boton.dataset.cajaId = id;
+            boton.setAttribute('aria-controls', _resumenCaja.id);
+            boton.innerHTML = '<span aria-hidden="true">🟢</span>' + (_desktopCaja ? '<b></b>' : '');
+            boton.addEventListener('click', () => {
+                const actual = _cajasCache.find(item => String(item.cajaId || item.sucursal) === id);
+                if (!actual) return;
+                mostrarResumenCaja(actual, boton);
+                void verificarEstadoCaja();
+            });
+        }
+        const nombre = nombreSucursalCaja(caja.sucursal);
+        boton.setAttribute('aria-label', 'Ver caja ' + id + ' de ' + nombre);
+        boton.title = nombre + ' · ' + formatearBs(caja.saldoActual);
+        if (_desktopCaja) boton.querySelector('b').textContent = nombre;
+        boton.setAttribute('aria-expanded', String(id === _cajaResumenId && _resumenCaja.matches(':popover-open')));
+        return boton;
+    });
+    grupo.replaceChildren(...botones);
+    grupo.hidden = botones.length === 0;
+    grupo.scrollLeft = desplazamiento;
+    if (foco) botones.find(boton => boton.dataset.cajaId === foco)?.focus({ preventScroll: true });
+}
+
+window.addEventListener('focus', () => { if (!document.hidden) void verificarEstadoCaja(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) void verificarEstadoCaja(); });
+window.addEventListener('eruditos:logout', () => {
+    _versionCaja++;
+    _consultaCaja = false;
+    _recargarCaja = false;
+    _cajasCache = [];
+    _sucursalesCajaCache = [];
+    renderIndicadoresCaja();
+    _resumenCaja?.hidePopover();
+    _cajaResumenId = null;
+    cerrarDetalleCaja();
+});
 
 function renderCardsCaja(sucursales) {
     var contenedor = document.getElementById("cajaCards");
@@ -57,12 +149,16 @@ function renderCardsCaja(sucursales) {
             export async function verificarEstadoCaja() {
                 if (!store.sessionToken)
                     return;
+                if (_consultaCaja) { _recargarCaja = true; return; }
+                _consultaCaja = true;
+                const version = _versionCaja, usuario = store.sessionUser;
                 try {
                     const respuestas = await Promise.all([
                         api({ ACCION: "ESTADO_CAJA", TOKEN: store.sessionToken }),
                         api({ ACCION: "LISTAR_SUCURSALES", TOKEN: store.sessionToken })
                     ]);
                     const data = respuestas[0], sucursalesData = respuestas[1];
+                    if (version !== _versionCaja || !store.sessionToken || usuario !== store.sessionUser) return;
                     if (!data.ok || !sucursalesData.ok) return;
                     _sucursalesCajaCache = sucursalesData.datos || [];
                     renderCardsCaja(_sucursalesCajaCache);
@@ -85,7 +181,14 @@ function renderCardsCaja(sucursales) {
                     );
                     const ca = data.cajas || [];
                     _cajasCache = ca;
-                    let hay = false;
+                    renderIndicadoresCaja();
+                    const resumen = _resumenCaja;
+                    if (_cajaResumenId !== null && resumen?.matches(':popover-open')) {
+                        const caja = ca.find(item => String(item.cajaId || item.sucursal) === _cajaResumenId);
+                        if (caja) actualizarResumenCaja(caja);
+                        else resumen.hidePopover();
+                    }
+                    let hay = ca.length > 0;
                     ca.forEach(c => {
                         const s = (c.sucursal || "").toUpperCase()
                           , x = t[s];
@@ -103,8 +206,22 @@ function renderCardsCaja(sucursales) {
                         x.card.style.borderColor = negativo ? "var(--red)" : "var(--accent)";
                     }
                     );
-                    cb.style.display = hay ? "inline-block" : "none";
-                } catch (e) {}
+                    if (cb) cb.style.display = hay ? "inline-block" : "none";
+                    if (document.getElementById('cajaDetalleOverlay')?.style.display !== 'flex') _cajaDetalleId = null;
+                    if (_cajaDetalleId !== null) {
+                        const seleccionada = ca.find(caja => String(caja.cajaId || caja.sucursal) === _cajaDetalleId);
+                        if (seleccionada) abrirDetalleCaja(seleccionada.sucursal, seleccionada.cajaId);
+                        else {
+                            cerrarDetalleCaja();
+                            mostrarMsg('La caja seleccionada ya está cerrada', 'ok');
+                        }
+                    }
+                } catch (e) {} finally {
+                    if (version === _versionCaja) {
+                        _consultaCaja = false;
+                        if (_recargarCaja) { _recargarCaja = false; void verificarEstadoCaja(); }
+                    }
+                }
             }
 
 // Abre una caja con saldo inicial para una sucursal
@@ -210,10 +327,12 @@ function renderCardsCaja(sucursales) {
             }
 
 // ══ Detalle de caja (overlay al hacer clic en la card) ══
-export function abrirDetalleCaja(sucursal) {
-    var c = _cajasCache.find(function(x) { return x.sucursal === sucursal; });
+export function abrirDetalleCaja(sucursal, cajaId) {
+    var c = _cajasCache.find(function(x) { return cajaId !== undefined ? String(x.cajaId) === String(cajaId) : x.sucursal === sucursal; });
     if (!c) return;
-    document.getElementById("cajaDetalleTitulo").textContent = nombreSucursalCaja(c.sucursal || "");
+    _cajaDetalleId = String(c.cajaId || c.sucursal);
+    const varias = _cajasCache.filter(caja => caja.sucursal === c.sucursal).length > 1;
+    document.getElementById("cajaDetalleTitulo").textContent = nombreSucursalCaja(c.sucursal || "") + (varias ? ' · Caja ' + c.cajaId : '');
     var estadoEl = document.getElementById("cajaDetalleEstado");
     estadoEl.textContent = "ABIERTA";
     estadoEl.className = "rol-pill";
@@ -253,7 +372,9 @@ export function abrirDetalleCaja(sucursal) {
 
 export function cerrarDetalleCaja(e) {
     if (e && e.target !== document.getElementById("cajaDetalleOverlay")) return;
-    document.getElementById("cajaDetalleOverlay").style.display = "none";
+    const overlay = document.getElementById("cajaDetalleOverlay");
+    if (overlay) overlay.style.display = "none";
+    _cajaDetalleId = null;
 }
 
 // ── Init: main.js llamara initCaja() en fase 5 ──────────────

@@ -67,6 +67,8 @@ test('el cierre de sesión libera el carrito antes de descartar el borrador y la
         },
         confirm: () => true,
         api: async () => { events.push('logout'); return { ok: true }; },
+        window: { dispatchEvent: event => events.push(event.type) },
+        Event,
         clearSession: () => events.push('sesion'),
         clearCarrito: () => events.push('carrito'),
         cargarSucursalesEnDropdowns() {},
@@ -81,4 +83,5 @@ test('el cierre de sesión libera el carrito antes de descartar el borrador y la
     await ctx.cerrarSesion();
 
     assert.deepEqual(events.slice(0, 4), ['liberar', 'logout', 'borrador', 'sesion']);
+    assert.equal(events.at(-1), 'eruditos:logout');
 });

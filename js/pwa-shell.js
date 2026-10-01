@@ -3,15 +3,19 @@
     const modoInstalado = matchMedia('(display-mode: standalone)');
     const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
         || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const esAndroid = /Android/i.test(navigator.userAgent);
     let solicitudInstalacion = null;
     let instalacionConfirmada = false;
     let instalacionIntentada = false;
+    let instalacionEnCurso = false;
     let splashOculto = false;
 
     function actualizarBotones() {
         const instalado = instalacionConfirmada || modoInstalado.matches || navigator.standalone === true;
         document.querySelectorAll('.pwa-install-button').forEach(boton => {
-            boton.hidden = instalado || (!solicitudInstalacion && !esIOS && !instalacionIntentada);
+            const instruccionesAndroid = esAndroid && boton.dataset.installFallback === 'android';
+            boton.hidden = instalado || (!solicitudInstalacion && !esIOS && !instalacionIntentada && !instruccionesAndroid);
+            boton.disabled = instalacionEnCurso;
         });
     }
 
@@ -43,21 +47,33 @@
     document.addEventListener('DOMContentLoaded', () => {
         const dialogo = document.getElementById('pwaInstallDialog');
         const instrucciones = document.getElementById('pwaInstallInstructions');
+        function mostrarInstrucciones() {
+            instrucciones.textContent = esIOS
+                ? 'En tu iPhone o iPad, abre el menú Compartir del navegador y elige «Añadir a pantalla de inicio». Después toca «Añadir».'
+                : 'En el menú del navegador, toca «Instalar aplicación» o «Añadir a pantalla de inicio». Si no aparece, abre el sistema en Chrome y vuelve a intentarlo.';
+            dialogo.showModal();
+        }
         document.querySelectorAll('.pwa-install-button').forEach(boton => {
             boton.addEventListener('click', async () => {
-                if (instalacionConfirmada || modoInstalado.matches || navigator.standalone === true) return;
+                if (instalacionEnCurso || instalacionConfirmada || modoInstalado.matches || navigator.standalone === true) return;
                 if (solicitudInstalacion) {
                     const solicitud = solicitudInstalacion;
                     solicitudInstalacion = null;
                     instalacionIntentada = true;
+                    instalacionEnCurso = true;
                     actualizarBotones();
-                    try { await solicitud.prompt(); } catch (_) {}
+                    try {
+                        await solicitud.prompt();
+                        await solicitud.userChoice;
+                    } catch (_) {
+                        mostrarInstrucciones();
+                    } finally {
+                        instalacionEnCurso = false;
+                        actualizarBotones();
+                    }
                     return;
                 }
-                instrucciones.textContent = esIOS
-                    ? 'En tu iPhone o iPad, abre el menú Compartir del navegador y elige «Añadir a pantalla de inicio». Después toca «Añadir».'
-                    : 'Abre el menú del navegador y elige «Instalar aplicación» o «Añadir a pantalla de inicio».';
-                dialogo.showModal();
+                mostrarInstrucciones();
             });
         });
         document.getElementById('pwaInstallClose').addEventListener('click', () => dialogo.close());

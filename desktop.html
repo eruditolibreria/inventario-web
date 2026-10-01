@@ -152,10 +152,15 @@
                 <small>INVENTARIO v3.0</small>
             </div>
             <div class="desktop-header-right">
+                <div id="desktopCashInfo" popover="auto" role="status" style="inset:auto;top:var(--cash-info-top,64px);left:var(--cash-info-left,12px);margin:0;width:min(300px,calc(100vw - 24px));padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text)">
+                    <div id="desktopCashName" style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+                    <div id="desktopCashAmount" style="margin-top:4px;font:700 16px var(--mono)"></div>
+                </div>
                 <button class="pwa-install-button" type="button" aria-label="Instalar sistema Eruditos" title="Instalar sistema Eruditos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
                 <button class="theme-toggle" id="themeToggleBtn" title="Cambiar tema claro/oscuro" onclick="toggleTheme()">
                     <span class="theme-toggle-icon" id="themeIcon"><i class="fa-solid fa-moon"></i></span>
                 </button>
+                <div id="desktopCashIndicators" role="group" aria-label="Cajas abiertas" hidden></div>
                 <div class="user-badge" title="Cerrar sesión" onclick="cerrarSesion()" style="cursor:pointer;">
                     <div class="avatar">👤</div>
                     <div class="user-info">

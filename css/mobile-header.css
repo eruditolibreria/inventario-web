@@ -1,0 +1,30 @@
+.app-header.mobile-header{gap:6px;padding:8px 12px;min-height:64px}
+.mobile-header .brand{flex:none}
+.mobile-header .brand h1{white-space:nowrap;font-size:18px}
+.mobile-header-actions{flex:none}
+.mobile-header .club-notification-bell,.mobile-menu-button,.mobile-cash-button,.pwa-install-login{width:48px;height:48px;flex:none}
+.mobile-menu-button{border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text);cursor:pointer}
+.mobile-cash-button{border:0;background:transparent;cursor:pointer}
+.mobile-menu-button{font-size:26px}
+.mobile-cash-indicators{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.mobile-cash-indicators[hidden]{display:none}
+.mobile-cash-button span{display:inline-block;font-size:12px;animation:cash-pulse 1.8s ease-in-out infinite}
+@keyframes cash-pulse{50%{opacity:.45;transform:scale(.9)}}
+.mobile-header-menu{margin:auto;padding:16px;max-height:calc(100dvh - 24px);overflow:auto}
+.mobile-header-menu>:not(:last-child){margin-bottom:10px}
+.mobile-menu-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mobile-menu-title h2{margin:0;font-size:18px}
+.mobile-header-menu .user-badge{cursor:default;border-radius:12px}
+.mobile-header-menu .uname{overflow-wrap:anywhere}
+#cajaDetalleTitulo{min-width:0;overflow-wrap:anywhere}
+.mobile-header-menu .user-badge>div:last-child{min-width:0}
+.mobile-header-menu .btn,.mobile-header-menu .pwa-install-button{min-height:48px}
+.mobile-header-menu .btn{display:flex;align-items:center;justify-content:center;gap:8px}
+.mobile-header-menu .pwa-install-button{display:flex;justify-content:center;gap:8px;width:100%;height:auto;margin-right:0;border-radius:12px;font:600 14px var(--font)}
+.mobile-header-menu [hidden]{display:none!important}
+.mobile-header-menu .pwa-install-button:hover{transform:none}
+.mobile-header .club-notification-panel{position:fixed;top:var(--mobile-notification-top,86px);left:12px;right:12px;width:auto;max-width:480px;margin-inline:auto;max-height:calc(100dvh - var(--mobile-notification-top,86px) - 12px)}
+.mobile-header .club-notification-list{max-height:calc(100dvh - var(--mobile-notification-top,86px) - 76px)}
+.mobile-menu-button:focus-visible,.mobile-cash-button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+@media(max-width:380px){.mobile-brand-name{display:none}}
+@media(prefers-reduced-motion:reduce){.mobile-cash-button span{animation:none}}

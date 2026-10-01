@@ -32,8 +32,13 @@ function renderSelectorSucursalActiva(sucursales) {
     if (!contenedor) {
         contenedor = document.createElement("div");
         contenedor.id = "selectorSucursalActiva";
-        contenedor.style.cssText = "min-width:150px;max-width:220px";
-        badge.parentElement.insertBefore(contenedor, badge);
+        const espacioMobile = document.getElementById("mobileHeaderBranch");
+        if (espacioMobile) {
+            espacioMobile.appendChild(contenedor);
+        } else {
+            contenedor.style.cssText = "min-width:150px;max-width:220px";
+            badge.parentElement.insertBefore(contenedor, badge);
+        }
     }
     const esAdministrador = store.sessionRol === "ADMIN" || can("usuarios.asignar_roles_criticos");
     if (esAdministrador) {

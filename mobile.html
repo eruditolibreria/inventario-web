@@ -107,9 +107,11 @@
         <link rel="stylesheet" href="/css/componentes.css">
         <link rel="stylesheet" href="/css/club.css">
         <link rel="stylesheet" href="/css/pwa-shell.css">
+        <link rel="stylesheet" href="/css/mobile-header.css">
         <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
         <script defer src="/js/pwa-shell.js"></script>
+        <script defer src="/js/mobile-header.js"></script>
         
     </head>
     <body>
@@ -117,7 +119,7 @@
         <dialog id="pwaInstallDialog" class="pwa-install-dialog" aria-labelledby="pwaInstallTitle"><h2 id="pwaInstallTitle">Instalar sistema Eruditos</h2><p id="pwaInstallInstructions"></p><button id="pwaInstallClose" class="btn btn-primary" type="button">Entendido</button></dialog>
         <div class="panel" id="mainPanel">
             <div id="loginScreen">
-                <button class="pwa-install-button pwa-install-login" type="button" aria-label="Instalar sistema Eruditos" title="Instalar sistema Eruditos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
+                <button class="pwa-install-button pwa-install-login" data-install-fallback="android" type="button" aria-label="Instalar sistema Eruditos" title="Instalar sistema Eruditos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
                 <div class="login-logo">
                     <span class="logo-icon">📦</span>
                     <h2>Grupo Eruditos</h2>
@@ -137,26 +139,28 @@
                 <p class="access-notice">Acceso solo para usuarios autorizados</p>
             </div>
             <div id="appScreen" class="oculto">
-                <div class="app-header">
-                    <div class="brand">
-                        <h1>
-                            📦 <span>Eruditos</span>
-                        </h1>
-                        <small>INVENTARIO v3.0</small>
+                <div class="app-header mobile-header">
+                    <div class="brand"><h1><span aria-hidden="true">📦</span> <span class="mobile-brand-name">Eruditos</span></h1></div>
+                    <div id="mobileCashIndicators" class="mobile-cash-indicators" role="group" aria-label="Cajas abiertas" hidden></div>
+                    <div id="mobileCashInfo" popover="auto" role="status" style="inset:auto 12px;top:var(--cash-info-top,86px);margin:0 auto;width:min(300px,calc(100vw - 24px));padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text)">
+                        <div id="mobileCashName" style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+                        <div id="mobileCashAmount" style="margin-top:4px;font:700 16px var(--mono)"></div>
                     </div>
-                    <button class="pwa-install-button" type="button" aria-label="Instalar sistema Eruditos" title="Instalar sistema Eruditos" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
-                    <button class="theme-toggle" id="themeToggleBtn" title="Cambiar tema claro/oscuro" onclick="toggleTheme()">
-                        <span class="theme-toggle-icon" id="themeIcon"><i class="fa-solid fa-moon"></i></span>
-                    </button>
-                    <div class="user-badge" title="Cerrar sesión" onclick="cerrarSesion()" style="cursor:pointer;">
-                        <div class="avatar">👤</div>
-                        <div>
-                            <div class="uname" id="badgeUser">-</div>
-                            <div id="badgeRol" class="rol-pill"></div>
-                            <div id="cajaBadge" class="caja-badge">🟢 CAJA ABIERTA</div>
-                            <div class="logout-hint" style="margin-top:2px">Cerrar sesión</div>
+                    <div class="mobile-header-actions" id="mobileHeaderActions"></div>
+                    <button id="mobileMenuBtn" class="mobile-menu-button" type="button" aria-label="Abrir menú de cuenta y ajustes" aria-haspopup="dialog" aria-controls="mobileHeaderMenu" aria-expanded="false">⋮</button>
+                    <dialog id="mobileHeaderMenu" class="pwa-install-dialog mobile-header-menu" aria-labelledby="mobileMenuTitle">
+                        <div class="mobile-menu-title"><h2 id="mobileMenuTitle">Cuenta y ajustes</h2><button id="mobileMenuClose" class="mobile-menu-button" type="button" aria-label="Cerrar menú">×</button></div>
+                        <div class="user-badge">
+                            <div class="avatar">👤</div>
+                            <div><div class="uname" id="badgeUser">-</div><div id="badgeRol" class="rol-pill"></div><div id="cajaBadge" class="caja-badge">🟢 CAJA ABIERTA</div></div>
                         </div>
-                    </div>
+                        <div class="mobile-header-branch" id="mobileHeaderBranch"></div>
+                        <button class="btn btn-ghost" id="themeToggleBtn" type="button" onclick="toggleTheme()"><span class="theme-toggle-icon" id="themeIcon"><i class="fa-solid fa-moon"></i></span> Cambiar tema</button>
+                        <button id="mobileSoundToggle" class="btn btn-ghost" type="button" aria-pressed="false" hidden>Silenciar avisos</button>
+                        <button class="pwa-install-button" data-install-fallback="android" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 17v3h16v-3"/></svg><span>Instalar app</span></button>
+                        <button class="btn btn-ghost" type="button" id="mobileLogoutBtn">Cerrar sesión</button>
+                        <small>INVENTARIO v3.0</small>
+                    </dialog>
                 </div>
                 <div class="panel-body">
                     <div class="mode-tabs">

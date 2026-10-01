@@ -17,8 +17,8 @@ function notificaciones() {
 }
 
 export function initRealtime() {
-    if (_canal) return;
     void notificaciones().then(modulo => modulo.initNotificaciones());
+    if (_canal) return;
     _canal = channel("cambios-inventario")
         .on("postgres_changes", { event: "*", schema: "public", table: "inventario" }, (payload) => {
             try {
@@ -27,9 +27,10 @@ export function initRealtime() {
         })
         .on("postgres_changes", { event: "*", schema: "public", table: "club_notificaciones_internas" }, (payload) => {
             try {
-                window.dispatchEvent(new CustomEvent("club:notificacion", { detail: payload }));
-                void notificaciones().then(modulo => modulo.cargarNotificaciones());
+                void notificaciones().then(() => window.dispatchEvent(new CustomEvent("club:notificacion", { detail: payload })));
             } catch (_) {}
         })
-        .subscribe();
+        .subscribe(estado => {
+            if (estado === 'SUBSCRIBED') void notificaciones().then(modulo => modulo.cargarNotificaciones());
+        });
 }
