@@ -12,15 +12,16 @@ if (dirname(outputDir) !== resolve(projectDir) || basename(outputDir) !== 'dist'
 
 const textFiles = ['index.html', 'app.js', 'styles.css', 'manifest.json', 'sw.js'];
 const imageFiles = [
-  'camino-erudito.png',
-  'logo-blanco.png',
+  'camino-erudito.webp',
+  'logo-blanco.webp',
   'launchericon-192x192.png',
   'launchericon-512x512.png',
   'splash-eruditos.png',
 ];
+const sourceOnlyFiles = ['camino-erudito.png', 'logo-blanco.png'];
 
 const sourceFiles = await readdir(join(sourceDir, 'club'));
-const unexpectedFiles = sourceFiles.filter(file => ![...textFiles, ...imageFiles].includes(file));
+const unexpectedFiles = sourceFiles.filter(file => ![...textFiles, ...imageFiles, ...sourceOnlyFiles].includes(file));
 if (unexpectedFiles.length) {
   throw new Error(`Revisar archivos nuevos de Club antes de publicar: ${unexpectedFiles.join(', ')}`);
 }
