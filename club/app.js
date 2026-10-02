@@ -1,6 +1,8 @@
 import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from '../js/config.js';
 import { createClubNavigation } from './navigation.js';
-import { createClubSessionWatcher } from './session.js';
+import { createClubSessionWatcher, sessionId } from './session.js';
+import { createClubIdle } from './idle.js';
+import { setupDoubleBack } from '../js/back-exit.js';
 
 const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
@@ -8,6 +10,7 @@ const SESSION_KEY = 'club_eruditos_session';
 const DEVICE_KEY = 'club_eruditos_device_id';
 const CODES_KEY = 'club_eruditos_retiros';
 const THEME_KEY = 'club_eruditos_theme';
+const END_REASON_KEY='club_eruditos_cierre';
 let session = readJson(SESSION_KEY, null);
 let refreshing = null;
 const readCache = new Map();
@@ -131,6 +134,7 @@ document.querySelectorAll('.install-button').forEach(boton=>boton.addEventListen
 $('cerrarInstalacion').addEventListener('click',()=>$('installDialog').close());
 actualizarBotonesInstalacion();
 function mensajeError(code) {
+  if(code==='SESION_INACTIVA')return 'Tu sesión se cerró por inactividad, inicia sesión nuevamente';
   return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', SESION_TRASLADADA:'Tu sesión se trasladó a otro dispositivo. Ingresa nuevamente si quieres usarla aquí.', DISPOSITIVO_INVALIDO:'No se pudo identificar este dispositivo. Recarga la página.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
 }
 
@@ -143,8 +147,8 @@ async function post(url, body, token) {
     data = await res.json().catch(() => ({ ok:false, error:'RESPUESTA_INVALIDA' }));
   } finally { clearTimeout(timeout); }
   data.httpStatus=res.status;
-  if ((data.error === 'NO_AUTORIZADO' || data.error === 'SESION_TRASLADADA') && token && session?.token===token) {
-    saveSession(null); showAuth(); setStatus('authStatus',mensajeError(data.error),true);
+  if (['NO_AUTORIZADO','SESION_TRASLADADA','SESION_INACTIVA'].includes(data.error) && token && session?.token===token) {
+    terminarSesion(data.error);
   }
   return data;
 }
@@ -215,6 +219,7 @@ function prefetchTabs() {
 }
 
 function showAuth() {
+  idle.stop();
   sessionWatcher.stop();
   document.body.classList.remove('club-active');
   navigation.reset();
@@ -241,8 +246,13 @@ function showAuth() {
   setStatus('canjesStatus','');
   seleccionarPanel('login');
   $('authView').hidden=false; $('appView').hidden=true;
+  const reason=readJson(END_REASON_KEY,null);
+  setStatus('authStatus',reason?mensajeError(reason):'',Boolean(reason));
 }
 function showApp() {
+  localStorage.removeItem(END_REASON_KEY);
+  idle.start();
+  if(!session?.token){ocultarSplash();return;}
   sessionWatcher.start();
   document.body.classList.add('club-active');
   navigation.reset();
@@ -333,11 +343,16 @@ $('recuperarForm').addEventListener('submit', async e => {
 
 $('copyRecovery').addEventListener('click',()=>navigator.clipboard?.writeText($('recoveryCodes').textContent));
 $('closeRecovery').addEventListener('click',()=>$('recoveryDialog').close());
-$('logoutBtn').addEventListener('click',async()=>{
-  await refreshIfNeeded().catch(()=>{});
+function terminarSesion(reason=null,notify=false) {
   const token=session?.token;
+  if(reason)localStorage.setItem(END_REASON_KEY,JSON.stringify(reason));else localStorage.removeItem(END_REASON_KEY);
   saveSession(null);showAuth();
-  if(token)void fetch(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({ACCION:'SALIR'})}).catch(()=>{});
+  if(notify&&token)void fetch(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({ACCION:'SALIR'})}).catch(()=>{});
+}
+$('logoutBtn').addEventListener('click',()=>{$('logoutDialog').showModal();});
+$('logoutCancel').addEventListener('click',()=>{$('logoutDialog').close();});
+$('logoutConfirm').addEventListener('click',()=>{
+  terminarSesion(null,true);
 });
 $('activarCuentaBtn').addEventListener('click', mostrarActivacion);
 $('usernameDialog').addEventListener('cancel', e => e.preventDefault());
@@ -772,7 +787,23 @@ const sessionWatcher=createClubSessionWatcher({
   }),
   getSession:()=>session,
   verify:async()=>{await refreshIfNeeded();if(!session?.token)return {ok:false,error:'NO_AUTORIZADO'};return post(AUTH_URL,{ACCION:'SESION'},session.token);},
-  onTransferred:()=>{saveSession(null);showAuth();setStatus('authStatus',mensajeError('SESION_TRASLADADA'),true);},
+  onTransferred:reason=>{terminarSesion(reason||'SESION_TRASLADADA');},
+});
+const idle=createClubIdle({
+  getSessionId:()=>sessionId(session?.token||''),
+  onExpired:()=>terminarSesion('SESION_INACTIVA',true),
+  notifyActivity:async()=>{
+    if(!idle.check())return;
+    const expected=sessionId(session?.token||'');
+    await refreshIfNeeded();
+    if(session?.token&&sessionId(session.token)===expected)return post(AUTH_URL,{ACCION:'ACTIVIDAD',INACTIVIDAD_MS:idle.elapsed()},session.token);
+  },
+});
+setupDoubleBack({
+  nativeSecondBack:true,
+  closeOverlay:()=>{const dialog=document.querySelector('dialog[open]');if(!dialog)return false;dialog.close();return true;},
+  showNotice:message=>{$('exitNotice').textContent=message;$('exitNotice').hidden=false;return true;},
+  hideNotice:()=>{$('exitNotice').hidden=true;},
 });
 if('serviceWorker'in navigator)void navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
 window.addEventListener('storage',e=>{if(e.key!==SESSION_KEY)return;resetReadCache();session=readJson(SESSION_KEY,null);if(session?.token)showApp();else showAuth();});

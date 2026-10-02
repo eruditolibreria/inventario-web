@@ -18,6 +18,7 @@ function setup(respuestas) {
     renderInicio:data=>{renders++;node('hero').hidden=false;node('clubProgreso').hidden=false;node('saldoDisponible').textContent=String(data.saldo);},
     prefetchTabs:()=>prefetch++,
     saveSession:value=>{context.session=value;context.viewEpoch++;},showAuth:()=>{node('appView').hidden=true;},
+    terminarSesion:()=>{context.saveSession(null);context.showAuth();},
   });
   function $(id){return node(id);}
   vm.runInContext(app.slice(app.indexOf('async function post('),app.indexOf('function prefetchTabs(')),context);

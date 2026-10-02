@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const source=fs.readFileSync('club/session.js','utf8').replace('export function','function');
+const source=fs.readFileSync('club/session.js','utf8').replaceAll('export function','function');
 const first='c9000000-0000-0000-0000-000000000001';
 const second='c9000000-0000-0000-0000-000000000002';
 const token=id=>`header.${Buffer.from(JSON.stringify({session_id:id})).toString('base64url')}.signature`;

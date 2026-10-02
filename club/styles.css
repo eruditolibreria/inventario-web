@@ -129,6 +129,7 @@
 :root[data-theme="dark"] .customer-level[data-level="10"]{--level-color:#efb940;--level-light:#fff1b0}
 .club-pages{position:relative;overflow-x:clip;overflow-y:visible;touch-action:pan-y pinch-zoom;isolation:isolate}
 body.club-active{touch-action:pan-y pinch-zoom}
+.exit-notice{position:fixed;z-index:1000;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:12px 18px;border-radius:14px;background:#25164a;color:#fff;text-align:center;box-shadow:0 4px 18px #0004;font-size:14px}
 #appView>header,#appView>nav{user-select:none;-webkit-user-select:none}
 .club-pages>[data-view-panel]{width:100%;display:flow-root;backface-visibility:hidden}
 .club-pages.is-dragging{user-select:none;cursor:grabbing}

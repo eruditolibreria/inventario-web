@@ -20,6 +20,9 @@ test('el portal independiente incluye el inicio de sesión por dispositivo y sus
   assert.match(navigation, /export function createClubNavigation/);
   assert.match(app, /from '\.\/session\.js'/);
   assert.ok(fs.statSync(path.join(dist,'session.js')).size>0);
+  assert.ok(fs.statSync(path.join(dist,'idle.js')).size>0);
+  assert.match(app,/from '\.\/js\/back-exit\.js'/);
+  assert.ok(fs.statSync(path.join(dist,'js','back-exit.js')).size>0);
   assert.ok(fs.statSync(path.join(dist,'js','vendor','supabase-umd.js')).size>0);
   assert.match(app, /DISPOSITIVO_ID:deviceId/);
   assert.match(css, /url\('\/camino-erudito\.webp'\)/);

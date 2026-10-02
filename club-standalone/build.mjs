@@ -10,7 +10,7 @@ if (dirname(outputDir) !== resolve(projectDir) || basename(outputDir) !== 'dist'
   throw new Error('La carpeta de salida debe estar dentro de club-standalone.');
 }
 
-const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'styles.css', 'manifest.json', 'sw.js'];
+const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'idle.js', 'styles.css', 'manifest.json', 'sw.js'];
 const imageFiles = [
   'camino-erudito.webp',
   'logo-blanco.webp',
@@ -33,6 +33,7 @@ for (const file of textFiles) {
   let content = await readFile(join(sourceDir, 'club', file), 'utf8');
   content = content.replaceAll('/club/', '/');
   if (file === 'app.js') content = content.replace("from '../js/config.js'", "from './js/config.js'");
+  if (file === 'app.js') content = content.replace("from '../js/back-exit.js'", "from './js/back-exit.js'");
   if (content.includes('/club/')) throw new Error(`Quedó una ruta de Club sin adaptar en ${file}.`);
   await writeFile(join(outputDir, file), content);
 }
@@ -42,6 +43,7 @@ for (const file of imageFiles) {
 }
 
 await copyFile(join(sourceDir, 'js', 'config.js'), join(outputDir, 'js', 'config.js'));
+await copyFile(join(sourceDir, 'js', 'back-exit.js'), join(outputDir, 'js', 'back-exit.js'));
 await mkdir(join(outputDir, 'js', 'vendor'), {recursive:true});
 await copyFile(join(sourceDir, 'js', 'vendor', 'supabase-umd.js'), join(outputDir, 'js', 'vendor', 'supabase-umd.js'));
 console.log('Portal Club independiente listo en club-standalone/dist.');

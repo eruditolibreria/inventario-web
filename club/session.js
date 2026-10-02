@@ -1,4 +1,4 @@
-function sessionId(token) {
+export function sessionId(token) {
   try {
     const payload=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.session_id||'')?payload.session_id:null;
@@ -14,7 +14,7 @@ export function createClubSessionWatcher({createClient,getSession,verify,onTrans
     checking=expected;
     try {
       const data=await verify();
-      if(current(expected)&&(data?.error==='SESION_TRASLADADA'||data?.error==='NO_AUTORIZADO'))onTransferred();
+      if(current(expected)&&['SESION_TRASLADADA','NO_AUTORIZADO','SESION_INACTIVA'].includes(data?.error))onTransferred(data.error);
     } catch (_) { /* Un corte de conexión conserva la sesión hasta verificarla. */ }
     finally { if(checking===expected)checking=null; }
   }
@@ -37,7 +37,7 @@ export function createClubSessionWatcher({createClient,getSession,verify,onTrans
       await nextClient.realtime.setAuth();
       if(!current(expected)||client!==nextClient)return;
       channel=nextClient.channel(`club-sesion:${id}`,{config:{private:true}})
-        .on('broadcast',{event:'sesion_trasladada'},()=>{if(current(expected))onTransferred();})
+        .on('broadcast',{event:'sesion_trasladada'},message=>{if(current(expected))onTransferred(message?.payload?.error||'SESION_TRASLADADA');})
         .subscribe(status=>{
           if(!current(expected))return;
           connected=status==='SUBSCRIBED';

@@ -1,3 +1,4 @@
+import { setupDoubleBack } from './back-exit.js';
 /* ═══════════════════════════════════════════════════════════════
    GRUPO ERUDITOS · Sistema de Inventario
    js/main.js – Punto de entrada unificado (Fase 5)
@@ -239,61 +240,33 @@ function restaurarSesion() {
 // ═══════════════════════════════════════════════════════════════
 // DOBLE TOQUE ATRÁS (popstate)
 // ═══════════════════════════════════════════════════════════════
-let backPressTimer = null;
-let exitToast = null;
-
 function setupBackHandler() {
-    window.addEventListener('popstate', function(e) {
-        e.preventDefault();
-        const dialogo = document.querySelector('dialog[open]');
-        if (dialogo) {
-            dialogo.close();
-            history.pushState(null, null, location.href);
-            return;
-        }
-        const resumenCaja = document.getElementById('mobileCashInfo');
-        if (resumenCaja?.matches(':popover-open')) {
-            resumenCaja.hidePopover();
-            history.pushState(null, null, location.href);
-            return;
-        }
-        // Si hay un overlay abierto, cerrarlo en vez de salir
-        var overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "laminaEditOverlay", "laminaDetalleOverlay", "cajaDetalleOverlay", "imagenZoomOverlay", "escanerModal"];
-        for (var i = 0; i < overlays.length; i++) {
-            var ov = document.getElementById(overlays[i]);
-            if (ov && ov.style.display === "flex") {
-                if (ov.id === "escanerModal" && window.cerrarEscanerVenta) {
-                    window.cerrarEscanerVenta();
-                } else {
-                    ov.style.display = "none";
-                }
-                history.pushState(null, null, location.href);
-                return;
+    setupDoubleBack({
+        closeOverlay: () => {
+            const dialogo = document.querySelector('dialog[open]');
+            if (dialogo) { dialogo.close(); return true; }
+            const resumenCaja = document.getElementById('mobileCashInfo');
+            if (resumenCaja?.matches(':popover-open')) { resumenCaja.hidePopover(); return true; }
+            const overlays = ["productoDetalleOverlay", "inventarioEditOverlay", "laminaEditOverlay", "laminaDetalleOverlay", "cajaDetalleOverlay", "imagenZoomOverlay", "escanerModal"];
+            for (const id of overlays) {
+                const overlay = document.getElementById(id);
+                if (overlay?.style.display !== 'flex') continue;
+                if (id === 'escanerModal' && window.cerrarEscanerVenta) window.cerrarEscanerVenta();
+                else overlay.style.display = 'none';
+                return true;
             }
-        }
-        if (backPressTimer) {
-            // Segundo toque: salir
-            if (exitToast) cerrarToast(exitToast);
-            clearTimeout(backPressTimer);
-            backPressTimer = null;
-            // Intentar cerrar la app (PWA standalone)
+            return false;
+        },
+        showNotice: (message, duration) => mostrarToast(message, null, null, duration),
+        hideNotice: cerrarToast,
+        onExit: () => {
             if (navigator.userAgent.includes('Android')) {
-                try { window.history.go(-2); } catch(_) {}
+                try { window.history.go(-2); } catch (_) {}
             }
-            mostrarMsg("👋 Hasta pronto", "ok");
-            return;
-        }
-        backPressTimer = setTimeout(() => {
-            backPressTimer = null;
-        }, 1800);
-        history.pushState(null, null, location.href);
-        exitToast = mostrarToast("Presiona atrás nuevamente para salir", null, null, 1800);
+            mostrarMsg('👋 Hasta pronto', 'ok');
+        },
     });
-
-    // Poner un estado inicial para que popstate se dispare
-    history.pushState(null, null, location.href);
 }
-
 // ═══════════════════════════════════════════════════════════════
 // REGISTRO DE SERVICE WORKER
 // ═══════════════════════════════════════════════════════════════
