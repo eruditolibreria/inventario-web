@@ -42,6 +42,7 @@ let _precargarModo = null;
 let _prepararCompra = null;
 let _prepararGasto = null;
 let _cargarClub = null;
+let _mobileNav = null;
 
 /**
  * Registra las dependencias que navegacion necesita y que seran
@@ -62,6 +63,13 @@ export function initNavegacion(callbacks) {
     if (callbacks.prepararGasto) _prepararGasto = callbacks.prepararGasto;
     if (callbacks.cargarClub) _cargarClub = callbacks.cargarClub;
     _bindTabClicks();
+    if (!document.body.classList.contains('desktop')) {
+        void import('./mobile-navigation.js').then(({ initMobileNavigation }) => {
+            _mobileNav = initMobileNavigation(setModo);
+            window.cerrarMenuModulos = _mobileNav?.cerrarConAtras;
+            actualizarIndicador(store.modoActual);
+        }).catch(error => console.error('No se pudo cargar la navegación móvil:', error));
+    }
 }
 
 function _puedePrecargar() {
@@ -114,6 +122,7 @@ export function obtenerPermisos(r) {
 export function aplicarRol(rol) {
     const {tabs, inicio} = obtenerPermisos(rol);
     TODOS_MODOS.forEach(t => document.getElementById("tab-" + t)?.classList.toggle("hidden-tab", !tabs.includes(t)));
+    _mobileNav?.actualizarSesion();
     document.getElementById("subtab-cuentas-COBRAR")?.classList.toggle("hidden-tab", !can("cuentas_cobrar.ver"));
     document.getElementById("subtab-rep-FINANCIERO")?.classList.toggle("hidden-tab", !can("reportes.ver_utilidad"));
     document.getElementById("subtab-cuentas-PAGAR")?.classList.toggle("hidden-tab", !can("cuentas_pagar.ver"));
@@ -127,7 +136,7 @@ export function aplicarRol(rol) {
 
 export function actualizarIndicador(modo) {
     const nav = document.querySelector('.mode-tabs');
-    const tab = document.getElementById('tab-' + modo);
+    const tab = _mobileNav?.tabActivo(modo) || document.getElementById('tab-' + modo);
     const indicator = document.getElementById('navIndicator');
     if (!nav || !tab || !indicator) return;
     const navRect = nav.getBoundingClientRect();
@@ -160,6 +169,7 @@ function _actualizarTabs(modo) {
         var sidebarTab = document.getElementById("sidebar-tab-" + m);
         if (sidebarTab) sidebarTab.classList.toggle("active", m === modo);
     });
+    _mobileNav?.actualizarActivo(modo);
     actualizarIndicador(modo);
 }
 

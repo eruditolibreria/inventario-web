@@ -163,73 +163,25 @@
                     </dialog>
                 </div>
                 <div class="panel-body">
-                    <div class="mode-tabs">
+                    <div class="mode-tabs" role="navigation" aria-label="Módulos del sistema">
                         <div class="nav-indicator" id="navIndicator"></div>
-                        <div class="mode-tab" id="tab-VENTA" aria-label="Venta">
-                            <span class="tab-icon"><i class="fa-solid fa-sack-dollar"></i></span>
-                            Venta
-                        </div>
-                        <div class="mode-tab" id="tab-CLIENTES" aria-label="Clientes">
-                            <span class="tab-icon"><i class="fa-solid fa-address-book"></i></span>
-                            Clientes
-                        </div>
-                        <div class="mode-tab" id="tab-CLUB" aria-label="Club Eruditos"><span class="tab-icon"><i class="fa-solid fa-star"></i></span>Club</div>
-                        <div class="mode-tab" id="tab-COMPRA" aria-label="Compra">
-                            <span class="tab-icon"><i class="fa-solid fa-cart-shopping"></i></span>
-                            Compra
-                        </div>
-                        <div class="mode-tab" id="tab-GASTO" aria-label="Gastos">
-                            <span class="tab-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
-                            Gastos
-                        </div>
-                        <div class="mode-tab" id="tab-CAJA" aria-label="Caja">
-                            <span class="tab-icon"><i class="fa-solid fa-cash-register"></i></span>
-                            Caja
-                        </div>
-                        <div class="mode-tab" id="tab-ARQUEO" aria-label="Arqueo">
-                            <span class="tab-icon"><i class="fa-solid fa-scale-balanced"></i></span>
-                            Arqueo
-                        </div>
-                        <div class="mode-tab" id="tab-AUDITORIA" aria-label="Auditoría">
-                            <span class="tab-icon"><i class="fa-solid fa-clipboard-list"></i></span>
-                            Auditoría
-                        </div>
-                        <div class="mode-tab" id="tab-CUENTAS" aria-label="Cuentas">
-                            <span class="tab-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
-                            Cuentas
-                        </div>
-                        <div class="mode-tab" id="tab-DEVOLUCIONES" aria-label="Devoluciones">
-                            <span class="tab-icon"><i class="fa-solid fa-rotate-left"></i></span>
-                            Devol.
-                        </div>
-                        <div class="mode-tab" id="tab-TRANSFERENCIAS" aria-label="Transferencias">
-                            <span class="tab-icon"><i class="fa-solid fa-right-left"></i></span>
-                            Transf.
-                        </div>
-                        <div class="mode-tab" id="tab-REPORTES" aria-label="Reportes">
-                            <span class="tab-icon"><i class="fa-solid fa-chart-simple"></i></span>
-                            Report.
-                        </div>
-                        <div class="mode-tab" id="tab-BUSQUEDA" aria-label="Buscar">
-                            <span class="tab-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-                            Buscar
-                        </div>
-                        <div class="mode-tab" id="tab-LAMINAS" aria-label="Laminas">
-                            <span class="tab-icon"><i class="fa-solid fa-images"></i></span>
-                            Laminas
-                        </div>
-                        <div class="mode-tab" id="tab-SERVICIOS" aria-label="Servicios">
-                            <span class="tab-icon"><i class="fa-solid fa-print"></i></span>
-                            Servicios
-                        </div>
-                        <div class="mode-tab" id="tab-INVENTARIO" aria-label="Inventario">
-                            <span class="tab-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
-                            Inventario
-                        </div>
-                        <div class="mode-tab" id="tab-USUARIOS" aria-label="Usuarios">
-                            <span class="tab-icon"><i class="fa-solid fa-users"></i></span>
-                            Usuarios
-                        </div>
+                        <button type="button" class="mode-tab" id="tab-VENTA" aria-label="Venta" title="Venta"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></span><span class="nav-label">Venta</span></button>
+                        <button type="button" class="mode-tab" id="tab-CLIENTES" aria-label="Clientes" title="Clientes"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-address-book"></i></span><span class="nav-label">Clientes</span></button>
+                        <button type="button" class="mode-tab" id="tab-CLUB" aria-label="Club Eruditos" title="Club Eruditos"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-star"></i></span><span class="nav-label">Club Eruditos</span></button>
+                        <button type="button" class="mode-tab" id="tab-COMPRA" aria-label="Compra" title="Compra"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-cart-shopping"></i></span><span class="nav-label">Compra</span></button>
+                        <button type="button" class="mode-tab" id="tab-GASTO" aria-label="Gastos" title="Gastos"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-dollar"></i></span><span class="nav-label">Gastos</span></button>
+                        <button type="button" class="mode-tab" id="tab-CAJA" aria-label="Caja" title="Caja"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-cash-register"></i></span><span class="nav-label">Caja</span></button>
+                        <button type="button" class="mode-tab" id="tab-ARQUEO" aria-label="Arqueo" title="Arqueo"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-scale-balanced"></i></span><span class="nav-label">Arqueo</span></button>
+                        <button type="button" class="mode-tab" id="tab-AUDITORIA" aria-label="Auditoría" title="Auditoría"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-clipboard-list"></i></span><span class="nav-label">Auditoría</span></button>
+                        <button type="button" class="mode-tab" id="tab-CUENTAS" aria-label="Cuentas" title="Cuentas"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-file-invoice-dollar"></i></span><span class="nav-label">Cuentas</span></button>
+                        <button type="button" class="mode-tab" id="tab-DEVOLUCIONES" aria-label="Devoluciones" title="Devoluciones"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-rotate-left"></i></span><span class="nav-label">Devoluciones</span></button>
+                        <button type="button" class="mode-tab" id="tab-TRANSFERENCIAS" aria-label="Transferencias" title="Transferencias"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-right-left"></i></span><span class="nav-label">Transferencias</span></button>
+                        <button type="button" class="mode-tab" id="tab-REPORTES" aria-label="Reportes" title="Reportes"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-chart-simple"></i></span><span class="nav-label">Reportes</span></button>
+                        <button type="button" class="mode-tab" id="tab-BUSQUEDA" aria-label="Buscar" title="Buscar"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-magnifying-glass"></i></span><span class="nav-label">Buscar</span></button>
+                        <button type="button" class="mode-tab" id="tab-LAMINAS" aria-label="Láminas" title="Láminas"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-images"></i></span><span class="nav-label">Láminas</span></button>
+                        <button type="button" class="mode-tab" id="tab-SERVICIOS" aria-label="Servicios" title="Servicios"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-print"></i></span><span class="nav-label">Servicios</span></button>
+                        <button type="button" class="mode-tab" id="tab-INVENTARIO" aria-label="Inventario" title="Inventario"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-boxes-stacked"></i></span><span class="nav-label">Inventario</span></button>
+                        <button type="button" class="mode-tab" id="tab-USUARIOS" aria-label="Usuarios" title="Usuarios"><span class="tab-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span><span class="nav-label">Usuarios</span></button>
                     </div>
                     <div id="seccion-VENTA">
                         <div class="section-label">Registrar venta</div>

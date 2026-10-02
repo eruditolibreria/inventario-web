@@ -243,6 +243,7 @@ function restaurarSesion() {
 function setupBackHandler() {
     setupDoubleBack({
         closeOverlay: () => {
+            if (window.cerrarMenuModulos?.()) return true;
             const dialogo = document.querySelector('dialog[open]');
             if (dialogo) { dialogo.close(); return true; }
             const resumenCaja = document.getElementById('mobileCashInfo');
