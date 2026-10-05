@@ -1,12 +1,14 @@
 /* === MODO AUDITORIA: consulta inmutable de acciones del sistema === */
 import { api } from '../api.js';
 import { store } from '../store.js';
-import { hoy } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 
 const LIMITE = 25;
 let paginaActual = 1;
 let filtrosSesion = '';
+let filtrosAplicados = null;
+let sesionConsulta = '';
+let consultaSecuencia = 0;
 
 const $ = (id) => document.getElementById(id);
 
@@ -19,7 +21,7 @@ function escapar(valor) {
 function fechaTexto(valor) {
     if (!valor) return '—';
     const fecha = new Date(valor);
-    return Number.isNaN(fecha.getTime()) ? String(valor) : fecha.toLocaleString('es-BO', { hour12: false });
+    return Number.isNaN(fecha.getTime()) ? String(valor) : fecha.toLocaleString('es-BO', { hour12: false, timeZone: 'America/La_Paz' });
 }
 
 function valor(id) {
@@ -42,14 +44,14 @@ function llenarSelect(id, etiquetaInicial, opciones, valorOpcion, etiquetaOpcion
 function aplicarFiltrosAuditoria(data) {
     llenarSelect(
         'auditoriaSucursal',
-        'Todas las sucursales',
+        'Selecciona una sucursal',
         data.sucursales || [],
         (sucursal) => sucursal.nombre,
         (sucursal) => sucursal.nombreVisible || sucursal.nombre,
     );
     llenarSelect(
         'auditoriaUsuario',
-        'Todos los usuarios',
+        'Selecciona un usuario',
         data.usuarios || [],
         (usuario) => usuario.usuario,
         (usuario) => usuario.estado === 'ACTIVO' ? usuario.usuario : `${usuario.usuario} (inactivo)`,
@@ -59,10 +61,12 @@ function aplicarFiltrosAuditoria(data) {
 async function cargarFiltrosAuditoria() {
     if (!store.sessionToken) return false;
     if (filtrosSesion === store.sessionToken) return true;
-    const data = await api({ ACCION: 'LISTAR_FILTROS_AUDITORIA', TOKEN: store.sessionToken });
+    const token = store.sessionToken;
+    const data = await api({ ACCION: 'LISTAR_FILTROS_AUDITORIA', TOKEN: token });
+    if (store.sessionToken !== token) return false;
     if (!manejarRespuesta(data) || !data.ok) throw new Error(data?.error || 'No se pudieron cargar los filtros');
     aplicarFiltrosAuditoria(data);
-    filtrosSesion = store.sessionToken;
+    filtrosSesion = token;
     return true;
 }
 
@@ -101,45 +105,102 @@ function renderListado(datos, total, pagina) {
     paginacion.innerHTML = `<div class="pagination"><button class="btn btn-ghost" ${pagina <= 1 ? 'disabled' : ''} onclick="cambiarPaginaAuditoria(-1)">← Anterior</button><span>Página ${pagina} de ${totalPaginas} · ${Number(total || 0)} eventos</span><button class="btn btn-ghost" ${pagina >= totalPaginas ? 'disabled' : ''} onclick="cambiarPaginaAuditoria(1)">Siguiente →</button></div>`;
 }
 
-export function initAuditoria() {
-    const hasta = $('auditoriaFechaHasta');
-    if (hasta && !hasta.value) hasta.value = hoy();
+function fechaValida(texto) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return false;
+    const fecha = new Date(`${texto}T00:00:00Z`);
+    return Number.isFinite(fecha.getTime()) && fecha.toISOString().slice(0, 10) === texto;
 }
 
-export async function cargarAuditoria(pagina = 1) {
-    if (!store.sessionToken) return;
-    const loader = $('loaderAuditoria');
-    const tabla = $('tablaAuditoria');
-    if (loader) loader.style.display = 'block';
-    if (tabla) tabla.innerHTML = '';
+function leerFiltrosAuditoria() {
+    return {
+        FECHA_DESDE: valor('auditoriaFechaDesde'),
+        FECHA_HASTA: valor('auditoriaFechaHasta'),
+        SUCURSAL: valor('auditoriaSucursal'),
+        USUARIO: valor('auditoriaUsuario'),
+        MODULO: valor('auditoriaModulo'),
+        RESULTADO: valor('auditoriaResultado'),
+        BUSQUEDA: valor('auditoriaBusqueda'),
+    };
+}
 
+function errorFiltros(filtros) {
+    if (!fechaValida(filtros.FECHA_DESDE) || !fechaValida(filtros.FECHA_HASTA))
+        return 'Selecciona una fecha válida desde y hasta.';
+    if (filtros.FECHA_DESDE > filtros.FECHA_HASTA)
+        return 'La fecha desde debe ser igual o anterior a la fecha hasta.';
+    if (!filtros.SUCURSAL) return 'Selecciona una sucursal.';
+    if (!filtros.USUARIO) return 'Selecciona un usuario.';
+    return '';
+}
+
+export async function prepararAuditoria() {
+    const secuencia = ++consultaSecuencia;
+    const token = store.sessionToken;
+    filtrosAplicados = null;
+    sesionConsulta = '';
+    paginaActual = 1;
+    if ($('loaderAuditoria')) $('loaderAuditoria').style.display = 'none';
+    if ($('btnConsultarAuditoria')) $('btnConsultarAuditoria').disabled = false;
+    if ($('tablaAuditoria')) $('tablaAuditoria').innerHTML = '<div class="empty-state">Selecciona las fechas, la sucursal y el usuario para consultar la auditoría.</div>';
+    if ($('paginacionAuditoria')) $('paginacionAuditoria').innerHTML = '';
     try {
         await cargarFiltrosAuditoria();
+    } catch (error) {
+        if (secuencia === consultaSecuencia && token === store.sessionToken && $('tablaAuditoria'))
+            $('tablaAuditoria').innerHTML = `<div class="empty-state">${escapar(error.message || 'No se pudieron cargar los filtros')}</div>`;
+    }
+}
+
+export function initAuditoria() {
+    return prepararAuditoria();
+}
+
+export async function cargarAuditoria(pagina = 1, usarFiltrosAplicados = false) {
+    if (!store.sessionToken) return;
+    const token = store.sessionToken;
+    const secuencia = ++consultaSecuencia;
+    const loader = $('loaderAuditoria');
+    const tabla = $('tablaAuditoria');
+    const boton = $('btnConsultarAuditoria');
+    const filtros = usarFiltrosAplicados && sesionConsulta === token ? filtrosAplicados : leerFiltrosAuditoria();
+    const error = filtros ? errorFiltros(filtros) : 'Selecciona los filtros y pulsa Consultar auditoría.';
+    if (loader) loader.style.display = 'none';
+    if (boton) boton.disabled = false;
+    if ($('paginacionAuditoria')) $('paginacionAuditoria').innerHTML = '';
+    if (error) {
+        filtrosAplicados = null;
+        if (tabla) tabla.innerHTML = `<div class="empty-state">${escapar(error)}</div>`;
+        return;
+    }
+    if (loader) loader.style.display = 'block';
+    if (boton) boton.disabled = true;
+    if (tabla) tabla.innerHTML = '';
+    try {
         const data = await api({
-            ACCION: 'LISTAR_AUDITORIA',
-            FECHA_DESDE: valor('auditoriaFechaDesde'),
-            FECHA_HASTA: valor('auditoriaFechaHasta'),
-            SUCURSAL: valor('auditoriaSucursal'),
-            MODULO: valor('auditoriaModulo'),
-            RESULTADO: valor('auditoriaResultado'),
-            USUARIO: valor('auditoriaUsuario'),
-            BUSQUEDA: valor('auditoriaBusqueda'),
-            PAGINA: pagina,
-            LIMITE,
-            TOKEN: store.sessionToken,
+            ACCION: 'LISTAR_AUDITORIA', ...filtros,
+            PAGINA: pagina, LIMITE, TOKEN: token,
         });
+        if (secuencia !== consultaSecuencia || token !== store.sessionToken) return;
         if (!manejarRespuesta(data)) return;
         if (!data.ok) throw new Error(data.error || 'No se pudo consultar la auditoría');
+        filtrosAplicados = { ...filtros };
+        sesionConsulta = token;
         renderListado(data.datos || [], data.total || 0, Number(data.pagina || pagina));
     } catch (error) {
+        if (secuencia !== consultaSecuencia || token !== store.sessionToken) return;
+        filtrosAplicados = null;
         if (tabla) tabla.innerHTML = `<div class="empty-state">${escapar(error.message || 'Error de conexión')}</div>`;
     } finally {
-        if (loader) loader.style.display = 'none';
+        if (secuencia === consultaSecuencia && token === store.sessionToken) {
+            if (loader) loader.style.display = 'none';
+            if (boton) boton.disabled = false;
+        }
     }
 }
 
 export function cambiarPaginaAuditoria(delta) {
-    cargarAuditoria(Math.max(1, paginaActual + Number(delta || 0)));
+    if (!filtrosAplicados || sesionConsulta !== store.sessionToken) return;
+    return cargarAuditoria(Math.max(1, paginaActual + Number(delta || 0)), true);
 }
 
 export async function verDetalleAuditoria(id) {
@@ -149,7 +210,9 @@ export async function verDetalleAuditoria(id) {
     destino.innerHTML = '<div class="loader" style="display:block"></div>';
     overlay.style.display = 'flex';
     try {
-        const data = await api({ ACCION: 'DETALLE_AUDITORIA', ID: id, TOKEN: store.sessionToken });
+        const token = store.sessionToken;
+        const data = await api({ ACCION: 'DETALLE_AUDITORIA', ID: id, TOKEN: token });
+        if (token !== store.sessionToken) return;
         if (!manejarRespuesta(data)) return;
         if (!data.ok || !data.evento) throw new Error(data.error || 'Evento no encontrado');
         const evento = data.evento;

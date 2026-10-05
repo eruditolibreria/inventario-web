@@ -96,7 +96,6 @@ let auditoriaModuloPromise = null;
 let clientesModuloPromise = null;
 let adminInicializado = false;
 let reportesInicializado = false;
-let auditoriaInicializada = false;
 
 function precargarAdmin() {
     if (!adminModuloPromise) {
@@ -156,12 +155,7 @@ function precargarAuditoria() {
 }
 
 async function obtenerAuditoria() {
-    const modulo = await precargarAuditoria();
-    if (!auditoriaInicializada) {
-        modulo.initAuditoria();
-        auditoriaInicializada = true;
-    }
-    return modulo;
+    return precargarAuditoria();
 }
 
 function ejecutarAuditoria(nombre) {
@@ -520,7 +514,7 @@ async function inicializarApp() {
         cargarClientesModulo,
         listarCuentasCobrar,
         cargarArqueo,
-        cargarAuditoria: ejecutarAuditoria("cargarAuditoria"),
+        prepararAuditoria: ejecutarAuditoria("prepararAuditoria"),
         precargarModo,
         prepararCompra: function() {
             toggleClienteCompra();

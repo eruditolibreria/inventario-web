@@ -37,7 +37,7 @@ let _setReporteFinanciero = null;
 let _cargarClientesModulo = null;
 let _listarCuentasCobrar = null;
 let _cargarArqueo = null;
-let _cargarAuditoria = null;
+let _prepararAuditoria = null;
 let _precargarModo = null;
 let _prepararCompra = null;
 let _prepararGasto = null;
@@ -57,7 +57,7 @@ export function initNavegacion(callbacks) {
     if (callbacks.cargarClientesModulo) _cargarClientesModulo = callbacks.cargarClientesModulo;
     if (callbacks.listarCuentasCobrar) _listarCuentasCobrar = callbacks.listarCuentasCobrar;
     if (callbacks.cargarArqueo) _cargarArqueo = callbacks.cargarArqueo;
-    if (callbacks.cargarAuditoria) _cargarAuditoria = callbacks.cargarAuditoria;
+    if (callbacks.prepararAuditoria) _prepararAuditoria = callbacks.prepararAuditoria;
     if (callbacks.precargarModo) _precargarModo = callbacks.precargarModo;
     if (callbacks.prepararCompra) _prepararCompra = callbacks.prepararCompra;
     if (callbacks.prepararGasto) _prepararGasto = callbacks.prepararGasto;
@@ -283,7 +283,7 @@ export function setModo(modo, direccion, velocidad) {
     if (modo === "ARQUEO" && store.sessionToken)
         if (_cargarArqueo) _cargarArqueo();
     if (modo === "AUDITORIA" && store.sessionToken)
-        if (_cargarAuditoria) _cargarAuditoria(1);
+        if (_prepararAuditoria) _prepararAuditoria();
     if (modo === "DEVOLUCIONES")
         setSubModoDevol("REGISTRAR");
     if (modo === "REPORTES") {
@@ -319,6 +319,8 @@ function bloquearSucursalParaNoAdmin() {
     document.querySelectorAll(
         "select[id*='Sucursal'], select#sucursalVenta, select#sucursalCompra, select#sucursalGasto"
     ).forEach(sel => {
+        // Auditoría utiliza su propio catálogo autorizado y exige selección.
+        if (sel.id === 'auditoriaSucursal') return;
         if (!puedeElegir) {
             sel.value = suc || "";
             sel.disabled = true;

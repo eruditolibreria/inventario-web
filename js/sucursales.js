@@ -78,10 +78,10 @@ function renderSelectorSucursalActiva(sucursales) {
 function aplicarSucursalesEnDropdowns(sucursales) {
     const selects = document.querySelectorAll("select[id$='Sucursal']:not(#sucursalActivaGlobal), select[id*='Sucursal']:not(#sucursalActivaGlobal):not(#nuevoUsuarioSucursales), select#sucursalVenta, select#sucursalCompra, select#sucursalGasto, select#transfOrigen, select#transfDestino, select#filtroTransfOrigen, select#filtroTransfDestino");
     selects.forEach(function(sel) {
-        if (sel.disabled) return;
+        if (sel.disabled || sel.id === 'auditoriaSucursal') return;
         const actual = sel.value;
         while (sel.options.length > 0) sel.remove(0);
-        const esFiltroSucursal = ["filtroInvSucursal", "filtroTransfOrigen", "filtroTransfDestino", "auditoriaSucursal"].includes(sel.id);
+        const esFiltroSucursal = ["filtroInvSucursal", "filtroTransfOrigen", "filtroTransfDestino"].includes(sel.id);
         sel.add(new Option(esFiltroSucursal ? "Todas las sucursales" : "🏪 Seleccionar sucursal", ""));
         sucursales.forEach(function(s) {
             if (s.estado === "ACTIVO") sel.add(new Option(nombreSucursal(s), s.nombre));
