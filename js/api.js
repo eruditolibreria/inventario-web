@@ -16,7 +16,7 @@ import { contextoCatalogos, invalidarCatalogos } from './contexto-catalogos.js';
  *   if (!data.ok) { manejarRespuesta(data); return; }
  */
 
-import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES, BASE_URL_CLIENTES, BASE_URL_PROVEEDORES, BASE_URL_ARQUEO, BASE_URL_AUDITORIA, BASE_URL_CLUB_ADMIN, SUPABASE_ANON_KEY } from './config.js';
+import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES, BASE_URL_CLIENTES, BASE_URL_PROVEEDORES, BASE_URL_ARQUEO, BASE_URL_AUDITORIA, BASE_URL_CLUB_ADMIN, SUPABASE_ANON_KEY, LOGIN_REGION_ENABLED } from './config.js';
 import { store, setSession, setTokens } from './store.js';
 
 /**
@@ -154,6 +154,13 @@ function resolverBaseUrl(accion) {
 
 let _renovacion = null;
 
+function accesoRegional(endpoint, accion) {
+    if (typeof LOGIN_REGION_ENABLED !== 'undefined' && LOGIN_REGION_ENABLED && ['LOGIN', 'REFRESH_TOKEN'].includes(accion) && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(endpoint)) {
+        return endpoint + (endpoint.includes('?') ? '&' : '?') + 'forceFunctionRegion=us-west-2';
+    }
+    return endpoint;
+}
+
 export async function renovarSesionSiNecesario() {
     const token = store.sessionToken;
     const refreshToken = store.sessionRefreshToken;
@@ -163,7 +170,7 @@ export async function renovarSesionSiNecesario() {
     const pendiente = { token, refreshToken, promise: null };
     pendiente.promise = (async () => {
         try {
-            const r = await fetch(resolverBaseUrl("REFRESH_TOKEN"), {
+            const r = await fetch(accesoRegional(resolverBaseUrl("REFRESH_TOKEN"), "REFRESH_TOKEN"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_ANON_KEY },
                 body: JSON.stringify({ ACCION: "REFRESH_TOKEN", REFRESH_TOKEN: refreshToken })
@@ -202,7 +209,7 @@ async function api(params, { signal } = {}) {
     const esCatalogo = ["LISTAR_PROVEEDORES", "LISTAR_SUCURSALES", "LISTAR_ROLES_PERMISOS", "LISTAR_CATEGORIAS_INVENTARIO",
         "BUSCAR_CLIENTES_CATALOGO", "LISTAR_FILTROS_AUDITORIA"].includes(params.ACCION);
     const contextoSolicitud = contextoCatalogos(esCatalogo);
-    let endpoint = resolverBaseUrl(params.ACCION);
+    let endpoint = accesoRegional(resolverBaseUrl(params.ACCION), params.ACCION);
     // Read catalogs beside PostgreSQL and Redis; leave transaction routing unchanged.
     if (esCatalogo &&
         /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(endpoint)) {

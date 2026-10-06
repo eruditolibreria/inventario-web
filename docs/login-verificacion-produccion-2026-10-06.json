@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-06T20:43:36.134Z",
+  "backendCommit": "f5db92b4c05b465a1f37c657854b88870b8ac755",
+  "region": "us-west-2",
+  "checks": [
+    "RPC bloqueo disponible sin modificar contadores",
+    "Cuatro RPC rechazan acceso anónimo",
+    "Finalización fresca rechaza identidad sin acceso Staff/Club",
+    "LOGIN y REFRESH no conceden acceso ni entregan tokens sin contexto",
+    "Club conserva validación de dispositivo y no-store"
+  ],
+  "temporaryAccountsRemaining": 0
+}

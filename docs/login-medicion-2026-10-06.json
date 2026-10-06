@@ -1,0 +1,347 @@
+{
+  "startedAt": "2026-10-06T20:05:31.253Z",
+  "anonymousHttp": 403,
+  "runs": [
+    {
+      "requestedRegion": "sa-east-1",
+      "actualRegion": "sa-east-1",
+      "http": 200,
+      "outerDiagnosticMs": 30774.53,
+      "ok": true,
+      "region": "sa-east-1",
+      "summary": {
+        "staffBlockReadParallel": {
+          "n": 12,
+          "p50": 252.3,
+          "p95": 766.57
+        },
+        "passwordAuth": {
+          "n": 12,
+          "p50": 287.82,
+          "p95": 585.87
+        },
+        "staffContextNoMembership": {
+          "n": 12,
+          "p50": 237.78,
+          "p95": 714.8
+        },
+        "clubIdentityNotFound": {
+          "n": 12,
+          "p50": 237.87,
+          "p95": 608.86
+        },
+        "authVerify": {
+          "n": 12,
+          "p50": 198.58,
+          "p95": 262.06
+        },
+        "refreshToken": {
+          "n": 12,
+          "p50": 211.5,
+          "p95": 322.66
+        }
+      },
+      "failures": {
+        "redisBlockRead": 12,
+        "redisAtomicCounters": 12
+      },
+      "samples": {
+        "staffBlockReadParallel": [
+          486.65,
+          722.51,
+          766.57,
+          594,
+          222.71,
+          578.05,
+          626.08,
+          223.81,
+          239.95,
+          216.6,
+          252.3,
+          207.81
+        ],
+        "passwordAuth": [
+          585.87,
+          340.63,
+          300.81,
+          456.49,
+          290.32,
+          284.67,
+          306.82,
+          287.82,
+          279.64,
+          280.53,
+          278.6,
+          280.82
+        ],
+        "staffContextNoMembership": [
+          512.02,
+          714.8,
+          319.9,
+          292.41,
+          236.27,
+          247.43,
+          237.78,
+          234.44,
+          241.19,
+          219.61,
+          211.97,
+          221.85
+        ],
+        "clubIdentityNotFound": [
+          354,
+          340.69,
+          263.82,
+          608.86,
+          213.69,
+          237.87,
+          236.76,
+          241.02,
+          232.82,
+          249.84,
+          221.27,
+          223.97
+        ],
+        "authVerify": [
+          262.06,
+          211.89,
+          200.67,
+          209.04,
+          194.51,
+          198.58,
+          249.51,
+          198.54,
+          202.43,
+          196.43,
+          194.9,
+          197.02
+        ],
+        "refreshToken": [
+          322.66,
+          244.92,
+          227.73,
+          221.55,
+          209.38,
+          211.5,
+          220,
+          203.94,
+          205.81,
+          202.43,
+          205.08,
+          230.76
+        ]
+      },
+      "applicationPermissions": false,
+      "note": "Isolated Auth account; fresh password verification, refresh and getUser succeed. SQL identity/context reads have no matching application account. No business writes, sessions of real users, audit inserts, or real login counters.",
+      "accountDeleted": true
+    },
+    {
+      "requestedRegion": "us-west-2",
+      "actualRegion": "us-west-2",
+      "http": 200,
+      "outerDiagnosticMs": 14492.09,
+      "ok": true,
+      "region": "us-west-2",
+      "summary": {
+        "staffBlockReadParallel": {
+          "n": 12,
+          "p50": 100.96,
+          "p95": 594.41
+        },
+        "passwordAuth": {
+          "n": 12,
+          "p50": 124.58,
+          "p95": 515.33
+        },
+        "staffContextNoMembership": {
+          "n": 12,
+          "p50": 91.23,
+          "p95": 1236.07
+        },
+        "clubIdentityNotFound": {
+          "n": 12,
+          "p50": 68.27,
+          "p95": 937.66
+        },
+        "authVerify": {
+          "n": 12,
+          "p50": 42.85,
+          "p95": 735.04
+        },
+        "refreshToken": {
+          "n": 12,
+          "p50": 60.11,
+          "p95": 191.81
+        },
+        "redisBlockRead": {
+          "n": 12,
+          "p50": 1.52,
+          "p95": 8.81
+        },
+        "redisAtomicCounters": {
+          "n": 12,
+          "p50": 1.56,
+          "p95": 43.1
+        }
+      },
+      "failures": {},
+      "samples": {
+        "staffBlockReadParallel": [
+          214.55,
+          205.47,
+          322,
+          594.41,
+          453.06,
+          294.99,
+          51.24,
+          99.69,
+          56.46,
+          100.96,
+          91.46,
+          97.45
+        ],
+        "passwordAuth": [
+          136.46,
+          130.4,
+          515.33,
+          120.61,
+          117.32,
+          125.97,
+          126.67,
+          135.64,
+          124.58,
+          115.06,
+          111.51,
+          117.51
+        ],
+        "staffContextNoMembership": [
+          140,
+          1236.07,
+          590.61,
+          175.04,
+          241.54,
+          91.23,
+          89.28,
+          90.6,
+          115.29,
+          59.03,
+          47.29,
+          33.65
+        ],
+        "clubIdentityNotFound": [
+          93.59,
+          937.66,
+          910.11,
+          610.75,
+          184.64,
+          109.09,
+          60.46,
+          65.29,
+          68.27,
+          43.28,
+          49.8,
+          45.96
+        ],
+        "authVerify": [
+          43.42,
+          54.82,
+          67.57,
+          735.04,
+          53.74,
+          35.34,
+          30.39,
+          28.66,
+          63.43,
+          42.85,
+          28.01,
+          41.22
+        ],
+        "refreshToken": [
+          42.48,
+          114.4,
+          60.42,
+          71.39,
+          56.3,
+          61.24,
+          191.81,
+          38.41,
+          41.92,
+          60.11,
+          55.2,
+          60.75
+        ],
+        "redisBlockRead": [
+          8.81,
+          1.44,
+          1.52,
+          1.6,
+          1.54,
+          1.82,
+          1.47,
+          1.65,
+          1.47,
+          1.63,
+          1.33,
+          1.49
+        ],
+        "redisAtomicCounters": [
+          43.1,
+          1.75,
+          1.57,
+          1.4,
+          1.47,
+          1.45,
+          1.55,
+          5.76,
+          1.52,
+          1.61,
+          1.62,
+          1.56
+        ]
+      },
+      "applicationPermissions": false,
+      "note": "Isolated Auth account; fresh password verification, refresh and getUser succeed. SQL identity/context reads have no matching application account. No business writes, sessions of real users, audit inserts, or real login counters.",
+      "accountDeleted": true
+    }
+  ],
+  "completedAt": "2026-10-06T20:06:16.524Z",
+  "cleanup": {
+    "checkedAt": "2026-10-06T20:07:37.923Z",
+    "diagnosticAuthAccountsRemaining": 0,
+    "allAccountsDeleted": true
+  },
+  "liveRouting": [
+    {
+      "function": "usuarios",
+      "requestedRegion": "automatic",
+      "actualRegion": "sa-east-1",
+      "http": 200,
+      "earlyValidationError": "USUARIO_Y_PASSWORD_REQUERIDOS",
+      "ms": 457.33
+    },
+    {
+      "function": "usuarios",
+      "requestedRegion": "us-west-2",
+      "actualRegion": "us-west-2",
+      "http": 200,
+      "earlyValidationError": "USUARIO_Y_PASSWORD_REQUERIDOS",
+      "ms": 334.77
+    },
+    {
+      "function": "club-auth",
+      "requestedRegion": "automatic",
+      "actualRegion": "sa-east-1",
+      "http": 400,
+      "earlyValidationError": "DISPOSITIVO_INVALIDO",
+      "ms": 222.57
+    },
+    {
+      "function": "club-auth",
+      "requestedRegion": "us-west-2",
+      "actualRegion": "us-west-2",
+      "http": 400,
+      "earlyValidationError": "DISPOSITIVO_INVALIDO",
+      "ms": 745.67
+    }
+  ]
+}

@@ -174,7 +174,7 @@ export async function loginSubmit() {
             if (_verificarEstadoCaja) _verificarEstadoCaja();
             cargarSucursalesEnDropdowns();
         } else {
-            mostrarMensajeLogin(data.motivo || "Usuario o contraseña incorrectos", "err");
+            mostrarMensajeLogin(data.error === "LOGIN_TEMPORALMENTE_NO_DISPONIBLE" ? "El acceso no está disponible por el momento. Intenta nuevamente." : (data.motivo || "Usuario o contraseña incorrectos"), "err");
         }
     } catch (e) {
         mostrarMensajeLogin("Error de conexión. Intenta de nuevo.", "err");

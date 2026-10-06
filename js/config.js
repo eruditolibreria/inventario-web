@@ -8,6 +8,9 @@ export const HOST = LOCAL
 
 export const CLUB_CONTENT_URL = LOCAL ? `${HOST}/club-content` : '/api/club/v1';
 
+// Reversión de región del acceso, independiente de catálogos y transacciones.
+export const LOGIN_REGION_ENABLED = true;
+
 // Cliente directo Supabase (PostgREST + Realtime)
 export const SUPABASE_URL = LOCAL
   ? "http://127.0.0.1:54321"
