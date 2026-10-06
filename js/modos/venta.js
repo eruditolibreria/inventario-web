@@ -1,3 +1,4 @@
+import { contextoCatalogos } from '../contexto-catalogos.js';
 /* === MODO VENTA: Busqueda, carrito, cobro y gestion de clientes === */
 
 /*
@@ -56,6 +57,11 @@ function _guardarCarritoDraft() {
 let _verificarEstadoCaja = null;
 let _clientesVenta = [];
 let _clienteVentaSeleccionado = null;
+let _clienteVentaSecuencia = 0;
+let _clienteVentaPendiente = false;
+globalThis.window?.addEventListener("eruditos:logout", () => {
+    _clienteVentaSecuencia++; _clienteVentaPendiente = false; _clientesVenta = []; _clienteVentaSeleccionado = null;
+});
 let _clienteVentaTimer = null;
 let _escanerVentaMovilActivo = false;
 let _cobroEnCurso = false;
@@ -715,15 +721,19 @@ export function toggleClienteVenta() {
 
 // Carga clientes registrados para el selector de ventas
 export async function cargarClientes(busqueda = "") {
-    if (!store.sessionToken) return;
+    if (!store.sessionToken) return [];
+    const contexto = contextoCatalogos();
     try {
-        const data = await api({
-            ACCION: "BUSCAR_CLIENTES_VENTA",
+        let data = await api({
+            ACCION: "BUSCAR_CLIENTES_CATALOGO",
             BUSQUEDA: busqueda,
             TOKEN: store.sessionToken
         });
-        if (data.ok) _clientesVenta = data.datos || [];
-    } catch (_) {}
+        if (data.error === "ACCION_INVALIDA") data = await api({ ACCION: "BUSCAR_CLIENTES_VENTA", BUSQUEDA: busqueda });
+        if (contexto !== contextoCatalogos()) return [];
+        _clientesVenta = data.ok ? data.datos || [] : [];
+        return _clientesVenta;
+    } catch (_) { return []; }
 }
 
 // Muestra sugerencias de clientes mientras se escribe
@@ -732,6 +742,9 @@ export function buscarClienteVenta() {
     const lista = document.getElementById("listaClienteVenta");
     if (!input || !lista) return;
     const texto = input.value.trim();
+    const secuencia = ++_clienteVentaSecuencia;
+    _clienteVentaPendiente = false;
+    const contexto = contextoCatalogos();
     document.getElementById("clienteVentaId").value = "";
     document.getElementById("clienteCreditoVenta").textContent = "";
     _clienteVentaSeleccionado = null;
@@ -742,9 +755,10 @@ export function buscarClienteVenta() {
     }
     clearTimeout(_clienteVentaTimer);
     _clienteVentaTimer = setTimeout(async () => {
-        await cargarClientes(texto);
+        const clientes = await cargarClientes(texto);
+        if (secuencia !== _clienteVentaSecuencia || contexto !== contextoCatalogos() || input.value.trim() !== texto) return;
         lista.innerHTML = "";
-        _clientesVenta.slice(0, 8).forEach(cliente => {
+        clientes.slice(0, 8).forEach(cliente => {
             const item = document.createElement("div");
             item.className = "ac-item";
             const titulo = document.createElement("strong");
@@ -752,12 +766,29 @@ export function buscarClienteVenta() {
             const detalle = document.createElement("small");
             detalle.textContent = `${cliente.codigoCliente}${cliente.documento ? " · " + cliente.documento : ""}`;
             item.append(titulo, detalle);
-            item.addEventListener("click", () => {
+            item.addEventListener("click", async () => {
+                const seleccion = ++_clienteVentaSecuencia;
+                _clienteVentaPendiente = true;
                 input.value = cliente.nombre;
-                document.getElementById("clienteVentaId").value = cliente.id;
-                document.getElementById("clienteCreditoVenta").textContent = `Deuda: ${formatearBs(cliente.deuda)} · Disponible: ${formatearBs(cliente.creditoDisponible)}`;
-                _clienteVentaSeleccionado = cliente;
+                document.getElementById("clienteVentaId").value = "";
+                document.getElementById("clienteCreditoVenta").textContent = "Consultando cliente…";
+                _clienteVentaSeleccionado = null;
                 lista.classList.remove("show");
+                try {
+                    let data = await api({ ACCION: "OBTENER_CLIENTE_SELECTOR", ID: cliente.id });
+                    if (data.error === "ACCION_INVALIDA") data = await api({ ACCION: "OBTENER_CLIENTE", ID: cliente.id, DIFERIDO: true });
+                    if (seleccion !== _clienteVentaSecuencia || contexto !== contextoCatalogos() || input.value !== cliente.nombre) return;
+                    if (!data.ok) throw new Error(data.error || "CLIENTE_NO_DISPONIBLE");
+                    const actual = data.cliente;
+                    document.getElementById("clienteVentaId").value = actual.id;
+                    input.value = actual.nombre;
+                    document.getElementById("clienteCreditoVenta").textContent = actual.deuda === undefined ? "" :
+                        `Deuda: ${formatearBs(actual.deuda)} · Disponible: ${formatearBs(actual.creditoDisponible)}`;
+                    _clienteVentaSeleccionado = actual;
+                } catch (_) {
+                    if (seleccion === _clienteVentaSecuencia && contexto === contextoCatalogos())
+                        document.getElementById("clienteCreditoVenta").textContent = "No se pudo consultar el cliente. Selecciónalo de nuevo.";
+                } finally { if (seleccion === _clienteVentaSecuencia) _clienteVentaPendiente = false; }
             });
             lista.appendChild(item);
         });
@@ -1315,6 +1346,7 @@ async function _incrementarCantidad(i) {
 
 // Procesa la venta POS. El backend calcula importes y protege reintentos.
 export async function cobrar() {
+    if (_clienteVentaPendiente) { mostrarMsg("Espera a que termine la consulta del cliente", "err"); return; }
     if (_cobroEnCurso) return;
     if (_cambioCarritoEnCurso) {
         mostrarMsg("Espera a que termine la reserva del carrito", "err");
@@ -1426,6 +1458,7 @@ export async function cobrar() {
 
 // Crea una cotización sin registrar un cobro ni descontar inventario.
 export async function cotizar() {
+    if (_clienteVentaPendiente) { mostrarMsg("Espera a que termine la consulta del cliente", "err"); return; }
     if (_cobroEnCurso) return;
     if (_cambioCarritoEnCurso) {
         mostrarMsg("Espera a que termine la reserva del carrito", "err");

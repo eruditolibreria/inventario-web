@@ -1,3 +1,4 @@
+import { contextoCatalogos } from '../contexto-catalogos.js';
 /* === MODO SERVICIOS: Corte, laminado, enmarcado, impresion === */
 import { store } from '../store.js';
 import { api } from '../api.js';
@@ -6,6 +7,11 @@ import { manejarRespuesta } from '../ui.js';
 
 let _verif=null;
 let _clientesServicio = [];
+let _clienteServicioSecuencia = 0;
+let _clienteServicioPendiente = false;
+globalThis.window?.addEventListener("eruditos:logout", () => {
+    _clienteServicioSecuencia++; _clienteServicioPendiente = false; _clientesServicio = [];
+});
 let _clienteServicioTimer = null;
 export function initServicios(cb){if(cb&&cb.verificarEstadoCaja)_verif=cb.verificarEstadoCaja;}
 
@@ -31,11 +37,15 @@ export function togglePagoServicio() {
 }
 
 export async function cargarClientesServicio(busqueda = "") {
-    if (!store.sessionToken) return;
+    if (!store.sessionToken) return [];
+    const contexto = contextoCatalogos();
     try {
-        const data = await api({ ACCION: "BUSCAR_CLIENTES_VENTA", BUSQUEDA: busqueda, TOKEN: store.sessionToken });
-        if (data.ok) _clientesServicio = data.datos || [];
-    } catch (_) {}
+        let data = await api({ ACCION: "BUSCAR_CLIENTES_CATALOGO", BUSQUEDA: busqueda, TOKEN: store.sessionToken });
+        if (data.error === "ACCION_INVALIDA") data = await api({ ACCION: "BUSCAR_CLIENTES_VENTA", BUSQUEDA: busqueda });
+        if (contexto !== contextoCatalogos()) return [];
+        _clientesServicio = data.ok ? data.datos || [] : [];
+        return _clientesServicio;
+    } catch (_) { return []; }
 }
 
 export function buscarClienteServicio() {
@@ -45,6 +55,9 @@ export function buscarClienteServicio() {
     const info = document.getElementById("srvClienteCredito");
     if (!input || !lista || !clienteId || !info) return;
     const texto = input.value.trim();
+    const secuencia = ++_clienteServicioSecuencia;
+    _clienteServicioPendiente = false;
+    const contexto = contextoCatalogos();
     clienteId.value = "";
     info.textContent = "";
     lista.innerHTML = "";
@@ -54,9 +67,10 @@ export function buscarClienteServicio() {
     }
     clearTimeout(_clienteServicioTimer);
     _clienteServicioTimer = setTimeout(async () => {
-        await cargarClientesServicio(texto);
+        const clientes = await cargarClientesServicio(texto);
+        if (secuencia !== _clienteServicioSecuencia || contexto !== contextoCatalogos() || input.value.trim() !== texto) return;
         lista.innerHTML = "";
-        _clientesServicio.slice(0, 8).forEach(cliente => {
+        clientes.slice(0, 8).forEach(cliente => {
             const item = document.createElement("div");
             item.className = "ac-item";
             const titulo = document.createElement("strong");
@@ -64,13 +78,27 @@ export function buscarClienteServicio() {
             const detalle = document.createElement("small");
             detalle.textContent = `${cliente.codigoCliente}${cliente.documento ? " · " + cliente.documento : ""}`;
             item.append(titulo, detalle);
-            item.addEventListener("click", () => {
+            item.addEventListener("click", async () => {
+                const seleccion = ++_clienteServicioSecuencia;
+                _clienteServicioPendiente = true;
                 input.value = cliente.nombre;
-                clienteId.value = cliente.id;
-                info.textContent = cliente.deuda === undefined
-                    ? ""
-                    : `Deuda: ${formatearBs(cliente.deuda)} · Disponible: ${formatearBs(cliente.creditoDisponible)}`;
+                clienteId.value = "";
+                info.textContent = "Consultando cliente…";
                 lista.classList.remove("show");
+                try {
+                    let data = await api({ ACCION: "OBTENER_CLIENTE_SELECTOR", ID: cliente.id });
+                    if (data.error === "ACCION_INVALIDA") data = await api({ ACCION: "OBTENER_CLIENTE", ID: cliente.id, DIFERIDO: true });
+                    if (seleccion !== _clienteServicioSecuencia || contexto !== contextoCatalogos() || input.value !== cliente.nombre) return;
+                    if (!data.ok) throw new Error(data.error || "CLIENTE_NO_DISPONIBLE");
+                    const actual = data.cliente;
+                    clienteId.value = actual.id;
+                    input.value = actual.nombre;
+                    info.textContent = actual.deuda === undefined ? "" :
+                        `Deuda: ${formatearBs(actual.deuda)} · Disponible: ${formatearBs(actual.creditoDisponible)}`;
+                } catch (_) {
+                    if (seleccion === _clienteServicioSecuencia && contexto === contextoCatalogos())
+                        info.textContent = "No se pudo consultar el cliente. Selecciónalo de nuevo.";
+                } finally { if (seleccion === _clienteServicioSecuencia) _clienteServicioPendiente = false; }
             });
             lista.appendChild(item);
         });
@@ -81,6 +109,7 @@ export function buscarClienteServicio() {
 
 // agregarServicio
 export async function agregarServicio(tipo) {
+    if (_clienteServicioPendiente) { mostrarMsg("Espera a que termine la consulta del cliente", "err"); return; }
     if (!store.sessionToken) { mostrarMsg("Sesión expirada", "err"); return }
     const sucursal = document.getElementById("srvSucursal").value;
     if (!sucursal) { mostrarMsg("Selecciona una sucursal primero", "err"); return }

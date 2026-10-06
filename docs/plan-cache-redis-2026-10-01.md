@@ -1,6 +1,82 @@
+Plan final vigente: [plan-final-redis-2026-10-06.md](</F:/Sistema de Inventario/eruditos-frontend/docs/plan-final-redis-2026-10-06.md>). Este archivo conserva los análisis anteriores.
+
 # Plan de caché Redis para Eruditos
 
 Fecha: 1 de octubre de 2026. Alcance: análisis de los checkouts locales del frontend y del backend; implementación propuesta, todavía sin ejecutar.
+
+## Ampliación de candidatos — 6 de octubre de 2026
+
+Esta revisión prevalece sobre las prioridades del plan original del 1 de octubre. Se utilizaron CodeGraph y las skills karpathy-guidelines y supabase-postgres-best-practices. No se implementó Redis ni se modificó código de negocio.
+
+El índice del backend se sincronizó: 61 archivos, 882 nodos y 3.504 relaciones. El frontend omitía club/content.js y otros archivos recientes pese a informar que estaba actualizado; la sincronización incremental no lo resolvió. Se reconstruyó con acceso autorizado y se comprobó createClubContentClient y sus dependencias: 76 archivos, 1.438 nodos y 6.041 relaciones. Las migraciones SQL se revisaron directamente.
+
+### Catálogos y proyecciones descriptivas
+
+Los TTL son puntos de partida sujetos a medición. Conservar autorización vigente antes de acceder a Redis e invalidar por alta, edición, baja y cambio de pertenencia al filtro. Un estado cacheado puede servir para una pantalla, pero no decide si se permite una operación de negocio.
+
+| Candidato | Datos cacheables | TTL inicial | Condiciones |
+| --- | --- | --- | --- |
+| Proveedores | ID, nombre, NIT y contacto necesario | 15–30 min | Alta prioridad. LISTAR_PROVEEDORES alimenta compras. Separar del historial y stock incluidos en OBTENER_PROVEEDOR. |
+| Sucursales | ID, código, nombre visible y descripción autorizada | 15–60 min | Alta. Reutilizar etiquetas en selectores, Club, auditoría y comprobantes; membresías/estado se validan actualmente. |
+| Usuarios para selectores | ID y usuario/nombre mostrado | 15–30 min | Alta. Proyección nueva: LISTAR_USUARIOS_ADMIN también devuelve rol, estado, sucursales y excepciones. |
+| Clientes para selección | ID, código y nombre; contacto donde haga falta | 5–15 min | Alta. Separar deuda, crédito y agregados de compras de la respuesta actual. |
+| Categorías de inventario | Valores distintos visibles | 15–30 min | Alta. Primero RPC DISTINCT autorizada; hoy se descargan páginas para deduplicar en el navegador. |
+| Filtros de auditoría | Sucursales y usuarios autorizados | 5–15 min | Alta/media. Reutilizar catálogos anteriores bajo acceso actual. |
+| Roles/descripciones de permisos | Código/nombre, módulo, acción y descripción | 15–60 min | Media. Separar de asignaciones de LISTAR_ROLES_PERMISOS; permisos efectivos actuales por solicitud. |
+| Ficha descriptiva de producto | ID, nombre, categoría, proveedor, ubicación, código de barras y URL de imagen | 15–30 min | Media. Separar stock y precio; mantener identidad por sucursal. |
+| Código de barras → productos | IDs y sucursales coincidentes | 15–30 min | Media. Un código puede devolver varias existencias; no asumir un ID global único. Stock/precio/acceso se resuelven aparte. |
+| Ficha descriptiva de lámina | ID, título, categoría, ubicación y sucursal | 15–30 min | Media. Separar estado/disponibilidad. |
+| Categorías/ubicaciones para filtros | DISTINCT de valores autorizados | 15–30 min | Media/baja. Consultas propuestas, crear solo cuando la interfaz las necesite. |
+
+Acotar entradas, páginas, búsquedas y tamaño. Para clientes, preferir entidades por ID y búsquedas repetidas; no almacenar todas las combinaciones escritas. El listado de proveedores limita a 200 resultados: conservar límite y filtros, sin asumir que sea exhaustivo. Las compras pueden guardar nombres libres fuera del maestro.
+
+### Candidatos condicionados
+
+| Candidato | TTL orientativo | Condición |
+| --- | --- | --- |
+| Búsquedas de láminas | 30–120 s | Incluyen estado y total. Invalidar por alta, edición o cambio de estado. SIN STOCK es una selección variable aunque muestre datos descriptivos. |
+| Última compra del producto | 1–5 min | Cada compra cambia la fila más reciente; preservar autorización de costos. Medir si compensa cachear una consulta de una fila y añadir una ruta Edge. |
+| Comprobante consultado repetidamente | 5–15 min para su cuerpo estable | Su estado cambia con anulaciones; el nombre visible de sucursal también puede cambiar. Verificar estado actual o usar versiones antes de reimprimir. |
+| Reportes con filtros repetidos | 30–60 s | Invalidación por ventas, devoluciones, pagos y otras fuentes. Medir repetición. |
+
+### Contenido ya cubierto o sin necesidad de Redis
+
+- Club público: el código actual implementa caché CDN Vercel para reglas (900 s), noticias (300 s) y catálogo (300 s), con ETag, etiquetas, límite por fechas y cola SQL de invalidación. Reutilizarla; Redis debajo solo si fallos de CDN generan carga relevante. La documentación local registra despliegue y pruebas, sin nueva verificación de producción en este análisis.
+- Club privado: la migración del 5 de octubre añade progreso calculado, revisiones y trabajo pendiente por cuenta. La ruta RESUMEN con SEPARAR_CONTENIDO consulta esa instantánea. El diagnóstico histórico sobre procesamiento en cada RESUMEN describe la ruta anterior, que sigue como compatibilidad. No duplicar puntos, sesión o disponibilidad en Redis como primera etapa.
+- Tipos de servicio, papel, color, tamaños, categorías de gasto y métodos de pago: definidos en HTML; Redis no ahorraría una consulta de base de datos. Mantener recursos estáticos hasta tener catálogos editables en servidor.
+- Nombres de niveles del Club: NIVELES está definido en club/app.js; reglas públicas y retos participan en la caché CDN.
+- Fotos/logos/PDF: servir mediante Storage/CDN; Redis puede guardar referencias descriptivas, sin duplicar binarios.
+
+### Evidencias locales
+
+| Fuente | Hallazgo |
+| --- | --- |
+| [Proveedores](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/proveedores/index.ts:45>) y [compras](</F:/Sistema de Inventario/eruditos-frontend/js/modos/compra.js:214>) | Lista usada por autocompletado; detalle mezcla compras y stock/costos. |
+| [Usuarios](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/usuarios/index.ts:182>) y [roles/permisos](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/usuarios/index.ts:508>) | Separar etiquetas de acceso/asignaciones. Edición administrativa necesita datos vigentes o versión para evitar sobrescribir cambios ajenos. |
+| [Filtros de auditoría](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/auditoria/index.ts:144>) | Usuarios filtrados por identidad/membresías y alcance global actual. |
+| [Clientes](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/clientes/index.ts:86>) | La proyección ligera debe evitar calcular agregados en cada fallo de caché si solo se necesitan nombres. |
+| [Láminas](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/laminas/index.ts:30>) | Claves con texto, categoría, estado, sucursal, página/límite y alcance. |
+| [Última compra](</F:/Sistema de Inventario/eruditos-frontend/js/db.js:159>) | Supabase directo; medir sobrecarga de nueva ruta Redis. |
+| [Comprobante](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/comprobantes/index.ts:88>) y [anulación](</F:/Sistema de Inventario/eruditos-backend/supabase/migrations/20260904020000_devoluciones_y_anulaciones_venta.sql:116>) | La respuesta completa no es inmutable. |
+| [Club público](</F:/Sistema de Inventario/eruditos-backend/supabase/functions/_shared/club-content.ts:3>) y [resumen privado](</F:/Sistema de Inventario/eruditos-backend/supabase/migrations/20261005030000_club_resumen_privado.sql:1>) | Implementaciones posteriores que cambian las prioridades originales. |
+
+### Invalidación y orden revisado
+
+Invalidar entidad y listas/búsquedas. Código de barras modificado: código anterior y nuevo. Categoría/ubicación: DISTINCT de alcances afectados. Traslado: sucursal anterior, nueva y alcance global. Cubrir funciones, compras/importaciones por RPC y administración directa. No exponer datos personales en claves ni reutilizar entradas de privilegios anteriores.
+
+La cola del Club es referencia de diseño; su worker purga Vercel y no debe reutilizarse a ciegas para Redis. TTL como respaldo; versiones transaccionales donde haga falta frescura tras cambios. [Redis documenta expiración e invalidación al escribir](https://redis.io/docs/latest/develop/use-cases/cache-aside/) y [Vercel documenta su capa CDN](https://vercel.com/docs/caching/cdn-cache).
+
+Orden propuesto:
+
+1. Proveedores y datos descriptivos de sucursales.
+2. Categorías con DISTINCT autorizado y filtros de auditoría reutilizando usuarios/sucursales.
+3. Clientes y usuarios básicos separados de crédito, totales y configuración de acceso.
+4. Roles/descripciones de permisos y fichas descriptivas de productos/láminas con lecturas repetidas.
+5. Un reporte y candidatos condicionados cuando las mediciones justifiquen su coste.
+
+La prioridad combina estabilidad, tamaño y facilidad de integración; la frecuencia/latencia real decidirá el alcance final. Reglas/noticias/catálogo del Club mantienen su capa CDN. Esta ampliación es análisis y planificación, no implementación.
+
+## Plan original del 1 de octubre — contexto histórico
 
 ## Recomendación
 

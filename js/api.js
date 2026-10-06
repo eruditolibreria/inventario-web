@@ -1,3 +1,4 @@
+import { contextoCatalogos, invalidarCatalogos } from './contexto-catalogos.js';
 /* === API: Cliente HTTP con refresh token automatico === */
 
 /*
@@ -107,6 +108,9 @@ function resolverBaseUrl(accion) {
         OBTENER_COMPROBANTE: BASE_URL_COMPROBANTES,
         LISTAR_CLIENTES_MODULO: BASE_URL_CLIENTES,
         BUSCAR_CLIENTES_VENTA: BASE_URL_CLIENTES,
+        BUSCAR_CLIENTES_CATALOGO: BASE_URL_CLIENTES,
+        OBTENER_CLIENTE_SELECTOR: BASE_URL_CLIENTES,
+        LISTAR_CATEGORIAS_INVENTARIO: BASE_URL_INVENTARIO,
         OBTENER_CLIENTE: BASE_URL_CLIENTES,
         OBTENER_CLIENTE_MOVIMIENTOS: BASE_URL_CLIENTES,
         CREAR_CLIENTE: BASE_URL_CLIENTES,
@@ -195,7 +199,16 @@ async function api(params, { signal } = {}) {
         ? params.TOKEN
         : (store.sessionToken || params.TOKEN);
     if (body.TOKEN) body.TOKEN = tokenSolicitud;
-    const res = await fetch(resolverBaseUrl(params.ACCION), {
+    const esCatalogo = ["LISTAR_PROVEEDORES", "LISTAR_SUCURSALES", "LISTAR_ROLES_PERMISOS", "LISTAR_CATEGORIAS_INVENTARIO",
+        "BUSCAR_CLIENTES_CATALOGO", "LISTAR_FILTROS_AUDITORIA"].includes(params.ACCION);
+    const contextoSolicitud = contextoCatalogos(esCatalogo);
+    let endpoint = resolverBaseUrl(params.ACCION);
+    // Read catalogs beside PostgreSQL and Redis; leave transaction routing unchanged.
+    if (esCatalogo &&
+        /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(endpoint)) {
+        endpoint += (endpoint.includes("?") ? "&" : "?") + "forceFunctionRegion=us-west-2";
+    }
+    const res = await fetch(endpoint, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -204,7 +217,10 @@ async function api(params, { signal } = {}) {
         body: JSON.stringify(body),
         signal
     });
-    return res.json();
+    const data = await res.json();
+    if (!publica && params.ACCION !== "LOGOUT" && contextoSolicitud !== contextoCatalogos(esCatalogo)) return { ok: false, error: "SESION_CAMBIADA" };
+    if (data.ok && /^(CREAR_|ACTUALIZAR_|CAMBIAR_|ELIMINAR_|IMPORTAR_|REGISTRAR_|TRANSFERIR_|ASIGNAR_|DESACTIVAR_|ACTIVAR_|GUARDAR_|COMPRA$)/.test(params.ACCION)) invalidarCatalogos();
+    return data;
 }
 
 export { api };

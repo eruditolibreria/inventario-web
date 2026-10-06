@@ -1,3 +1,4 @@
+import { contextoCatalogos } from '../contexto-catalogos.js';
 /* === MODO COMPRA: Busqueda, registro y gestion de proveedores === */
 
 /*
@@ -33,6 +34,12 @@ import { nombreSucursalVisible } from '../sucursales.js';
 
 let _categoriasCompra = [];
 let _categoriasCompraCargadas = false;
+let _categoriasContexto = "";
+let _categoriasExpiran = 0;
+let _categoriasRevision = 0;
+globalThis.window?.addEventListener("eruditos:catalogos-invalidados", () => {
+    _categoriasCompra = []; _categoriasCompraCargadas = false; _categoriasRevision++; _cargaCategoriasCompra = null;
+});
 let _cargaCategoriasCompra = null;
 let _indiceCategoriaActivo = -1;
 
@@ -51,17 +58,23 @@ export function initCompra(callbacks) {
 
 function cargarCategoriasCompra(forzar = false) {
     if (!store.sessionToken || !can("inventario.ver")) return Promise.resolve([]);
-    if (!forzar && _categoriasCompraCargadas) return Promise.resolve(_categoriasCompra);
-    if (_cargaCategoriasCompra) return _cargaCategoriasCompra;
+    const contexto = contextoCatalogos();
+    if (_categoriasContexto !== contexto) { _categoriasCompra = []; _categoriasCompraCargadas = false; _categoriasRevision++; _cargaCategoriasCompra = null; }
+    if (!forzar && _categoriasCompraCargadas && Date.now() < _categoriasExpiran) return Promise.resolve(_categoriasCompra);
+    if (!forzar && _cargaCategoriasCompra) return _cargaCategoriasCompra;
+    const revision = ++_categoriasRevision;
+    _categoriasContexto = contexto;
 
-    _cargaCategoriasCompra = listarCategoriasInventario()
+    _cargaCategoriasCompra = listarCategoriasInventario({ forzar })
         .then(categorias => {
+            if (contexto !== contextoCatalogos() || revision !== _categoriasRevision) return [];
             _categoriasCompra = categorias;
+            _categoriasExpiran = categorias._expiraEn || 0;
             _categoriasCompraCargadas = true;
             return categorias;
         })
-        .catch(() => _categoriasCompra)
-        .finally(() => { _cargaCategoriasCompra = null; });
+        .catch(() => contexto === contextoCatalogos() ? _categoriasCompra : [])
+        .finally(() => { if (revision === _categoriasRevision) _cargaCategoriasCompra = null; });
     return _cargaCategoriasCompra;
 }
 

@@ -1,3 +1,4 @@
+import { vigenciaCatalogo } from './contexto-catalogos.js';
 /* === DB: Cliente directo Supabase (PostgREST + Realtime) === */
 /*
  * Antes todo pasaba por edge functions (service key). Desde la Fase 0
@@ -10,7 +11,7 @@
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from './config.js';
 import { store } from './store.js';
-import { renovarSesionSiNecesario } from './api.js';
+import { api, renovarSesionSiNecesario } from './api.js';
 
 const _sb = window.supabase;
 if (!_sb || !_sb.createClient) throw new Error("supabase-js no esta cargado");
@@ -101,7 +102,15 @@ export async function buscarSugerenciasVenta({ query, sucursal, signal }) {
 }
 
 /** Lista las categorías únicas visibles en el inventario autorizado. */
-export async function listarCategoriasInventario() {
+export async function listarCategoriasInventario({ forzar = false } = {}) {
+    const inicio = Date.now();
+    const response = await api({ ACCION: "LISTAR_CATEGORIAS_INVENTARIO", FORZAR: forzar });
+    if (response.ok && Array.isArray(response.datos)) {
+        Object.defineProperty(response.datos, "_expiraEn", { value: vigenciaCatalogo(response, inicio, 30000) });
+        return response.datos;
+    }
+    // During rolling deployment, old functions may not have this action yet.
+    if (response.error !== "ACCION_INVALIDA") throw new Error(response.error || "CATEGORIAS_NO_DISPONIBLES");
     const categorias = new Map();
     const limite = 1000;
     let desde = 0;

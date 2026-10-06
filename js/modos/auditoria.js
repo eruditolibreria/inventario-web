@@ -1,3 +1,4 @@
+import { contextoCatalogos, vigenciaCatalogo } from '../contexto-catalogos.js';
 /* === MODO AUDITORIA: consulta inmutable de acciones del sistema === */
 import { api } from '../api.js';
 import { store } from '../store.js';
@@ -6,6 +7,7 @@ import { manejarRespuesta } from '../ui.js';
 const LIMITE = 25;
 let paginaActual = 1;
 let filtrosSesion = '';
+let filtrosExpiran = 0;
 let filtrosAplicados = null;
 let sesionConsulta = '';
 let consultaSecuencia = 0;
@@ -60,13 +62,16 @@ function aplicarFiltrosAuditoria(data) {
 
 async function cargarFiltrosAuditoria() {
     if (!store.sessionToken) return false;
-    if (filtrosSesion === store.sessionToken) return true;
+    const contexto = contextoCatalogos();
+    if (filtrosSesion === contexto && Date.now() < filtrosExpiran) return true;
+    const inicio = Date.now();
     const token = store.sessionToken;
     const data = await api({ ACCION: 'LISTAR_FILTROS_AUDITORIA', TOKEN: token });
-    if (store.sessionToken !== token) return false;
+    if (contexto !== contextoCatalogos()) return false;
     if (!manejarRespuesta(data) || !data.ok) throw new Error(data?.error || 'No se pudieron cargar los filtros');
     aplicarFiltrosAuditoria(data);
-    filtrosSesion = token;
+    filtrosSesion = contexto;
+    filtrosExpiran = vigenciaCatalogo(data, inicio);
     return true;
 }
 

@@ -1,3 +1,4 @@
+import { contextoCatalogos, vigenciaCatalogo } from './contexto-catalogos.js';
 /* === SUCURSALES: selector global y listas compartidas === */
 
 import { store, setSucursalActiva } from './store.js';
@@ -6,19 +7,22 @@ import { mostrarMsg } from './utils.js';
 import { can } from './authorization.js';
 
 let sucursalesCache = [];
-let sucursalesActualizadasEn = 0;
+let sucursalesExpiranEn = 0;
+let sucursalesContexto = "";
+let sucursalesRevision = 0;
 let cargaSucursalesPromise = null;
-const CACHE_SUCURSALES_MS = 60 * 1000;
+globalThis.window?.addEventListener("eruditos:catalogos-invalidados", invalidarSucursalesCache);
+globalThis.window?.addEventListener("eruditos:logout", invalidarSucursalesCache);
 
 export const escaparSucursal = valor => String(valor ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 export const nombreSucursal = sucursal => sucursal?.nombre_visible || sucursal?.nombreVisible || sucursal?.nombre || sucursal?.id || "";
-export const obtenerSucursalesCache = () => sucursalesCache;
+export const obtenerSucursalesCache = () => sucursalesContexto === contextoCatalogos() ? sucursalesCache : [];
 
 export function nombreSucursalVisible(referencia) {
     const valor = String(referencia ?? "").trim();
     if (!valor) return "—";
     const normalizado = valor.toLocaleUpperCase("es");
-    const sucursal = [...sucursalesCache, ...(store.sessionSucursales || [])].find(item =>
+    const sucursal = [...obtenerSucursalesCache(), ...(store.sessionSucursales || [])].find(item =>
         [item.id, item.nombre].some(candidato => String(candidato ?? "").trim().toLocaleUpperCase("es") === normalizado)
     );
     return sucursal ? nombreSucursal(sucursal) : valor;
@@ -99,27 +103,37 @@ function aplicarSucursalesEnDropdowns(sucursales) {
 }
 
 export function invalidarSucursalesCache() {
-    sucursalesActualizadasEn = 0;
+    sucursalesExpiranEn = 0;
+    sucursalesRevision++;
+    sucursalesCache = [];
+    sucursalesContexto = "";
+    cargaSucursalesPromise = null;
 }
 
 export async function cargarSucursalesEnDropdowns(forzar = false) {
     if (!store.sessionToken) return [];
-    const vigente = sucursalesCache.length > 0 && Date.now() - sucursalesActualizadasEn < CACHE_SUCURSALES_MS;
+    const contexto = contextoCatalogos();
+    if (sucursalesContexto !== contexto) invalidarSucursalesCache();
+    const vigente = sucursalesCache.length > 0 && Date.now() < sucursalesExpiranEn;
     if (!forzar && vigente) {
         aplicarSucursalesEnDropdowns(sucursalesCache);
         return sucursalesCache;
     }
-    if (cargaSucursalesPromise) return cargaSucursalesPromise;
-    cargaSucursalesPromise = (async () => {
+    if (!forzar && cargaSucursalesPromise) return cargaSucursalesPromise;
+    const revision = ++sucursalesRevision;
+    const inicio = Date.now();
+    sucursalesContexto = contexto;
+    const pendiente = (async () => {
         try {
-            const data = await api({ ACCION: "LISTAR_SUCURSALES", TOKEN: store.sessionToken });
-            if (!data.ok) return [];
+            const data = await api({ ACCION: "LISTAR_SUCURSALES", TOKEN: store.sessionToken, FORZAR: forzar });
+            if (!data.ok || revision !== sucursalesRevision || contexto !== contextoCatalogos()) return [];
             sucursalesCache = data.datos || [];
-            sucursalesActualizadasEn = Date.now();
+            sucursalesExpiranEn = vigenciaCatalogo(data, inicio);
             aplicarSucursalesEnDropdowns(sucursalesCache);
             return sucursalesCache;
         } catch (_) { return []; }
-        finally { cargaSucursalesPromise = null; }
+        finally { if (revision === sucursalesRevision) cargaSucursalesPromise = null; }
     })();
-    return cargaSucursalesPromise;
+    cargaSucursalesPromise = pendiente;
+    return pendiente;
 }
