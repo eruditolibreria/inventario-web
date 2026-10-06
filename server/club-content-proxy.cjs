@@ -1,4 +1,4 @@
-// Solo contenido pÃºblico: las cookies de infraestructura del origen no llegan al CDN.
+// Solo contenido público: las cookies de infraestructura del origen no llegan al CDN.
 const ORIGIN = 'https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content';
 
 module.exports = function createClubContentProxy(resource) {
@@ -22,7 +22,7 @@ module.exports = function createClubContentProxy(resource) {
     return error(405, 'METODO_INVALIDO');
   }
   try {
-    // No reenviar Authorization, Cookie, parÃ¡metros ni cabeceras del visitante.
+    // No reenviar Authorization, Cookie, parámetros ni cabeceras del visitante.
     const upstream = await fetch(`${ORIGIN}/${resource}`, {
       method:'GET', redirect:'error', signal:AbortSignal.timeout(8000),
       headers:{Accept:'application/json'},
@@ -33,7 +33,7 @@ module.exports = function createClubContentProxy(resource) {
     const body = await upstream.text();
     if (JSON.parse(body).ok !== true) return error(503, 'CONTENIDO_NO_DISPONIBLE');
     const etag = upstream.headers.get('etag');
-    // Lista explÃ­cita: nunca copiar Set-Cookie ni cabeceras de Cloudflare/Supabase.
+    // Lista explícita: nunca copiar Set-Cookie ni cabeceras de Cloudflare/Supabase.
     res.setHeader('Cache-Control', upstream.headers.get('cache-control') || 'no-store');
     res.setHeader('Vercel-CDN-Cache-Control', upstream.headers.get('vercel-cdn-cache-control') || 'no-store');
     res.setHeader('Vercel-Cache-Tag', `club-${resource}`);

@@ -18,7 +18,7 @@ function origin(body={ok:true,datos:{},revision:1},status=200) {
     'vercel-cache-tag':'club-reglas','x-internal-test':'secret',
   }});
 }
-test('contenido pÃºblico conserva TTL/etiqueta pero excluye cookies y credenciales',async()=>{
+test('contenido público conserva TTL/etiqueta pero excluye cookies y credenciales',async()=>{
   const {res,calls}=await run({headers:{authorization:'Bearer private',cookie:'session=private'}},origin());
   assert.equal(res.statusCode,200);
   assert.equal(res.headers['vercel-cdn-cache-control'],'public, s-maxage=900, stale-while-revalidate=60');
@@ -28,7 +28,7 @@ test('contenido pÃºblico conserva TTL/etiqueta pero excluye cookies y credenci
   assert.deepEqual(calls[0][1].headers,{Accept:'application/json'});
   assert.equal(calls[0][0],'https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content/reglas');
 });
-test('no hay proxy arbitrario, consultas ni mÃ©todos de escritura',async()=>{
+test('no hay proxy arbitrario, consultas ni métodos de escritura',async()=>{
   for(const input of [{url:'/api/club/v1/reglas?cuenta=1'},{method:'POST'}]) {
     const {res,calls}=await run(input,origin());
     assert.ok([404,405].includes(res.statusCode));
@@ -46,7 +46,7 @@ test('errores de origen no se cachean ni exponen detalles',async()=>{
     assert.deepEqual(JSON.parse(res.body),{ok:false,error:'CONTENIDO_NO_DISPONIBLE'});
   }
 });
-test('HEAD y ETag condicional dÃ©bil/fuerte no devuelven cuerpo',async()=>{
+test('HEAD y ETag condicional débil/fuerte no devuelven cuerpo',async()=>{
   for(const headers of [{'if-none-match':'"abc"'},{'if-none-match':'W/"abc"'},{'if-none-match':'*'}]) {
     const {res}=await run({headers},origin());
     assert.equal(res.statusCode,304);
