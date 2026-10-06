@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const handler = require('../server/club-content-proxy.cjs');
+const createHandler = require('../server/club-content-proxy.cjs');
+const handler = createHandler('reglas');
 async function run({method='GET',url='/api/club/v1/reglas',headers={}}={}, origin) {
   const calls=[];
   const previous=global.fetch;
@@ -17,7 +18,7 @@ function origin(body={ok:true,datos:{},revision:1},status=200) {
     'vercel-cache-tag':'club-reglas','x-internal-test':'secret',
   }});
 }
-test('contenido público conserva TTL/etiqueta pero excluye cookies y credenciales',async()=>{
+test('contenido pÃºblico conserva TTL/etiqueta pero excluye cookies y credenciales',async()=>{
   const {res,calls}=await run({headers:{authorization:'Bearer private',cookie:'session=private'}},origin());
   assert.equal(res.statusCode,200);
   assert.equal(res.headers['vercel-cdn-cache-control'],'public, s-maxage=900, stale-while-revalidate=60');
@@ -27,8 +28,8 @@ test('contenido público conserva TTL/etiqueta pero excluye cookies y credencial
   assert.deepEqual(calls[0][1].headers,{Accept:'application/json'});
   assert.equal(calls[0][0],'https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content/reglas');
 });
-test('no hay proxy arbitrario, consultas ni métodos de escritura',async()=>{
-  for(const input of [{url:'/api/club/v1/cuentas'},{url:'/api/club/v1/reglas?cuenta=1'},{method:'POST'}]) {
+test('no hay proxy arbitrario, consultas ni mÃ©todos de escritura',async()=>{
+  for(const input of [{url:'/api/club/v1/reglas?cuenta=1'},{method:'POST'}]) {
     const {res,calls}=await run(input,origin());
     assert.ok([404,405].includes(res.statusCode));
     assert.equal(res.headers['cache-control'],'no-store');
@@ -45,7 +46,7 @@ test('errores de origen no se cachean ni exponen detalles',async()=>{
     assert.deepEqual(JSON.parse(res.body),{ok:false,error:'CONTENIDO_NO_DISPONIBLE'});
   }
 });
-test('HEAD y ETag condicional débil/fuerte no devuelven cuerpo',async()=>{
+test('HEAD y ETag condicional dÃ©bil/fuerte no devuelven cuerpo',async()=>{
   for(const headers of [{'if-none-match':'"abc"'},{'if-none-match':'W/"abc"'},{'if-none-match':'*'}]) {
     const {res}=await run({headers},origin());
     assert.equal(res.statusCode,304);
@@ -55,7 +56,20 @@ test('HEAD y ETag condicional débil/fuerte no devuelven cuerpo',async()=>{
   assert.equal(res.statusCode,200);
   assert.equal(res.body,undefined);
 });
-test('los dos proyectos utilizan el mismo intermediario',()=>{
-  assert.equal(require('../api/club/v1/[resource].js'),handler);
-  assert.equal(require('../club-standalone/api/club/v1/[resource].js'),handler);
+test('los dos proyectos exponen exclusivamente tres recursos públicos',async()=>{
+  assert.throws(()=>createHandler('cuentas'),/RECURSO_INVALIDO/);
+  const previous=global.fetch;
+  try {
+    for(const folder of ['api/club/v1','club-standalone/api/club/v1']) {
+      for(const resource of ['reglas','noticias','catalogo']) {
+        let called;
+        global.fetch=async url=>{called=url;return origin();};
+        const route=require('../'+folder+'/'+resource+'.js');
+        const res={setHeader(){},end(){}};
+        await route({method:'GET',url:'/api/club/v1/'+resource,headers:{}},res);
+        assert.equal(res.statusCode,200);
+        assert.ok(called.endsWith('/'+resource));
+      }
+    }
+  } finally {global.fetch=previous;}
 });
