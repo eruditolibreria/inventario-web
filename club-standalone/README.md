@@ -11,3 +11,8 @@ Este proyecto publica solo el portal de clientes. Usa el mismo código y el mism
 Al cambiar de dominio, los clientes deberán iniciar sesión de nuevo. Sus cuentas y puntos siguen en el mismo Supabase.
 
 Para revisar la salida antes de desplegar, ejecuta `node club-standalone/build.mjs` desde la raíz del repositorio. `dist/` es un resultado generado y no debe añadirse a Git.
+
+
+El contenido común ahora se lee por `/api/club/v1/{reglas,noticias,catalogo}` usando la caché CDN de Vercel. Antes de publicar esta versión, aplicar las dos migraciones CLUB del 5 de octubre de 2026 y desplegar las funciones `club-content`, `club-cache`, `club-public` y `club-admin` del backend. La invalidación requiere secretos únicamente en Supabase/Vault, sin variables privadas en este frontend. Consultar `docs/club-cache-despliegue.md` en eruditos-backend para el orden, configuración, verificación y recuperación.
+
+El service worker almacena exclusivamente archivos estáticos y su versión se genera automáticamente durante el build. El stock y los datos personales siguen fuera de la caché compartida.

@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "buildCommand": "node build.mjs",
-  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/club/v1/reglas",
@@ -28,7 +25,7 @@
       ]
     },
     {
-      "source": "/sw.js",
+      "source": "/club/sw.js",
       "headers": [
         {
           "key": "Cache-Control",
@@ -37,7 +34,7 @@
       ]
     },
     {
-      "source": "/index.html",
+      "source": "/club/index.html",
       "headers": [
         {
           "key": "Cache-Control",

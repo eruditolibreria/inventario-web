@@ -6,6 +6,8 @@ export const HOST = LOCAL
   ? "http://127.0.0.1:54321/functions/v1"
   : "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1";
 
+export const CLUB_CONTENT_URL = LOCAL ? `${HOST}/club-content` : '/api/club/v1';
+
 // Cliente directo Supabase (PostgREST + Realtime)
 export const SUPABASE_URL = LOCAL
   ? "http://127.0.0.1:54321"

@@ -1,6 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const projectDir = fileURLToPath(new URL('.', import.meta.url));
 const sourceDir = resolve(projectDir, '..');
@@ -10,7 +11,7 @@ if (dirname(outputDir) !== resolve(projectDir) || basename(outputDir) !== 'dist'
   throw new Error('La carpeta de salida debe estar dentro de club-standalone.');
 }
 
-const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'idle.js', 'styles.css', 'manifest.json', 'sw.js'];
+const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'idle.js', 'content.js', 'styles.css', 'manifest.json', 'sw.js'];
 const imageFiles = [
   'camino-erudito.webp',
   'logo-blanco.webp',
@@ -46,4 +47,17 @@ await copyFile(join(sourceDir, 'js', 'config.js'), join(outputDir, 'js', 'config
 await copyFile(join(sourceDir, 'js', 'back-exit.js'), join(outputDir, 'js', 'back-exit.js'));
 await mkdir(join(outputDir, 'js', 'vendor'), {recursive:true});
 await copyFile(join(sourceDir, 'js', 'vendor', 'supabase-umd.js'), join(outputDir, 'js', 'vendor', 'supabase-umd.js'));
+// Cambiar la cache estatica automaticamente cuando cambia cualquier archivo publicado.
+const hash = createHash('sha256');
+async function fingerprint(dir, prefix = '') {
+  for (const file of (await readdir(dir, {withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))) {
+    const relative = `${prefix}${file.name}`;
+    if (file.isDirectory()) await fingerprint(join(dir,file.name), `${relative}/`);
+    else if (relative !== 'sw.js') hash.update(relative).update(await readFile(join(dir,file.name)));
+  }
+}
+await fingerprint(outputDir);
+const workerPath = join(outputDir, 'sw.js');
+const worker = await readFile(workerPath, 'utf8');
+await writeFile(workerPath, worker.replace(/const CACHE = '[^']+';/, `const CACHE = 'club-eruditos-${hash.digest('hex').slice(0,16)}';`));
 console.log('Portal Club independiente listo en club-standalone/dist.');

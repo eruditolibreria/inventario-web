@@ -1,11 +1,14 @@
-import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, normalizarUrlPublica } from '../js/config.js';
+import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, CLUB_CONTENT_URL, normalizarUrlPublica } from '../js/config.js';
 import { createClubNavigation } from './navigation.js';
 import { createClubSessionWatcher, sessionId } from './session.js';
 import { createClubIdle } from './idle.js';
 import { setupDoubleBack } from '../js/back-exit.js';
+import { createClubContentClient, mergeClubRewards } from './content.js';
 
 const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
+const contentClient = createClubContentClient({baseUrl:CLUB_CONTENT_URL,fallbackUrl:`${HOST}/club-content`});
+let reglasPublicas=null,noticiasPublicas=[],inicioPrivado=null;
 const SESSION_KEY = 'club_eruditos_session';
 const DEVICE_KEY = 'club_eruditos_device_id';
 const CODES_KEY = 'club_eruditos_retiros';
@@ -167,7 +170,33 @@ async function refreshIfNeeded() {
   try { await refreshing; } finally { refreshing=null; }
 }
 
-async function clubApi(accion, body={}) { await refreshIfNeeded(); if (!session?.token) return {ok:false,error:'NO_AUTORIZADO'}; return post(PUBLIC_URL, { ACCION:accion, ...body }, session.token); }
+async function clubApi(accion, body={}) {
+  await refreshIfNeeded();
+  if (!session?.token) return {ok:false,error:'NO_AUTORIZADO'};
+  if(accion==='PREMIOS')return cargarCatalogoDisponible();
+  return post(PUBLIC_URL, { ACCION:accion, ...(accion==='RESUMEN'?{SEPARAR_CONTENIDO:true}:{}), ...body }, session.token);
+}
+async function cargarCatalogoDisponible() {
+  try {
+    const [publico,disponibilidad]=await Promise.all([contentClient.read('catalogo'),clubApi('DISPONIBILIDAD')]);
+    if(!disponibilidad.ok) {
+      if(['NO_AUTORIZADO','SESION_TRASLADADA','SESION_INACTIVA'].includes(disponibilidad.error))return disponibilidad;
+      throw new Error('DISPONIBILIDAD_NO_DISPONIBLE');
+    }
+    let catalogo=publico;
+    if(Number(publico.revision)!==Number(disponibilidad.revisionCatalogo)) {
+      catalogo=await clubApi('CATALOGO_ACTUAL');
+      if(!catalogo.ok)return catalogo;
+      contentClient.remember('catalogo',catalogo);
+    }
+    return mergeClubRewards(catalogo,disponibilidad);
+  } catch (_) {
+    if(!session?.token)return {ok:false,error:'NO_AUTORIZADO'};
+    // Compatibilidad durante el despliegue gradual de funciones y rutas.
+    return post(PUBLIC_URL,{ACCION:'PREMIOS'},session.token);
+  }
+}
+
 
 const readKey = (accion, body={}) => `${accion}:${JSON.stringify(body)}`;
 function requestRead(accion, body={}, ttl=30000) {
@@ -177,7 +206,7 @@ function requestRead(accion, body={}, ttl=30000) {
   if(readPending.has(key))return readPending.get(key);
   const epoch=viewEpoch;
   const pending=clubApi(accion,body).then(data=>{
-    if(data.ok && epoch===viewEpoch)readCache.set(key,{data,at:Date.now()});
+    if(data.ok && epoch===viewEpoch && accion!=='PREMIOS')readCache.set(key,{data,at:Date.now()});
     return data;
   }).finally(()=>{if(readPending.get(key)===pending)readPending.delete(key);});
   readPending.set(key,pending);
@@ -236,6 +265,8 @@ function showAuth() {
   enlaceReferido='';
   premioSeleccionado=null;
   canjeParaCancelar=null;
+  inicioPrivado=null;
+  $('notificaciones').replaceChildren();
   clearTimeout(usuarioTimer);
   usuarioRevision++;
   $('recoveryCodes').textContent='';
@@ -262,6 +293,8 @@ function showApp() {
   renderCabecera(session?.cliente);
   setStatus('appStatus','Cargando tu Club…');
   ocultarSplash();
+  inicioPrivado=null;
+  $('notificaciones').replaceChildren();
   void cargarPrimeraVista();
   if (session?.cliente?.usuario === null) $('usernameDialog').showModal();
 }
@@ -440,7 +473,7 @@ function renderRetos(retos=[]) {
     {codigo:'MAYORISTA',nombre:'Erudito Comedido',etiqueta:'RETO MAYORISTA',meta:10,unidad:'unidades',periodicidad:'week'},
     {codigo:'AMIGO_FIEL',nombre:'Erudito Amiguero',etiqueta:'RETO AMIGO FIEL',meta:10,unidad:'amigos',periodicidad:'month'},
   ];
-  $('retosClub').innerHTML=base.map(reto=>retoCard({...reto,...retos.find(r=>r.codigo===reto.codigo)})).join('');
+  $('retosClub').innerHTML=base.map(reto=>retoCard({...reto,...retos.find(r=>r.codigo===reto.codigo),...reglasPublicas?.retos?.find(r=>r.codigo===reto.codigo)})).join('');
 }
 
 function renderProgreso(progreso) {
@@ -610,7 +643,27 @@ $('copiarMensaje').addEventListener('click',async()=>{
   catch(_){campo.focus();campo.select();setStatus('compartirEstado','Selecciona y copia el mensaje para compartirlo.',true);}
 });
 
+async function cargarContenidoInicio(epoch) {
+  const results=await Promise.allSettled([contentClient.read('reglas'),contentClient.read('noticias')]);
+  if(epoch!==viewEpoch||!session?.token)return;
+  if(results[0].status==='fulfilled')reglasPublicas=results[0].value.datos;
+  if(results[1].status==='fulfilled')noticiasPublicas=results[1].value.datos;
+  renderContenidoInicio();
+  if(inicioPrivado?.progreso)renderRetos(inicioPrivado.progreso.retos);
+}
+function renderContenidoInicio() {
+  if(!session?.token)return;
+  const terminos=reglasPublicas?.terminos??inicioPrivado?.terminos;
+  $('terminosClub').hidden=!terminos; $('terminosClubTexto').textContent=terminos||'';
+  $('puntosBienvenidaReferido').textContent=Number(reglasPublicas?.puntosBienvenida??inicioPrivado?.puntosBienvenida??0).toLocaleString('es-BO');
+  const personales=inicioPrivado?.notificaciones||[];
+  const noticias=noticiasPublicas.map(n=>({...n,tipo:'NOTICIA',creado_en:n.publicada_en||n.creado_en}));
+  const novedades=[...noticias,...personales.filter(n=>!noticias.some(item=>n.tipo==='NOTICIA'&&item.id===n.id))]
+    .sort((a,b)=>Date.parse(b.creado_en)-Date.parse(a.creado_en)).slice(0,10);
+  $('notificaciones').innerHTML=novedades.map(n=>`<article class="list-item"><div><strong>${esc(n.titulo)}</strong><p>${esc(n.mensaje)}</p></div></article>`).join('')||'<div class="list-item">No hay novedades.</div>';
+}
 async function cargarInicio(){
+  void cargarContenidoInicio(viewEpoch);
   return loadRead('RESUMEN',{},30000,renderInicio,'Cargando tu Club…');
 }
 async function cargarPrimeraVista() {
@@ -648,7 +701,7 @@ function renderInicio(data){
   const cambioActivacion=clubPendiente!==pendiente;
   clubPendiente=pendiente;
   renderCabecera(data.cliente,pendiente?null:Number(data.progreso?.nivel||1),pendiente);
-  $('puntosBienvenidaReferido').textContent=Number(data.puntosBienvenida||0).toLocaleString('es-BO');
+  inicioPrivado=data;
   $('clubProgreso').hidden=pendiente||!data.progreso;
   if(!pendiente&&data.progreso)renderProgreso(data.progreso);
   $('activacionPanel').hidden=!pendiente;
@@ -660,8 +713,7 @@ function renderInicio(data){
   if(cambioActivacion)navigation.refresh();
   $('saldoDisponible').textContent=Number(data.cuenta?.saldo_disponible||0).toLocaleString('es-BO'); $('saldoPendiente').textContent=Number(data.cuenta?.saldo_pendiente||0).toLocaleString('es-BO');
   const vence=data.proximoVencimiento; $('vencimiento').hidden=!vence; if(vence)$('vencimiento').textContent=`${Number(vence.puntos_disponibles).toLocaleString('es-BO')} puntos vencen el ${fecha(vence.vence_en)}.`;
-  $('terminosClub').hidden=!data.terminos; $('terminosClubTexto').textContent=data.terminos||'';
-  $('notificaciones').innerHTML=(data.notificaciones||[]).map(n=>`<article class="list-item"><div><strong>${esc(n.titulo)}</strong><p>${esc(n.mensaje)}</p></div></article>`).join('')||'<div class="list-item">No hay novedades.</div>';
+  renderContenidoInicio();
 }
 
 async function cargarPremios(){
@@ -669,7 +721,7 @@ async function cargarPremios(){
 }
 function renderPremios(data){
   const saldo=Number($('saldoDisponible').textContent.replace(/\D/g,''))||0;
-  $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);const nivelMinimo=Number(p.nivel_minimo||1);const sinNivel=!clubPendiente&&clubNivel<nivelMinimo;const foto=imagen?`<button type="button" class="reward-image" data-image="${esc(imagen)}" data-title="${esc(p.nombre)}" aria-label="Ampliar imagen de ${esc(p.nombre)}"><img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.parentElement.disabled=true;this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span></button>`:'<div class="reward-image"><span>E</span></div>';return `<article class="reward">${foto}<span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p>${nivelMinimo>1?`<small>Desde ${esc(NIVELES[nivelMinimo-1]||NIVELES[0])}</small>`:''}<div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||sinNivel||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinNivel?'Nivel insuficiente':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
+  $('premiosGrid').innerHTML=(data.datos||[]).map(p=>{const imagen=normalizarUrlPublica(p.imagen_url);const stock=Number(p.stock_disponible||0);const sinPuntos=!clubPendiente&&saldo<Number(p.costo_puntos);const sinSucursal=!p.club_premios_sucursales?.length;const nivelMinimo=Number(p.nivel_minimo||1);const sinNivel=!clubPendiente&&clubNivel<nivelMinimo;const foto=imagen?`<button type="button" class="reward-image" data-image="${esc(imagen)}" data-title="${esc(p.nombre)}" aria-label="Ampliar imagen de ${esc(p.nombre)}"><img src="${esc(imagen)}" alt="${esc(p.nombre)}" loading="lazy" decoding="async" onerror="this.parentElement.disabled=true;this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>E</span></button>`:'<div class="reward-image"><span>E</span></div>';return `<article class="reward">${foto}<span class="eyebrow">${esc(p.codigo)}</span><h3>${esc(p.nombre)}</h3><p>${esc(p.descripcion||'Un beneficio para miembros del Club.')}</p><p><strong>Stock disponible: ${stock}</strong></p>${nivelMinimo>1?`<small>Desde ${esc(NIVELES[nivelMinimo-1]||NIVELES[0])}</small>`:''}<div class="price">${Number(p.costo_puntos).toLocaleString('es-BO')} pts</div><button class="primary" data-redeem="${p.id}" ${sinPuntos||sinNivel||sinSucursal||stock<=0?'disabled':''}>${stock<=0?'Agotado':sinSucursal?'Sin disponibilidad':sinNivel?'Nivel insuficiente':sinPuntos?'Te faltan puntos':'Canjear'}</button></article>`;}).join('')||'<div class="list-item">Próximamente habrá nuevos premios.</div>';
   $('premiosGrid').querySelectorAll('[data-image]').forEach(btn=>btn.addEventListener('click',()=>abrirImagen(btn.dataset.image,btn.dataset.title)));
   $('premiosGrid').querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',()=>clubPendiente?mostrarActivacion():abrirCanje((data.datos||[]).find(p=>p.id===Number(btn.dataset.redeem)))));
   document.querySelector('[data-view-panel="premios"] [data-card-loading]').hidden=true;
@@ -698,7 +750,21 @@ function mostrarActivacion(){
   $('activacionToken').focus({preventScroll:true});
 }
 
-function abrirCanje(premio){ premioSeleccionado=premio; $('redeemTitle').textContent=`Canjear ${premio.nombre}`; const sucursales=premio.club_premios_sucursales||[]; $('redeemBranch').innerHTML=sucursales.map(s=>`<option value="${esc(s.sucursal_id)}">${esc(s.sucursal_nombre||s.sucursal_id)}</option>`).join(''); $('redeemDialog').showModal(); }
+async function abrirCanje(premio){
+  const epoch=viewEpoch;
+  try {
+    const data=await clubApi('PREMIOS');
+    if(epoch!==viewEpoch||!session?.token)return;
+    if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;}
+    renderPremios(data);
+    const actual=data.datos.find(item=>item.id===premio.id);
+    if(!actual||Number(actual.stock_disponible)<=0||!actual.club_premios_sucursales?.length){setStatus('appStatus','El premio ya no está disponible.',true);return;}
+    premioSeleccionado=actual;
+    $('redeemTitle').textContent=`Canjear ${actual.nombre}`;
+    $('redeemBranch').innerHTML=actual.club_premios_sucursales.map(s=>`<option value="${esc(s.sucursal_id)}">${esc(s.sucursal_nombre||s.sucursal_id)}</option>`).join('');
+    $('redeemDialog').showModal();
+  } catch (_) {setStatus('appStatus','No se pudo verificar la disponibilidad. Intenta nuevamente.',true);}
+}
 $('cancelRedeem').addEventListener('click',()=>$('redeemDialog').close());
 $('confirmRedeem').addEventListener('click',async()=>{ if(!premioSeleccionado)return; $('confirmRedeem').disabled=true; const data=await clubApi('CREAR_CANJE',{PREMIO_ID:premioSeleccionado.id,SUCURSAL_ID:$('redeemBranch').value,IDEMPOTENCY_KEY:idempotencia()}); $('confirmRedeem').disabled=false; if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;} if(data.codigoRetiro){const codes=readJson(CODES_KEY,{});codes[data.canjeId||data.id]=data.codigoRetiro;localStorage.setItem(CODES_KEY,JSON.stringify(codes));} resetReadCache(); $('redeemDialog').close(); setStatus('appStatus','Canje solicitado. Guarda tu código de retiro.'); document.querySelector('nav [data-view="canjes"]').click(); });
 
@@ -731,7 +797,7 @@ async function cargarCanjes(){
 }
 function renderCanjes(data,pagina){
   const codes=readJson(CODES_KEY,{});
-  const html=(data.datos||[]).map(c=>{const p=Array.isArray(c.club_premios)?c.club_premios[0]:c.club_premios||{};const imagen=normalizarUrlPublica(p.imagen_url);const code=codes[c.id];const cancelable=c.estado==='SOLICITADO';return `<article class="list-item"><div class="list-product">${imagen?`<img class="list-thumb" src="${esc(imagen)}" alt="${esc(p.nombre||'Premio')}" loading="lazy">`:''}<div><strong>${esc(p.nombre||'Premio')}</strong><p>${esc(c.estado)} · ${esc(c.sucursal_nombre||c.sucursal_id)} · ${fecha(c.solicitado_en)}</p>${code?`<div class="code">${esc(code)}</div><small>Código de retiro</small>`:''}</div></div><div><span class="points negative">-${Number(c.puntos_total)} pts</span>${cancelable?`<button data-cancel="${c.id}">Cancelar</button>`:''}</div></article>`;}).join('');
+  const html=(data.datos||[]).map(c=>{const p=Array.isArray(c.club_premios)?c.club_premios[0]:c.club_premios||{};const imagen=normalizarUrlPublica(p.imagen_url);const code=codes[c.id];const cancelable=c.estado==='SOLICITADO';return `<article class="list-item"><div class="list-product">${imagen?`<img class="list-thumb" src="${esc(imagen)}" alt="${esc(p.nombre||'Premio')}" loading="lazy" decoding="async">`:''}<div><strong>${esc(p.nombre||'Premio')}</strong><p>${esc(c.estado)} · ${esc(c.sucursal_nombre||c.sucursal_id)} · ${fecha(c.solicitado_en)}</p>${code?`<div class="code">${esc(code)}</div><small>Código de retiro</small>`:''}</div></div><div><span class="points negative">-${Number(c.puntos_total)} pts</span>${cancelable?`<button data-cancel="${c.id}">Cancelar</button>`:''}</div></article>`;}).join('');
   if(pagina===1)$('canjesLista').innerHTML=html||'<div class="list-item">Aún no realizaste canjes.</div>';
   else $('canjesLista').insertAdjacentHTML('beforeend',html);
   canjesPagina=pagina;

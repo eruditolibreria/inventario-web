@@ -16,7 +16,7 @@ function setup(respuestas) {
     SUPABASE_ANON_KEY:'anon-test',PUBLIC_URL:'http://local/club-public',
     mensajeError:code=>code,setStatus:(target,message)=>node(target).textContent=message,
     renderInicio:data=>{renders++;node('hero').hidden=false;node('clubProgreso').hidden=false;node('saldoDisponible').textContent=String(data.saldo);},
-    prefetchTabs:()=>prefetch++,
+    prefetchTabs:()=>prefetch++,cargarContenidoInicio:async()=>{},
     saveSession:value=>{context.session=value;context.viewEpoch++;},showAuth:()=>{node('appView').hidden=true;},
     terminarSesion:()=>{context.saveSession(null);context.showAuth();},
   });
