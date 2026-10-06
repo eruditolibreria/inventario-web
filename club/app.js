@@ -1,4 +1,5 @@
-import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, CLUB_CONTENT_URL, normalizarUrlPublica, LOGIN_REGION_ENABLED } from '../js/config.js';
+import * as loginConfig from '../js/config.js';
+import { HOST, SUPABASE_URL, SUPABASE_ANON_KEY, CLUB_CONTENT_URL, normalizarUrlPublica } from '../js/config.js';
 import { createClubNavigation } from './navigation.js';
 import { createClubSessionWatcher, sessionId } from './session.js';
 import { createClubIdle } from './idle.js';
@@ -142,7 +143,7 @@ function mensajeError(code) {
 }
 
 async function post(url, body, token) {
-  if (body.ACCION === 'LOGIN' && typeof LOGIN_REGION_ENABLED !== 'undefined' && LOGIN_REGION_ENABLED && url === AUTH_URL && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(url)) {
+  if (body.ACCION === 'LOGIN' && typeof loginConfig !== 'undefined' && loginConfig.LOGIN_REGION_ENABLED !== false && url === AUTH_URL && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(url)) {
     url += (url.includes('?') ? '&' : '?') + 'forceFunctionRegion=us-west-2';
   }
   const controller=new AbortController();

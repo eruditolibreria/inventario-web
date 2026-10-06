@@ -1,5 +1,5 @@
 // Cambiar la versión al publicar una nueva entrega de recursos estáticos.
-const CACHE_NAME = 'eruditos-v125';
+const CACHE_NAME = 'eruditos-v126';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -26,9 +26,8 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => Promise.all(
       cacheNames.filter(cacheName => cacheName.startsWith('eruditos-v') && cacheName !== CACHE_NAME).map(cacheName => caches.delete(cacheName))
-    ))
+    )).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 function esRecursoEstatico(request, url) {
@@ -56,9 +55,9 @@ self.addEventListener('fetch', event => {
   // Las páginas se actualizan desde red; los recursos estáticos ya visitados
   // se entregan desde caché para no retrasar la interfaz ni guardar respuestas API.
   if (request.mode === 'navigate') {
-    event.respondWith(actualizarCache(request).catch(() => caches.match(request)));
+    event.respondWith(actualizarCache(request).catch(() => caches.open(CACHE_NAME).then(cache => cache.match(request))));
     return;
   }
 
-  event.respondWith(caches.match(request).then(cached => cached || actualizarCache(request)));
+  event.respondWith(caches.open(CACHE_NAME).then(cache => cache.match(request)).then(cached => cached || actualizarCache(request)));
 });

@@ -1,3 +1,4 @@
+import * as loginConfig from './config.js';
 import { contextoCatalogos, invalidarCatalogos } from './contexto-catalogos.js';
 /* === API: Cliente HTTP con refresh token automatico === */
 
@@ -16,7 +17,7 @@ import { contextoCatalogos, invalidarCatalogos } from './contexto-catalogos.js';
  *   if (!data.ok) { manejarRespuesta(data); return; }
  */
 
-import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES, BASE_URL_CLIENTES, BASE_URL_PROVEEDORES, BASE_URL_ARQUEO, BASE_URL_AUDITORIA, BASE_URL_CLUB_ADMIN, SUPABASE_ANON_KEY, LOGIN_REGION_ENABLED } from './config.js';
+import { BASE_URL_ERUDITOS, BASE_URL_USUARIOS, BASE_URL_LAMINAS, BASE_URL_SERVICIOS, BASE_URL_INVENTARIO, BASE_URL_VENTAS, BASE_URL_CAJA, BASE_URL_REPORTES, BASE_URL_CUENTAS, BASE_URL_DEVOLUCIONES, BASE_URL_COMPROBANTES, BASE_URL_CLIENTES, BASE_URL_PROVEEDORES, BASE_URL_ARQUEO, BASE_URL_AUDITORIA, BASE_URL_CLUB_ADMIN, SUPABASE_ANON_KEY } from './config.js';
 import { store, setSession, setTokens } from './store.js';
 
 /**
@@ -155,7 +156,7 @@ function resolverBaseUrl(accion) {
 let _renovacion = null;
 
 function accesoRegional(endpoint, accion) {
-    if (typeof LOGIN_REGION_ENABLED !== 'undefined' && LOGIN_REGION_ENABLED && ['LOGIN', 'REFRESH_TOKEN'].includes(accion) && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(endpoint)) {
+    if (typeof loginConfig !== 'undefined' && loginConfig.LOGIN_REGION_ENABLED !== false && ['LOGIN', 'REFRESH_TOKEN'].includes(accion) && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(endpoint)) {
         return endpoint + (endpoint.includes('?') ? '&' : '?') + 'forceFunctionRegion=us-west-2';
     }
     return endpoint;

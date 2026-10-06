@@ -90,8 +90,12 @@
 
         // CODIGO ORIGINAL
         if ('serviceWorker'in navigator) {
+                // Recupera una carga de módulos interrumpida al cambiar de versión.
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (typeof window.loginSubmit !== 'function') window.location.reload();
+                });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
                     .then(reg => reg.update())
                     .catch(err => console.warn('[SW] Error al actualizar:', err));
             });

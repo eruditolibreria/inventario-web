@@ -1,4 +1,4 @@
-const CACHE = 'club-eruditos-v32';
+const CACHE = 'club-eruditos-v33';
 const SHELL = [
   '/club/index.html', '/club/styles.css', '/club/app.js', '/club/navigation.js', '/club/session.js', '/club/idle.js', '/club/content.js', '/js/back-exit.js', '/js/config.js', '/js/vendor/supabase-umd.js',
   '/club/splash-eruditos.png', '/club/launchericon-192x192.png', '/club/manifest.json',
@@ -30,11 +30,11 @@ self.addEventListener('fetch', event => {
         event.waitUntil(caches.open(CACHE).then(cache => cache.put('/club/index.html', copy)));
       }
       return response;
-    }).catch(() => caches.match('/club/index.html')));
+    }).catch(() => caches.open(CACHE).then(cache => cache.match('/club/index.html'))));
     return;
   }
 
-  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
+  event.respondWith(caches.open(CACHE).then(cache => cache.match(request)).then(cached => cached || fetch(request).then(response => {
     if (response.ok) {
       const copy = response.clone();
       event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
