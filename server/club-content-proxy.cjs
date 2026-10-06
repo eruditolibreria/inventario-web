@@ -25,7 +25,8 @@ module.exports = function createClubContentProxy(resource) {
     // No reenviar Authorization, Cookie, parámetros ni cabeceras del visitante.
     const upstream = await fetch(`${ORIGIN}/${resource}`, {
       method:'GET', redirect:'error', signal:AbortSignal.timeout(8000),
-      headers:{Accept:'application/json'},
+      // El catálogo se lee junto a PostgreSQL; la cabecera es interna, nunca del visitante.
+      headers:resource === 'catalogo' ? {Accept:'application/json', 'x-region':'us-west-2'} : {Accept:'application/json'},
     });
     if (upstream.status !== 200 || !upstream.headers.get('content-type')?.includes('application/json')) {
       return error(503, 'CONTENIDO_NO_DISPONIBLE');

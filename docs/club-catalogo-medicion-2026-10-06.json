@@ -1,0 +1,454 @@
+{
+  "originSamples": [
+    {
+      "name": "independent",
+      "index": 0,
+      "http": 200,
+      "ms": 3960.69,
+      "cdn": "MISS",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 1,
+      "http": 200,
+      "ms": 366.33,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 2,
+      "http": 200,
+      "ms": 272.79,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 3,
+      "http": 200,
+      "ms": 123.33,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 4,
+      "http": 200,
+      "ms": 266.55,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 5,
+      "http": 200,
+      "ms": 119.58,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 6,
+      "http": 200,
+      "ms": 123.7,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 7,
+      "http": 200,
+      "ms": 162.28,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 8,
+      "http": 200,
+      "ms": 119.56,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "independent",
+      "index": 9,
+      "http": 200,
+      "ms": 126.45,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 0,
+      "http": 200,
+      "ms": 1658.15,
+      "cdn": "MISS",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 1,
+      "http": 200,
+      "ms": 398.01,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 2,
+      "http": 200,
+      "ms": 124.29,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 3,
+      "http": 200,
+      "ms": 137.35,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 4,
+      "http": 200,
+      "ms": 123.8,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 5,
+      "http": 200,
+      "ms": 133.68,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 6,
+      "http": 200,
+      "ms": 132,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 7,
+      "http": 200,
+      "ms": 123.99,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 8,
+      "http": 200,
+      "ms": 139.97,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "integrated",
+      "index": 9,
+      "http": 200,
+      "ms": 132.24,
+      "cdn": "HIT",
+      "region": null,
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 0,
+      "http": 200,
+      "ms": 1447.19,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 1,
+      "http": 200,
+      "ms": 1062.62,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 2,
+      "http": 200,
+      "ms": 982.22,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 3,
+      "http": 200,
+      "ms": 950.69,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 4,
+      "http": 200,
+      "ms": 958.53,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 5,
+      "http": 200,
+      "ms": 509.81,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 6,
+      "http": 200,
+      "ms": 487.19,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 7,
+      "http": 200,
+      "ms": 1277.17,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 8,
+      "http": 200,
+      "ms": 457.93,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    },
+    {
+      "name": "origin",
+      "index": 9,
+      "http": 200,
+      "ms": 867.09,
+      "cdn": null,
+      "region": "sa-east-1",
+      "bytes": 514,
+      "items": 1,
+      "revision": 6,
+      "ok": true
+    }
+  ],
+  "readiness": {
+    "measuredAt": "2026-10-06T19:39:22.912Z",
+    "anonymousProbeHttp": 403,
+    "metrics": {
+      "ok": true,
+      "region": "us-west-2",
+      "samples": 30,
+      "failed": 0,
+      "equal": true,
+      "items": 1,
+      "bytes": 537,
+      "sourceP50": 37.23,
+      "sourceP95": 398.71,
+      "revisionP50": 37.2,
+      "revisionP95": 369.3,
+      "redisP50": 1.48,
+      "redisP95": 1.88,
+      "versionedHitP50": 38.94,
+      "versionedHitP95": 371.03,
+      "note": "Component timing with real public catalogue; includes fresh PostgreSQL revision on hits. No business mutations."
+    },
+    "regionalPublic": {
+      "n": 10,
+      "p50": 431.68,
+      "p95": 503.98,
+      "region": "us-west-2"
+    },
+    "samples": [
+      {
+        "ms": 503.98,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 421.6,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 431.68,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 373.67,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 437.53,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 454.45,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 451.26,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 418.76,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 436.41,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      },
+      {
+        "ms": 422.1,
+        "region": "us-west-2",
+        "items": 1,
+        "revision": 6
+      }
+    ]
+  }
+}

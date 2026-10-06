@@ -1,13 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const createHandler = require('../server/club-content-proxy.cjs');
-const handler = createHandler('reglas');
-async function run({method='GET',url='/api/club/v1/reglas',headers={}}={}, origin) {
+async function run({method='GET',url='/api/club/v1/reglas',headers={}}={}, origin, resource='reglas') {
   const calls=[];
   const previous=global.fetch;
   global.fetch=async (...args)=>{calls.push(args); if(origin instanceof Error) throw origin; return origin;};
   const res={headers:{}, setHeader(k,v){this.headers[k.toLowerCase()]=v;}, end(body){this.body=body;}};
-  try {await handler({method,url,headers},res);} finally {global.fetch=previous;}
+  try {await createHandler(resource)({method,url,headers},res);} finally {global.fetch=previous;}
   return {res,calls};
 }
 function origin(body={ok:true,datos:{},revision:1},status=200) {
@@ -72,4 +71,12 @@ test('los dos proyectos exponen exclusivamente tres recursos públicos',async()=
       }
     }
   } finally {global.fetch=previous;}
+});
+
+test('solo catálogo usa la región de PostgreSQL y descarta la región del visitante',async()=>{
+  for (const resource of ['reglas','noticias','catalogo']) {
+    const {res,calls}=await run({url:'/api/club/v1/'+resource,headers:{'x-region':'sa-east-1',authorization:'Bearer private',cookie:'session=private'}},origin(),resource);
+    assert.equal(res.statusCode,200);
+    assert.deepEqual(calls[0][1].headers,resource === 'catalogo' ? {Accept:'application/json','x-region':'us-west-2'} : {Accept:'application/json'});
+  }
 });
