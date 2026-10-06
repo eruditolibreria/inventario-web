@@ -1,29 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    {
-      "source": "/api/club/v1/reglas",
-      "destination": "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content/reglas"
-    },
-    {
-      "source": "/api/club/v1/noticias",
-      "destination": "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content/noticias"
-    },
-    {
-      "source": "/api/club/v1/catalogo",
-      "destination": "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content/catalogo"
-    }
-  ],
   "headers": [
-    {
-      "source": "/api/club/v1/:path*",
-      "headers": [
-        {
-          "key": "x-vercel-enable-rewrite-caching",
-          "value": "1"
-        }
-      ]
-    },
     {
       "source": "/club/sw.js",
       "headers": [
@@ -42,5 +19,8 @@
         }
       ]
     }
+  ],
+  "regions": [
+    "gru1"
   ]
 }

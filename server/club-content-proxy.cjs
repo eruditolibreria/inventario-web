@@ -1,0 +1,49 @@
+// Solo contenido público: las cookies de infraestructura del origen no llegan al CDN.
+const ORIGIN = 'https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1/club-content';
+
+module.exports = async function clubContentProxy(req, res) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  const error = (status, code) => {
+    res.statusCode = status;
+    res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ok:false, error:code}));
+  };
+  const url = new URL(req.url, 'https://club.invalid');
+  const resource = url.pathname.match(/^\/api\/club\/v1\/(reglas|noticias|catalogo)\/?$/)?.[1];
+  if (!resource || url.search) return error(404, 'RECURSO_INVALIDO');
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Allow', 'GET, HEAD, OPTIONS');
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (!['GET', 'HEAD'].includes(req.method)) {
+    res.setHeader('Allow', 'GET, HEAD, OPTIONS');
+    return error(405, 'METODO_INVALIDO');
+  }
+  try {
+    // No reenviar Authorization, Cookie, parámetros ni cabeceras del visitante.
+    const upstream = await fetch(`${ORIGIN}/${resource}`, {
+      method:'GET', redirect:'error', signal:AbortSignal.timeout(8000),
+      headers:{Accept:'application/json'},
+    });
+    if (upstream.status !== 200 || !upstream.headers.get('content-type')?.includes('application/json')) {
+      return error(503, 'CONTENIDO_NO_DISPONIBLE');
+    }
+    const body = await upstream.text();
+    if (JSON.parse(body).ok !== true) return error(503, 'CONTENIDO_NO_DISPONIBLE');
+    const etag = upstream.headers.get('etag');
+    // Lista explícita: nunca copiar Set-Cookie ni cabeceras de Cloudflare/Supabase.
+    res.setHeader('Cache-Control', upstream.headers.get('cache-control') || 'no-store');
+    res.setHeader('Vercel-CDN-Cache-Control', upstream.headers.get('vercel-cdn-cache-control') || 'no-store');
+    res.setHeader('Vercel-Cache-Tag', `club-${resource}`);
+    if (etag) res.setHeader('ETag', etag);
+    const normalize = value => value.trim().replace(/^W\//, '');
+    const conditional = req.headers['if-none-match'];
+    const matches = etag && typeof conditional === 'string' && conditional.split(',').some(value =>
+      normalize(value) === normalize(etag) || value.trim() === '*');
+    res.statusCode = matches ? 304 : 200;
+    res.end(matches || req.method === 'HEAD' ? undefined : body);
+  } catch (_) {
+    return error(503, 'CONTENIDO_NO_DISPONIBLE');
+  }
+};
