@@ -8,5 +8,6 @@
 tests/
 docs/
 tmp/
-club-standalone/
+# Ambos proyectos necesitan el codigo de club-standalone para compilar.
+club-standalone/dist/
 *.md

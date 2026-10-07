@@ -30,3 +30,35 @@ test('el portal independiente incluye el inicio de sesión por dispositivo y sus
   assert.ok(fs.statSync(path.join(dist, 'camino-erudito.webp')).size > 0);
   assert.ok(fs.statSync(path.join(dist, 'logo-blanco.webp')).size > 0);
 });
+
+test('el despliegue desde Git conserva los archivos necesarios tras aplicar .vercelignore', () => {
+  const listed = spawnSync('git', ['ls-files', '--cached', '--exclude-from=.vercelignore', '--'], {
+    cwd: root, encoding: 'utf8',
+  });
+  const ignored = spawnSync('git', ['ls-files', '--cached', '--ignored', '--exclude-from=.vercelignore', '--'], {
+    cwd: root, encoding: 'utf8',
+  });
+  assert.equal(listed.status, 0, listed.stderr);
+  assert.equal(ignored.status, 0, ignored.stderr);
+  const excluded = new Set(ignored.stdout.trim().split('\n'));
+  const fixture = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'club-git-build-'));
+  try {
+    for (const file of listed.stdout.trim().split('\n').filter(file => file && !excluded.has(file))) {
+      const target = path.join(fixture, file);
+      fs.mkdirSync(path.dirname(target), {recursive:true});
+      fs.copyFileSync(path.join(root, file), target);
+    }
+    fs.mkdirSync(path.join(fixture, 'club-standalone'), {recursive:true});
+    const result = spawnSync(process.execPath, ['build.mjs'], {
+      cwd: path.join(fixture, 'club-standalone'), encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(fs.statSync(path.join(fixture, 'club-standalone', 'dist', 'index.html')).size > 0);
+    for (const file of ['club-standalone/vercel.json', 'club-standalone/api/club/v1/catalogo.js',
+      'club-standalone/api/club/v1/noticias.js', 'club-standalone/api/club/v1/reglas.js', 'server/club-content-proxy.cjs']) {
+      assert.ok(fs.statSync(path.join(fixture, file)).size > 0, file);
+    }
+  } finally {
+    fs.rmSync(fixture, {recursive:true, force:true});
+  }
+});
