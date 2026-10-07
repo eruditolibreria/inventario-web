@@ -6,20 +6,25 @@ export function sessionId(token) {
 }
 
 export function createClubSessionWatcher({createClient,getSession,verify,onTransferred}) {
-  let client=null,channel=null,id=null,timer=null,connected=false,checking=null;
+  let client=null,channel=null,id=null,timer=null,connected=false,checking=null,lastVerified=-Infinity;
   const current=expected=>id===expected&&sessionId(getSession()?.token||'')===expected;
+  function markVerified(token) {
+    const expected=sessionId(token||'');
+    if(expected&&current(expected))lastVerified=performance.now();
+  }
   async function check() {
     const expected=id;
     if(!expected||checking===expected||document.hidden||!current(expected))return;
     checking=expected;
     try {
       const data=await verify();
+      if(data?.ok&&current(expected))markVerified(getSession()?.token);
       if(current(expected)&&['SESION_TRASLADADA','NO_AUTORIZADO','SESION_INACTIVA'].includes(data?.error))onTransferred(data.error);
     } catch (_) { /* Un corte de conexión conserva la sesión hasta verificarla. */ }
     finally { if(checking===expected)checking=null; }
   }
   function stop() {
-    id=null;connected=false;
+    id=null;connected=false;lastVerified=-Infinity;
     clearInterval(timer);timer=null;
     const previous=client,previousChannel=channel;
     client=null;channel=null;
@@ -30,7 +35,7 @@ export function createClubSessionWatcher({createClient,getSession,verify,onTrans
     id=sessionId(getSession()?.token||'');
     if(!id)return;
     const expected=id;
-    timer=setInterval(()=>{if(!connected)void check();},15000);
+    timer=setInterval(()=>{if(!connected&&performance.now()-lastVerified>=60000)void check();},60000);
     try {
       const nextClient=createClient();
       client=nextClient;
@@ -47,5 +52,5 @@ export function createClubSessionWatcher({createClient,getSession,verify,onTrans
   }
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)void check();});
   window.addEventListener('online',()=>{void check();});
-  return {start,stop,check};
+  return {start,stop,check,markVerified};
 }

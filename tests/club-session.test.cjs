@@ -7,10 +7,10 @@ const first='c9000000-0000-0000-0000-000000000001';
 const second='c9000000-0000-0000-0000-000000000002';
 const token=id=>`header.${Buffer.from(JSON.stringify({session_id:id})).toString('base64url')}.signature`;
 function setup() {
-  let session={token:token(first)},closed=0,checks=0,result={ok:true};
+  let session={token:token(first)},closed=0,checks=0,result={ok:true},now=0;
   const clients=[],timers=new Map(),events={};
   const document={hidden:false,addEventListener:(name,fn)=>events[name]=fn};
-  const context=vm.createContext({atob,document,window:{addEventListener:(name,fn)=>events[name]=fn},
+  const context=vm.createContext({atob,performance:{now:()=>now},document,window:{addEventListener:(name,fn)=>events[name]=fn},
     setInterval:(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key;},clearInterval:key=>timers.delete(key)});
   vm.runInContext(source,context);
   const watcher=context.createClubSessionWatcher({
@@ -25,7 +25,7 @@ function setup() {
     verify:async()=>{checks++;if(result instanceof Error)throw result;return typeof result==='function'?result():result;},
     onTransferred:()=>{closed++;session=null;watcher.stop();},
   });
-  return {watcher,clients,timers,events,document,setSession:id=>session={token:token(id)},setResult:value=>result=value,closed:()=>closed,checks:()=>checks};
+  return {watcher,clients,timers,events,document,advance:ms=>now+=ms,setSession:id=>session={token:token(id)},setResult:value=>result=value,closed:()=>closed,checks:()=>checks};
 }
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 
@@ -40,7 +40,7 @@ test('al reconectar se verifica si el traslado ocurrio mientras estaba sin conex
 });
 test('fallos de red conservan la sesion y hay respaldo cuando falla tiempo real',async()=>{
   const f=setup();await f.watcher.start();f.setResult(new Error('offline'));
-  const interval=[...f.timers.values()][0];assert.equal(interval.ms,15000);interval.fn();await flush();assert.equal(f.closed(),0);
+  const interval=[...f.timers.values()][0];assert.equal(interval.ms,60000);interval.fn();await flush();assert.equal(f.closed(),0);
   f.setResult({ok:false,error:'NO_AUTORIZADO'});f.events.online();await flush();assert.equal(f.closed(),1);
 });
 test('el canal conectado no consulta periodicamente y volver a la pantalla si verifica',async()=>{
@@ -62,4 +62,16 @@ test('una verificacion antigua no invalida una cuenta que inicio despues',async(
   f.setResult(()=>new Promise(r=>resolve=r));const pending=f.watcher.check();
   f.setSession(second);await f.watcher.start();resolve({ok:false,error:'SESION_TRASLADADA'});await pending;
   assert.equal(f.closed(),0);
+});
+
+test('una petición privada verificada evita respaldo redundante pero este vuelve tras un minuto sin lecturas',async()=>{
+  const f=setup();await f.watcher.start();const interval=[...f.timers.values()][0];
+  f.watcher.markVerified(token(first));interval.fn();await flush();assert.equal(f.checks(),0);
+  f.advance(60000);interval.fn();await flush();assert.equal(f.checks(),1);
+  interval.fn();await flush();assert.equal(f.checks(),1);
+  f.advance(60000);f.setResult({ok:false,error:'SESION_TRASLADADA'});interval.fn();await flush();assert.equal(f.closed(),1);
+});
+test('una respuesta de la cuenta anterior no aplaza comprobar la sesión nueva',async()=>{
+  const f=setup();await f.watcher.start();f.setSession(second);await f.watcher.start();
+  f.watcher.markVerified(token(first));[...f.timers.values()][0].fn();await flush();assert.equal(f.checks(),1);
 });

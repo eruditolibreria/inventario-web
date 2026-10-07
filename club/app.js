@@ -142,7 +142,9 @@ function mensajeError(code) {
 }
 
 async function post(url, body, token) {
-  if (body.ACCION === 'LOGIN' && typeof loginConfig !== 'undefined' && loginConfig.LOGIN_REGION_ENABLED !== false && url === AUTH_URL && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(url)) {
+  const requestEndpoint=url;
+  const privateRequest=Boolean(token&&(url===PUBLIC_URL||url===AUTH_URL));
+  if (((body.ACCION==='LOGIN'&&url===AUTH_URL)||privateRequest) && typeof loginConfig !== 'undefined' && loginConfig.LOGIN_REGION_ENABLED !== false && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(url)) {
     url += (url.includes('?') ? '&' : '?') + 'forceFunctionRegion=us-west-2';
   }
   const controller=new AbortController();
@@ -153,6 +155,9 @@ async function post(url, body, token) {
     data = await res.json().catch(() => ({ ok:false, error:'RESPUESTA_INVALIDA' }));
   } finally { clearTimeout(timeout); }
   data.httpStatus=res.status;
+  if(res.ok&&data.ok&&privateRequest&&(requestEndpoint===PUBLIC_URL||['SESION','ACTIVIDAD'].includes(body.ACCION))) {
+    sessionWatcher.markVerified(token);
+  }
   if (['NO_AUTORIZADO','SESION_TRASLADADA','SESION_INACTIVA'].includes(data.error) && token && session?.token===token) {
     terminarSesion(data.error);
   }
