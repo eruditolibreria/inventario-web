@@ -41,8 +41,18 @@ test('la actividad compartida entre pestanas extiende ambas',async()=>{
 test('los avisos al backend se agrupan y conservan la edad de la ultima actividad',async()=>{
   const f=setup();f.idle.start();f.advance(1000);f.events.pointerdown({isTrusted:true});await flush();
   f.advance(1000);f.events.pointermove({isTrusted:true});await flush();assert.equal(f.sent(),1);
-  f.advance(14000);await flush();assert.equal(f.sent(),2);assert.equal(f.idle.elapsed(),14000);
+  f.advance(58999);await flush();assert.equal(f.sent(),1);f.advance(1);await flush();assert.equal(f.sent(),2);assert.equal(f.idle.elapsed(),59000);
 });
 test('una nueva sesion inicia su propio plazo y al salir se detienen los temporizadores',()=>{
   const f=setup();f.idle.start();f.advance(590000);f.setId('session-2');f.idle.start();f.advance(10000);assert.equal(f.ended(),0);f.idle.stop();f.advance(600000);assert.equal(f.ended(),0);
+});
+
+test('cincuenta usuarios activos agrupan tres minutos en tres avisos por persona',async()=>{
+  const people=Array.from({length:50},()=>setup());people.forEach(f=>f.idle.start());
+  for(let second=0;second<180;second++){
+    people.forEach(f=>{f.advance(1000);f.events.pointermove({isTrusted:true});});await flush();
+  }
+  assert.equal(people.reduce((n,f)=>n+f.sent(),0),150);
+  people.forEach(f=>f.advance(60000));await flush();
+  people.forEach(f=>{assert.equal(f.sent(),4);assert.equal(f.idle.elapsed(),60000);assert.equal(f.ended(),0);});
 });

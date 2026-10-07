@@ -20,7 +20,6 @@ let refreshing = null;
 const readCache = new Map();
 const readPending = new Map();
 let viewEpoch = 0;
-let prefetchEpoch = -1;
 const deviceId = (() => {
   const saved = localStorage.getItem(DEVICE_KEY);
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved || '')) return saved;
@@ -139,7 +138,7 @@ $('cerrarInstalacion').addEventListener('click',()=>$('installDialog').close());
 actualizarBotonesInstalacion();
 function mensajeError(code) {
   if(code==='SESION_INACTIVA')return 'Tu sesión se cerró por inactividad, inicia sesión nuevamente';
-  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', SESION_TRASLADADA:'Tu sesión se trasladó a otro dispositivo. Ingresa nuevamente si quieres usarla aquí.', DISPOSITIVO_INVALIDO:'No se pudo identificar este dispositivo. Recarga la página.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El acceso no está disponible por el momento. Intenta nuevamente.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
+  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El servicio de ingreso está ocupado. Intenta nuevamente en unos momentos.', INTENTOS_DEMASIADO_FRECUENTES:'Se realizaron demasiados intentos. Espera un momento antes de volver a ingresar.', SESION_TRASLADADA:'Tu sesión se trasladó a otro dispositivo. Ingresa nuevamente si quieres usarla aquí.', DISPOSITIVO_INVALIDO:'No se pudo identificar este dispositivo. Recarga la página.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El acceso no está disponible por el momento. Intenta nuevamente.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
 }
 
 async function post(url, body, token) {
@@ -233,24 +232,6 @@ async function loadRead(accion, body, ttl, render, status) {
     return cached?.data || {ok:false,error:'SIN_CONEXION'};
   }
 }
-function prefetchTabs() {
-  if(prefetchEpoch===viewEpoch || !session?.token)return;
-  const epoch=viewEpoch;
-  prefetchEpoch=epoch;
-  const start=()=>{
-    if(epoch!==viewEpoch || document.hidden)return;
-    const tabs=[['PREMIOS',{},60000]];
-    if(!clubPendiente)tabs.push(['MOVIMIENTOS',{PAGINA:1,LIMITE:20},30000],['CANJES',{PAGINA:1,LIMITE:20},15000]);
-    void Promise.allSettled(tabs.map(([accion,body,ttl])=>requestRead(accion,body,ttl).then(data=>{
-      if(epoch!==viewEpoch || !data.ok)return;
-      if(accion==='PREMIOS')renderPremios(data);
-      if(accion==='MOVIMIENTOS')renderMovimientos(data,1);
-      if(accion==='CANJES')renderCanjes(data,1);
-    })));
-  };
-  if('requestIdleCallback'in window)requestIdleCallback(start,{timeout:1800});else setTimeout(start,900);
-}
-
 function showAuth() {
   idle.stop();
   sessionWatcher.stop();
@@ -691,8 +672,7 @@ async function cargarPrimeraVista() {
   $('appView').setAttribute('aria-busy','false');
   $('inicioCarga').hidden=Boolean(data?.ok);
   $('reintentarInicio').hidden=Boolean(data?.ok);
-  if(data?.ok)prefetchTabs();
-  else $('inicioCargaTexto').textContent='No se pudo cargar tu Club. Toca Reintentar para volver a conectar.';
+  if(!data?.ok) $('inicioCargaTexto').textContent='No se pudo cargar tu Club. Toca Reintentar para volver a conectar.';
 }
 $('reintentarInicio').addEventListener('click',()=>{void cargarPrimeraVista();});
 function renderInicio(data){

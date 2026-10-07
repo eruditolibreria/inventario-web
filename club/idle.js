@@ -19,8 +19,8 @@ export function createClubIdle({getSessionId,onExpired,notifyActivity}) {
     localStorage.setItem(ACTIVITY_KEY,JSON.stringify({id,at:Date.now()}));
     check();
     if(pending)return;
-    if(Date.now()-lastSent<15000){
-      if(!sendTimer)sendTimer=setTimeout(()=>{sendTimer=null;send();},15000-(Date.now()-lastSent));
+    if(Date.now()-lastSent<60000){
+      if(!sendTimer)sendTimer=setTimeout(()=>{sendTimer=null;send();},60000-(Date.now()-lastSent));
       return;
     }
     send();

@@ -21,7 +21,7 @@ function setup(respuestas) {
     terminarSesion:()=>{context.saveSession(null);context.showAuth();},
   });
   function $(id){return node(id);}
-  vm.runInContext(app.slice(app.indexOf('async function post('),app.indexOf('function prefetchTabs(')),context);
+  vm.runInContext(app.slice(app.indexOf('async function post('),app.indexOf('function showAuth(')),context);
   vm.runInContext(app.slice(app.indexOf('async function cargarInicio('),app.indexOf('function renderInicio(')),context);
   return {context,node,timers,calls:()=>calls,renders:()=>renders,prefetch:()=>prefetch};
 }
@@ -30,7 +30,7 @@ test('la primera carga recupera un corte de conexion sin dejar un saldo falso de
   const loading=f.context.cargarPrimeraVista();
   assert.equal(f.node('hero').hidden,true);
   await loading;
-  assert.equal(f.calls(),2);assert.equal(f.renders(),1);assert.equal(f.prefetch(),1);
+  assert.equal(f.calls(),2);assert.equal(f.renders(),1);assert.equal(f.prefetch(),0);
   assert.equal(f.node('saldoDisponible').textContent,'8');assert.equal(f.node('inicioCarga').hidden,true);
   assert.equal(f.node('appView').attributes['aria-busy'],'false');
 });
