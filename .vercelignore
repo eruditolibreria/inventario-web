@@ -1,0 +1,12 @@
+.codegraph/
+.continue/
+.vscode/
+.git/
+.vercel/
+**/.vercel/**
+.env*
+tests/
+docs/
+tmp/
+club-standalone/
+*.md

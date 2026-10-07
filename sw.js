@@ -1,5 +1,5 @@
 // Cambiar la versión al publicar una nueva entrega de recursos estáticos.
-const CACHE_NAME = 'eruditos-v126';
+const CACHE_NAME = 'eruditos-v127';
 const urlsToCache = [
   '/',
   '/index.html',

@@ -40,6 +40,11 @@ export function channel(name) {
     return client.channel(name);
 }
 
+/** Retirar el canal también del cliente compartido al cerrar sesión. */
+export function removeChannel(value) {
+    return client.removeChannel(value);
+}
+
 // ══ PRODUCTOS: consultas paginadas server-side ══
 
 const PRODUCTO_COLS = "id,producto,categoria,precio_unidad,precio_venta,proveedor,ubicacion,sucursal,stock,imagen,codigo_barras,clave";
