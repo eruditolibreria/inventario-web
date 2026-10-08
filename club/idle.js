@@ -1,7 +1,7 @@
 export const CLUB_IDLE_MS=10*60*1000;
 const ACTIVITY_KEY='club_eruditos_actividad';
 export function createClubIdle({getSessionId,onExpired,notifyActivity}) {
-  let id=null,timer=null,sendTimer=null,lastSent=0,pending=false;
+  let id=null,timer=null,sendTimer=null,lastSent=0,pending=false,interacted=false;
   const read=()=>{try{return JSON.parse(localStorage.getItem(ACTIVITY_KEY))||{};}catch(_){return {};}};
   function check() {
     if(!id||getSessionId()!==id)return false;
@@ -16,6 +16,7 @@ export function createClubIdle({getSessionId,onExpired,notifyActivity}) {
     if(!event.isTrusted||document.hidden||!check())return;
     const state=read();
     if(Date.now()-Number(state.at)<1000)return;
+    interacted=true;
     localStorage.setItem(ACTIVITY_KEY,JSON.stringify({id,at:Date.now()}));
     check();
     if(pending)return;
@@ -23,7 +24,15 @@ export function createClubIdle({getSessionId,onExpired,notifyActivity}) {
       if(!sendTimer)sendTimer=setTimeout(()=>{sendTimer=null;send();},60000-(Date.now()-lastSent));
       return;
     }
-    send();
+    if(!sendTimer)sendTimer=setTimeout(()=>{sendTimer=null;send();},0);
+  }
+  function claimActivity() {
+    if(!interacted||pending||Date.now()-lastSent<60000||!check())return null;
+    pending=true;return {id,ACTIVIDAD:true,INACTIVIDAD_MS:Math.max(0,Date.now()-Number(read().at||0))};
+  }
+  function completeActivity(expected,ok) {
+    if(id!==expected)return;pending=false;
+    if(ok){lastSent=Date.now();clearTimeout(sendTimer);sendTimer=null;}
   }
   function send() {
     if(pending||!check())return;
@@ -31,7 +40,7 @@ export function createClubIdle({getSessionId,onExpired,notifyActivity}) {
     lastSent=Date.now();pending=true;
     void Promise.resolve(notifyActivity()).catch(()=>{}).finally(()=>{if(id===expected)pending=false;});
   }
-  function stop(){id=null;clearTimeout(timer);clearTimeout(sendTimer);timer=null;sendTimer=null;pending=false;}
+  function stop(){id=null;interacted=false;clearTimeout(timer);clearTimeout(sendTimer);timer=null;sendTimer=null;pending=false;}
   function start(){
     stop();id=getSessionId();if(!id)return;
     const state=read();
@@ -44,5 +53,5 @@ export function createClubIdle({getSessionId,onExpired,notifyActivity}) {
   window.addEventListener('pageshow',check);
   window.addEventListener('popstate',activity);
   window.addEventListener('storage',event=>{if(event.key===ACTIVITY_KEY)check();});
-  return {start,stop,check,elapsed:()=>Math.max(0,Date.now()-Number(read().at||0))};
+  return {start,stop,check,claimActivity,completeActivity,elapsed:()=>Math.max(0,Date.now()-Number(read().at||0))};
 }

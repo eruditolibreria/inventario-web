@@ -5,7 +5,7 @@ export function sessionId(token) {
   } catch (_) { return null; }
 }
 
-export function createClubSessionWatcher({createClient,getSession,verify,onTransferred}) {
+export function createClubSessionWatcher({createClient,getSession,verify,onTransferred,onClient=()=>{},onStop=()=>{},isUpdatesConnected=()=>true}) {
   let client=null,channel=null,id=null,timer=null,connected=false,checking=null,lastVerified=-Infinity;
   const current=expected=>id===expected&&sessionId(getSession()?.token||'')===expected;
   function markVerified(token) {
@@ -24,6 +24,7 @@ export function createClubSessionWatcher({createClient,getSession,verify,onTrans
     finally { if(checking===expected)checking=null; }
   }
   function stop() {
+    onStop();
     id=null;connected=false;lastVerified=-Infinity;
     clearInterval(timer);timer=null;
     const previous=client,previousChannel=channel;
@@ -35,12 +36,13 @@ export function createClubSessionWatcher({createClient,getSession,verify,onTrans
     id=sessionId(getSession()?.token||'');
     if(!id)return;
     const expected=id;
-    timer=setInterval(()=>{if(!connected&&performance.now()-lastVerified>=60000)void check();},60000);
+    timer=setInterval(()=>{if((!connected||!isUpdatesConnected())&&performance.now()-lastVerified>=60000)void check();},60000);
     try {
       const nextClient=createClient();
       client=nextClient;
       await nextClient.realtime.setAuth();
       if(!current(expected)||client!==nextClient)return;
+      void Promise.resolve(onClient(nextClient)).catch(()=>{});
       channel=nextClient.channel(`club-sesion:${id}`,{config:{private:true}})
         .on('broadcast',{event:'sesion_trasladada'},message=>{if(current(expected))onTransferred(message?.payload?.error||'SESION_TRASLADADA');})
         .subscribe(status=>{

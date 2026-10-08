@@ -9,7 +9,7 @@ function setup(storage=new Map()) {
   const document={hidden:false,addEventListener:(name,fn)=>events[name]=fn};
   const context=vm.createContext({Date:{now:()=>now},document,window:{addEventListener:(name,fn)=>events[name]=fn},
     localStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)},
-    setTimeout:(fn,delay)=>{const key={};timers.set(key,{fn,at:now+delay});return key;},clearTimeout:key=>timers.delete(key)});
+    setImmediate,setTimeout:(fn,delay)=>{const key={};timers.set(key,{fn,at:now+delay});if(delay===0)setImmediate(()=>{if(timers.has(key)){timers.delete(key);fn();}});return key;},clearTimeout:key=>timers.delete(key)});
   vm.runInContext(source,context);
   const idle=context.createClubIdle({getSessionId:()=>id,onExpired:()=>{ended++;idle.stop();},notifyActivity:async()=>{sent++;}});
   const advance=ms=>{now+=ms;for(const [key,timer] of [...timers])if(timer.at<=now){timers.delete(key);timer.fn();}};
@@ -55,4 +55,10 @@ test('cincuenta usuarios activos agrupan tres minutos en tres avisos por persona
   assert.equal(people.reduce((n,f)=>n+f.sent(),0),150);
   people.forEach(f=>f.advance(60000));await flush();
   people.forEach(f=>{assert.equal(f.sent(),4);assert.equal(f.idle.elapsed(),60000);assert.equal(f.ended(),0);});
+});
+
+test('una lectura puede comunicar actividad real y cancelar el aviso separado',async()=>{
+ const f=setup();f.idle.start();assert.equal(f.idle.claimActivity(),null);f.advance(1000);f.events.pointerdown({isTrusted:true});
+ const activity=f.idle.claimActivity();assert.equal(activity.ACTIVIDAD,true);assert.equal(activity.INACTIVIDAD_MS,0);
+ f.idle.completeActivity(activity.id,true);await flush();assert.equal(f.sent(),0);assert.equal(f.idle.claimActivity(),null);
 });

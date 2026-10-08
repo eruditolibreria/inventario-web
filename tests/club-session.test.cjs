@@ -6,7 +6,7 @@ const source=fs.readFileSync('club/session.js','utf8').replaceAll('export functi
 const first='c9000000-0000-0000-0000-000000000001';
 const second='c9000000-0000-0000-0000-000000000002';
 const token=id=>`header.${Buffer.from(JSON.stringify({session_id:id})).toString('base64url')}.signature`;
-function setup() {
+function setup(isUpdatesConnected=()=>true) {
   let session={token:token(first)},closed=0,checks=0,result={ok:true},now=0;
   const clients=[],timers=new Map(),events={};
   const document={hidden:false,addEventListener:(name,fn)=>events[name]=fn};
@@ -21,7 +21,7 @@ function setup() {
         removeChannel:async()=>{record.removed++;},channel:(topic,options)=>{assert.equal(record.authed,true);record.topic=topic;record.private=options.config.private;return channel;}};
       clients.push(record);return client;
     },
-    getSession:()=>session,
+    getSession:()=>session, isUpdatesConnected,
     verify:async()=>{checks++;if(result instanceof Error)throw result;return typeof result==='function'?result():result;},
     onTransferred:()=>{closed++;session=null;watcher.stop();},
   });
@@ -74,4 +74,7 @@ test('una petición privada verificada evita respaldo redundante pero este vuelv
 test('una respuesta de la cuenta anterior no aplaza comprobar la sesión nueva',async()=>{
   const f=setup();await f.watcher.start();f.setSession(second);await f.watcher.start();
   f.watcher.markVerified(token(first));[...f.timers.values()][0].fn();await flush();assert.equal(f.checks(),1);
+});
+test('el respaldo detecta canales de contenido caídos aunque el de sesión siga conectado',async()=>{
+ let healthy=false;const f=setup(()=>healthy);await f.watcher.start();f.clients[0].status('SUBSCRIBED');await flush();const count=f.checks();f.advance(60000);[...f.timers.values()][0].fn();await flush();assert.equal(f.checks(),count+1);healthy=true;f.advance(60000);[...f.timers.values()][0].fn();await flush();assert.equal(f.checks(),count+1);
 });

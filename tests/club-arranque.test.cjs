@@ -21,6 +21,8 @@ function setup(respuestas) {
     terminarSesion:()=>{context.saveSession(null);context.showAuth();},
   });
   function $(id){return node(id);}
+  vm.runInContext(fs.readFileSync('club/cache.js','utf8').replaceAll('export ',''),context);
+  vm.runInContext('const readClient=createClubReadCache({request:(action,body)=>clubApi(action,body),getIdentity:()=>session?.token});',context);
   vm.runInContext(app.slice(app.indexOf('async function post('),app.indexOf('function showAuth(')),context);
   vm.runInContext(app.slice(app.indexOf('async function cargarInicio('),app.indexOf('function renderInicio(')),context);
   return {context,node,timers,calls:()=>calls,renders:()=>renders,prefetch:()=>prefetch};

@@ -1,6 +1,6 @@
-const CACHE = 'club-eruditos-v36';
+const CACHE = 'club-eruditos-v37';
 const SHELL = [
-  '/club/index.html', '/club/styles.css', '/club/app.js', '/club/navigation.js', '/club/session.js', '/club/idle.js', '/club/content.js', '/js/back-exit.js', '/js/config.js', '/js/vendor/supabase-umd.js',
+  '/club/index.html', '/club/styles.css', '/club/app.js', '/club/navigation.js', '/club/session.js', '/club/idle.js', '/club/content.js', '/club/cache.js', '/club/changes.js', '/js/back-exit.js', '/js/config.js', '/js/vendor/supabase-umd.js',
   '/club/splash-eruditos.png', '/club/launchericon-192x192.png', '/club/manifest.json',
 ];
 

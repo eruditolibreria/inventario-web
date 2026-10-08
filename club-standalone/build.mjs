@@ -11,7 +11,7 @@ if (dirname(outputDir) !== resolve(projectDir) || basename(outputDir) !== 'dist'
   throw new Error('La carpeta de salida debe estar dentro de club-standalone.');
 }
 
-const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'idle.js', 'content.js', 'styles.css', 'manifest.json', 'sw.js'];
+const textFiles = ['index.html', 'app.js', 'navigation.js', 'session.js', 'idle.js', 'content.js', 'cache.js', 'changes.js', 'styles.css', 'manifest.json', 'sw.js'];
 const imageFiles = [
   'camino-erudito.webp',
   'logo-blanco.webp',

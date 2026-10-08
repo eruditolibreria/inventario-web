@@ -11,7 +11,8 @@ module.exports = function createClubContentProxy(resource) {
     res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ok:false, error:code}));
   };
   const url = new URL(req.url, 'https://club.invalid');
-  if (url.search) return error(404, 'RECURSO_INVALIDO');
+  const version=url.searchParams.get('v');
+  if (url.search && (!version || !/^[0-9]{1,18}$/.test(version) || [...url.searchParams.keys()].length!==1)) return error(404, 'RECURSO_INVALIDO');
   if (req.method === 'OPTIONS') {
     res.setHeader('Allow', 'GET, HEAD, OPTIONS');
     res.statusCode = 204;
@@ -23,7 +24,7 @@ module.exports = function createClubContentProxy(resource) {
   }
   try {
     // No reenviar Authorization, Cookie, parámetros ni cabeceras del visitante.
-    const upstream = await fetch(`${ORIGIN}/${resource}`, {
+    const upstream = await fetch(`${ORIGIN}/${resource}${version ? '?v='+version : ''}`, {
       method:'GET', redirect:'error', signal:AbortSignal.timeout(8000),
       // El catálogo se lee junto a PostgreSQL; la cabecera es interna, nunca del visitante.
       headers:resource === 'catalogo' ? {Accept:'application/json', 'x-region':'us-west-2'} : {Accept:'application/json'},

@@ -5,6 +5,8 @@ import { createClubSessionWatcher, sessionId } from './session.js';
 import { createClubIdle } from './idle.js';
 import { setupDoubleBack } from '../js/back-exit.js';
 import { createClubContentClient, mergeClubRewards } from './content.js';
+import { createClubReadCache } from './cache.js';
+import { createClubUpdates } from './changes.js';
 
 const AUTH_URL = `${HOST}/club-auth`;
 const PUBLIC_URL = `${HOST}/club-public`;
@@ -17,8 +19,9 @@ const THEME_KEY = 'club_eruditos_theme';
 const END_REASON_KEY='club_eruditos_cierre';
 let session = readJson(SESSION_KEY, null);
 let refreshing = null;
-const readCache = new Map();
-const readPending = new Map();
+const readClient=createClubReadCache({request:(action,body)=>clubApi(action,body),getIdentity:()=>sessionId(session?.token||'')});
+const changedResources=new Set();
+let changesTimer=null;
 let viewEpoch = 0;
 const deviceId = (() => {
   const saved = localStorage.getItem(DEVICE_KEY);
@@ -50,7 +53,7 @@ const fecha = value => value ? new Intl.DateTimeFormat('es-BO', { dateStyle:'med
 const idempotencia = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch (_) { return fallback; } }
-function resetReadCache() { readCache.clear(); readPending.clear(); viewEpoch++; }
+function resetReadCache() { readClient.clear(); changedResources.clear(); clearTimeout(changesTimer); changesTimer=null; viewEpoch++; }
 function saveSession(value) {
   if (!value) resetReadCache();
   session = value ? { token:value.token, refreshToken:value.refreshToken, expiresAt:value.expiresAt, cliente:value.cliente || null } : null;
@@ -138,7 +141,7 @@ $('cerrarInstalacion').addEventListener('click',()=>$('installDialog').close());
 actualizarBotonesInstalacion();
 function mensajeError(code) {
   if(code==='SESION_INACTIVA')return 'Tu sesión se cerró por inactividad, inicia sesión nuevamente';
-  return ({ CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El servicio de ingreso está ocupado. Intenta nuevamente en unos momentos.', INTENTOS_DEMASIADO_FRECUENTES:'Se realizaron demasiados intentos. Espera un momento antes de volver a ingresar.', SESION_TRASLADADA:'Tu sesión se trasladó a otro dispositivo. Ingresa nuevamente si quieres usarla aquí.', DISPOSITIVO_INVALIDO:'No se pudo identificar este dispositivo. Recarga la página.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El acceso no está disponible por el momento. Intenta nuevamente.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
+  return ({ DATOS_CAMBIARON:'La información cambió. Vuelve a abrir esta sección.', CREDENCIALES_INVALIDAS:'Usuario o contraseña incorrectos.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El servicio de ingreso está ocupado. Intenta nuevamente en unos momentos.', INTENTOS_DEMASIADO_FRECUENTES:'Se realizaron demasiados intentos. Espera un momento antes de volver a ingresar.', SESION_TRASLADADA:'Tu sesión se trasladó a otro dispositivo. Ingresa nuevamente si quieres usarla aquí.', DISPOSITIVO_INVALIDO:'No se pudo identificar este dispositivo. Recarga la página.', CODIGO_VINCULACION_INVALIDO:'El código no es válido o ya venció.', CODIGO_ACTIVACION_INVALIDO:'El código de activación no es válido o ya venció.', CODIGO_REFERIDO_INVALIDO:'El código de referido no existe o no está activo.', REFERIDO_SOLO_CLIENTE_NUEVO:'Los referidos son solo para clientes nuevos.', NIVEL_INSUFICIENTE:'Este premio requiere un nivel más alto.', PASSWORD_MINIMO_8_CHARS:'La contraseña debe tener al menos 8 caracteres.', USUARIO_FORMATO:'El usuario debe tener de 6 a 12 letras o números.', USUARIO_OCUPADO:'Ese nombre de usuario ya está en uso.', REGISTRO_DUPLICADO:'Ya existe un registro con esos datos.', CLIENTE_EXISTENTE_REQUIERE_CODIGO:'Tu C.I. ya está registrado. Ingresa el código de un comprobante o solicítalo al personal.', INTENTOS_AGOTADOS:'Demasiados intentos. Espera 15 minutos.', DATOS_REGISTRO_INVALIDOS:'Revisa tus datos personales y el número de celular.', CUENTA_YA_VINCULADA:'Este cliente ya tiene una cuenta de Club.', COMPRA_MINIMA_REQUERIDA:'Primero realiza una compra de Bs 5,00 o más.', CUENTA_PENDIENTE_ACTIVACION:'Activa tu Club con el código de una compra de Bs 5,00 o más.', RECUPERACION_INVALIDA:'El código de recuperación no es válido o ya fue usado.', LOGIN_TEMPORALMENTE_NO_DISPONIBLE:'El acceso no está disponible por el momento. Intenta nuevamente.', NO_AUTORIZADO:'Tu sesión terminó. Ingresa nuevamente.', CANJE_NO_CANCELABLE:'Este canje ya está en preparación o fue cerrado; no puede cancelarse desde el portal.', SALDO_INSUFICIENTE:'No tienes puntos suficientes.', PUNTOS_INSUFICIENTES:'No tienes puntos suficientes.', STOCK_INSUFICIENTE:'El premio ya no tiene stock disponible.', STOCK_PREMIO_INSUFICIENTE:'El premio ya no tiene stock disponible.', PRODUCTO_PREMIO_NO_CONFIGURADO:'Este premio necesita ser configurado nuevamente por la librería.', PRODUCTO_PREMIO_NO_ENCONTRADO:'No se encontró el producto del premio en la sucursal elegida.' })[code] || code || 'No se pudo completar la solicitud.';
 }
 
 async function post(url, body, token) {
@@ -147,13 +150,15 @@ async function post(url, body, token) {
   if (((body.ACCION==='LOGIN'&&url===AUTH_URL)||privateRequest) && typeof loginConfig !== 'undefined' && loginConfig.LOGIN_REGION_ENABLED !== false && /^https:\/\/[^/]+\.supabase\.co\/functions\/v1\//.test(url)) {
     url += (url.includes('?') ? '&' : '?') + 'forceFunctionRegion=us-west-2';
   }
+  const activity=privateRequest&&requestEndpoint===PUBLIC_URL&&['VERSIONES','RESUMEN','MOVIMIENTOS','CANJES','DISPONIBILIDAD','CATALOGO_ACTUAL'].includes(body.ACCION)&&typeof idle!=='undefined'?idle.claimActivity():null;
+  if(activity)body={...body,ACTIVIDAD:true,INACTIVIDAD_MS:activity.INACTIVIDAD_MS};
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),30000);
   let res,data;
   try {
     res = await fetch(url, { method:'POST', signal:controller.signal, headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token || SUPABASE_ANON_KEY}` }, body:JSON.stringify(body) });
     data = await res.json().catch(() => ({ ok:false, error:'RESPUESTA_INVALIDA' }));
-  } finally { clearTimeout(timeout); }
+  } finally { clearTimeout(timeout);if(activity)idle.completeActivity(activity.id,Boolean(res?.ok&&data?.ok)); }
   data.httpStatus=res.status;
   if(res.ok&&data.ok&&privateRequest&&(requestEndpoint===PUBLIC_URL||['SESION','ACTIVIDAD'].includes(body.ACCION))) {
     sessionWatcher.markVerified(token);
@@ -206,24 +211,12 @@ async function cargarCatalogoDisponible() {
 }
 
 
-const readKey = (accion, body={}) => `${accion}:${JSON.stringify(body)}`;
-function requestRead(accion, body={}, ttl=30000) {
-  const key=readKey(accion,body);
-  const cached=readCache.get(key);
-  if(cached && Date.now()-cached.at<ttl)return Promise.resolve(cached.data);
-  if(readPending.has(key))return readPending.get(key);
-  const epoch=viewEpoch;
-  const pending=clubApi(accion,body).then(data=>{
-    if(data.ok && epoch===viewEpoch && accion!=='PREMIOS')readCache.set(key,{data,at:Date.now()});
-    return data;
-  }).finally(()=>{if(readPending.get(key)===pending)readPending.delete(key);});
-  readPending.set(key,pending);
-  return pending;
-}
+const readKey = (accion, body={}) => accion+':'+JSON.stringify(body);
+function requestRead(accion,body={},ttl=30000){return readClient.read(accion,body,{ttl});}
 async function loadRead(accion, body, ttl, render, status) {
-  const cached=readCache.get(readKey(accion,body));
+  const cached=readClient.peek(accion,body);
   if(cached)render(cached.data);
-  if(cached && Date.now()-cached.at<ttl){setStatus('appStatus','');return cached.data;}
+  if(cached && readClient.valid(accion,body)){setStatus('appStatus','');return cached.data;}
   if(!cached)setStatus('appStatus',status);
   const epoch=viewEpoch;
   try {
@@ -240,6 +233,7 @@ async function loadRead(accion, body, ttl, render, status) {
 function showAuth() {
   idle.stop();
   sessionWatcher.stop();
+  clubUpdates.stop();
   document.body.classList.remove('club-active');
   navigation.reset();
   ['premiosGrid','movimientosLista','canjesLista'].forEach(id=>$(id).replaceChildren());
@@ -755,7 +749,7 @@ async function abrirCanje(premio){
   } catch (_) {setStatus('appStatus','No se pudo verificar la disponibilidad. Intenta nuevamente.',true);}
 }
 $('cancelRedeem').addEventListener('click',()=>$('redeemDialog').close());
-$('confirmRedeem').addEventListener('click',async()=>{ if(!premioSeleccionado)return; $('confirmRedeem').disabled=true; const data=await clubApi('CREAR_CANJE',{PREMIO_ID:premioSeleccionado.id,SUCURSAL_ID:$('redeemBranch').value,IDEMPOTENCY_KEY:idempotencia()}); $('confirmRedeem').disabled=false; if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;} if(data.codigoRetiro){const codes=readJson(CODES_KEY,{});codes[data.canjeId||data.id]=data.codigoRetiro;localStorage.setItem(CODES_KEY,JSON.stringify(codes));} resetReadCache(); $('redeemDialog').close(); setStatus('appStatus','Canje solicitado. Guarda tu código de retiro.'); document.querySelector('nav [data-view="canjes"]').click(); });
+$('confirmRedeem').addEventListener('click',async()=>{ if(!premioSeleccionado)return; $('confirmRedeem').disabled=true; const data=await clubApi('CREAR_CANJE',{PREMIO_ID:premioSeleccionado.id,SUCURSAL_ID:$('redeemBranch').value,IDEMPOTENCY_KEY:idempotencia()}); $('confirmRedeem').disabled=false; if(!data.ok){setStatus('appStatus',mensajeError(data.error),true);return;} if(data.codigoRetiro){const codes=readJson(CODES_KEY,{});codes[data.canjeId||data.id]=data.codigoRetiro;localStorage.setItem(CODES_KEY,JSON.stringify(codes));} readClient.invalidate(['RESUMEN','MOVIMIENTOS','CANJES','PREMIOS']); $('redeemDialog').close(); setStatus('appStatus','Canje solicitado. Guarda tu código de retiro.'); document.querySelector('nav [data-view="canjes"]').click(); });
 
 async function cargarMovimientos(){
   return loadRead('MOVIMIENTOS',{PAGINA:1,LIMITE:20},30000,data=>renderMovimientos(data,1),'Cargando movimientos…');
@@ -827,7 +821,7 @@ $('cancelConfirm').addEventListener('click',async()=>{
     delete codes[canjeId];
     localStorage.setItem(CODES_KEY,JSON.stringify(codes));
     $('cancelDialog').close();
-    resetReadCache();
+    readClient.invalidate(['RESUMEN','MOVIMIENTOS','CANJES','PREMIOS']);
     await Promise.all([cargarCanjes(),cargarInicio()]);
     setStatus('canjesStatus','Canje cancelado. Tus puntos fueron devueltos.');
     setStatus('appStatus','Canje cancelado. Tus puntos fueron devueltos.');
@@ -836,12 +830,40 @@ $('cancelConfirm').addEventListener('click',async()=>{
   } finally { $('cancelConfirm').disabled=false; }
 });
 
+function receiveVersions(meta){
+  for(const action of readClient.observe(meta))changedResources.add(action);
+  for(const resource of contentClient.observe(meta?.publicas))changedResources.add(resource);
+  if(meta?.publicas&&changedResources.has('catalogo')){readClient.invalidate(['PREMIOS']);changedResources.add('PREMIOS');}
+}
+function refreshChanges(){
+  if(!session?.token||document.hidden||!changedResources.size||changesTimer)return;
+  changesTimer=setTimeout(()=>{
+    changesTimer=null;if(!session?.token||document.hidden)return;
+    const view=document.querySelector('nav [data-view].active')?.dataset.view||'inicio';
+    const action={inicio:'RESUMEN',premios:'PREMIOS',movimientos:'MOVIMIENTOS',canjes:'CANJES'}[view];
+    const common=view==='inicio'&&['reglas','noticias'].some(resource=>changedResources.has(resource));
+    if(changedResources.has(action)||common){
+      changedResources.delete(action);
+      if(view==='inicio'){changedResources.delete('reglas');changedResources.delete('noticias');}
+      void ({inicio:cargarInicio,premios:cargarPremios,movimientos:cargarMovimientos,canjes:cargarCanjes}[view])().catch(()=>{});
+    }
+  },200+Math.floor(Math.random()*300));
+}
+const clubUpdates=createClubUpdates({
+  getSessionId:()=>sessionId(session?.token||''),readVersions:()=>clubApi('VERSIONES'),
+  onVersions:receiveVersions,onChange:refreshChanges,
+  onDeadline:()=>{readClient.invalidate(['RESUMEN','MOVIMIENTOS','PREMIOS']);['RESUMEN','MOVIMIENTOS','PREMIOS'].forEach(action=>changedResources.add(action));refreshChanges();},
+});
+
 const sessionWatcher=createClubSessionWatcher({
   createClient:()=>globalThis.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
     accessToken:async()=>{await refreshIfNeeded();return session?.token||SUPABASE_ANON_KEY;},
   }),
   getSession:()=>session,
-  verify:async()=>{await refreshIfNeeded();if(!session?.token)return {ok:false,error:'NO_AUTORIZADO'};return post(AUTH_URL,{ACCION:'SESION'},session.token);},
+  verify:()=>clubUpdates.sync(),
+  onClient:client=>clubUpdates.start(client),
+  isUpdatesConnected:()=>clubUpdates.connected(),
+  onStop:()=>clubUpdates.stop(),
   onTransferred:reason=>{terminarSesion(reason||'SESION_TRASLADADA');},
 });
 const idle=createClubIdle({
@@ -862,7 +884,7 @@ setupDoubleBack({
 });
 if('serviceWorker'in navigator)void navigator.serviceWorker.register('/club/sw.js').catch(()=>{});
 window.addEventListener('storage',e=>{if(e.key!==SESSION_KEY)return;resetReadCache();session=readJson(SESSION_KEY,null);if(session?.token)showApp();else showAuth();});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session?.token)void cargarInicio().catch(()=>{});});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshChanges();});
 if(session?.token)showApp();else {showAuth();ocultarSplash();}
 setTimeout(ocultarSplash,7000);
 const referidoUrl=new URL(location.href).searchParams.get('ref');
