@@ -68,3 +68,15 @@ test('una lectura fallida inicial recupera los canales al verificar la conexión
  const updates=createClubUpdates({getSessionId:()=>1,readVersions:async()=>{if(++count===1)throw Error('corte');return {ok:true,cache:meta()};},onVersions:()=>{},onChange:()=>{},onDeadline:()=>{}});
  await updates.start(client);assert.equal(topics.length,0);await updates.sync();assert.equal(topics.length,2);await updates.sync();assert.equal(topics.length,2);updates.stop();
 });
+
+test('una noticia no repite disponibilidad aunque quede una marca anterior del catálogo',async()=>{
+ const {createClubReadCache}=await load('cache'),{createClubContentClient}=await load('content');let calls=0;
+ const readClient=createClubReadCache({getIdentity:()=>1,request:async()=>{calls++;return {ok:true,cache:meta()};}});
+ const contentClient=createClubContentClient({baseUrl:'/api',fetcher:async()=>Response.json({ok:true,datos:[],revision:1})});
+ await readClient.read('PREMIOS');await contentClient.read('catalogo');await contentClient.read('noticias');
+ const app=fs.readFileSync(require('node:path').join(__dirname,'../club/app.js'),'utf8');
+ const handler=app.slice(app.indexOf('function receiveVersions('),app.indexOf('function refreshChanges('));
+ const changedResources=new Set(['catalogo']);const receive=new Function('readClient','contentClient','changedResources',handler+';return receiveVersions;')(readClient,contentClient,changedResources);
+ receive({disponibilidad:1,publicas:{catalogo:1,noticias:2}});await readClient.read('PREMIOS');assert.equal(calls,1);
+ receive({disponibilidad:1,publicas:{catalogo:2,noticias:2}});await readClient.read('PREMIOS');assert.equal(calls,2);
+});

@@ -832,8 +832,9 @@ $('cancelConfirm').addEventListener('click',async()=>{
 
 function receiveVersions(meta){
   for(const action of readClient.observe(meta))changedResources.add(action);
-  for(const resource of contentClient.observe(meta?.publicas))changedResources.add(resource);
-  if(meta?.publicas&&changedResources.has('catalogo')){readClient.invalidate(['PREMIOS']);changedResources.add('PREMIOS');}
+  const publicChanges=contentClient.observe(meta?.publicas);
+  for(const resource of publicChanges)changedResources.add(resource);
+  if(publicChanges.includes('catalogo')){readClient.invalidate(['PREMIOS']);changedResources.add('PREMIOS');}
 }
 function refreshChanges(){
   if(!session?.token||document.hidden||!changedResources.size||changesTimer)return;
@@ -842,10 +843,13 @@ function refreshChanges(){
     const view=document.querySelector('nav [data-view].active')?.dataset.view||'inicio';
     const action={inicio:'RESUMEN',premios:'PREMIOS',movimientos:'MOVIMIENTOS',canjes:'CANJES'}[view];
     const common=view==='inicio'&&['reglas','noticias'].some(resource=>changedResources.has(resource));
-    if(changedResources.has(action)||common){
+    const points=view==='premios'&&changedResources.has('RESUMEN');
+    if(changedResources.has(action)||common||points){
       changedResources.delete(action);
       if(view==='inicio'){changedResources.delete('reglas');changedResources.delete('noticias');}
-      void ({inicio:cargarInicio,premios:cargarPremios,movimientos:cargarMovimientos,canjes:cargarCanjes}[view])().catch(()=>{});
+      if(points)changedResources.delete('RESUMEN');
+      const epoch=viewEpoch;
+      void (async()=>{if(points)await cargarInicio();if(epoch===viewEpoch&&session?.token)await ({inicio:cargarInicio,premios:cargarPremios,movimientos:cargarMovimientos,canjes:cargarCanjes}[view])();})().catch(()=>{});
     }
   },200+Math.floor(Math.random()*300));
 }
