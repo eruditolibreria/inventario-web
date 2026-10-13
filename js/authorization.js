@@ -14,7 +14,7 @@ export const PERMISOS_POR_MODO = Object.freeze({
     TRANSFERENCIAS: ['transferencias.ver', 'transferencias.crear'],
     REPORTES: ['reportes.ver', 'reportes.ver_utilidad'],
     BUSQUEDA: ['ventas.ver', 'compras.ver', 'productos.ver'],
-    LAMINAS: ['laminas.ver', 'laminas.crear', 'laminas.editar'],
+    LAMINAS: ['laminas.ver', 'laminas.crear', 'laminas.editar', 'laminas.eliminar'],
     SERVICIOS: ['servicios.ver', 'servicios.crear'],
     INVENTARIO: ['inventario.ver'],
     USUARIOS: ['usuarios.ver', 'roles.ver', 'sucursales.ver'],

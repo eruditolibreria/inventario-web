@@ -801,8 +801,7 @@
                 padding: 12px 14px;
                 margin-bottom: 10px;
                 display: flex;
-                align-items: stretch;
-                justify-content: space-between;
+                flex-direction: column;
                 gap: 10px;
                 animation: fadeIn 0.2s ease;
             }
@@ -923,33 +922,55 @@
                 font-size: 12px;
             }
 
+            .lamina-cabecera {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            .lamina-cabecera .lam-titulo { flex: 1; overflow-wrap: anywhere; }
+            .lamina-cabecera > span { flex-shrink: 0; }
             .lamina-card .lam-actions {
                 display: flex;
-                flex-direction: column;
-                gap: 6px;
-                flex-shrink: 0;
-                align-items: stretch;
-                justify-content: center;
-                width: 106px;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding-top: 10px;
+                border-top: 1px solid var(--border);
             }
-
-            .lamina-card .lam-actions > * {
-                box-sizing: border-box;
+            .lamina-card .lam-actions .lam-accion {
+                flex: 1 1 100px;
+                width: auto;
+                min-height: 40px;
+                padding: 8px 10px;
+                font-size: 12px;
+                white-space: nowrap;
                 text-align: center;
             }
-
-            .lamina-card .lam-actions .lam-accion {
-                min-height: 30px;
-                padding: 5px 6px;
-                font-size: 11px;
-                white-space: nowrap;
+            .lamina-card .lam-accion-eliminar {
+                color: var(--red-text, var(--red));
+                border-color: var(--red);
             }
-
-            .lamina-card .lam-actions .lam-estado-disponible,
-            .lamina-card .lam-actions .lam-estado-sinstock {
-                display: block;
-                padding: 5px 6px;
+            .lamina-eliminar-dialog {
+                position: fixed;
+                inset: 0;
+                margin: auto;
+                width: min(460px, calc(100vw - 32px));
+                max-height: calc(100dvh - 32px);
+                overflow: auto;
+                padding: 24px;
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                background: var(--surface);
+                color: var(--text);
+                box-shadow: 0 20px 60px #0006;
             }
+            .lamina-eliminar-dialog::backdrop { background: #000a; }
+            .lamina-eliminar-dialog h2 { margin-bottom: 12px; font-size: 20px; }
+            .lamina-eliminar-dialog p { color: var(--muted); font-size: 14px; }
+            .lamina-eliminar-datos { display: grid; gap: 6px; margin: 16px 0; overflow-wrap: anywhere; }
+            .lamina-eliminar-datos > span { color: var(--muted); font-size: 13px; }
+            .lamina-eliminar-resultado { min-height: 22px; margin-bottom: 14px; color: var(--red-text, var(--red)); font-size: 13px; }
+            .lamina-eliminar-dialog .btn-eliminar { background: var(--red); color: #fff; border-color: var(--red); }
 
             .lam-estado-disponible {
                 font-size: 10px;

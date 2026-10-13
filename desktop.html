@@ -2091,6 +2091,15 @@
 
 <div id="laminaDetalleOverlay" class="producto-detalle-overlay" style="display:none"><div id="laminaDetalleContenido" class="producto-detalle-card lamina-detalle-card"></div></div>
 
+<dialog id="laminaEliminarDialog" class="lamina-eliminar-dialog" aria-labelledby="laminaEliminarTitulo" aria-describedby="laminaEliminarAviso">
+    <h2 id="laminaEliminarTitulo">Eliminar lámina</h2>
+    <p id="laminaEliminarAviso">Esta lámina se eliminará permanentemente del catálogo.</p>
+    <div class="lamina-eliminar-datos"><strong id="laminaEliminarNombre"></strong><span>Sucursal: <span id="laminaEliminarSucursal"></span></span></div>
+    <div id="laminaEliminarResultado" class="lamina-eliminar-resultado" role="status" aria-live="polite"></div>
+    <div class="row-2"><button id="laminaEliminarCancelar" class="btn btn-ghost" type="button" autofocus>Cancelar</button><button id="laminaEliminarConfirmar" class="btn btn-eliminar" type="button">Eliminar</button></div>
+</dialog>
+
+
 <div id="inventarioAjusteOverlay" class="producto-detalle-overlay" style="display:none" onclick="cerrarAjusteInventario(event)">
     <div class="producto-detalle-card" style="max-width:470px" onclick="event.stopPropagation()">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">

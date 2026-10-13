@@ -4,12 +4,15 @@ import { api } from '../api.js';
 import { mostrarMsg } from '../utils.js';
 import { manejarRespuesta } from '../ui.js';
 import { can } from '../authorization.js';
+import { nombreSucursalVisible } from '../sucursales.js';
 
 let laminaTimer = null;
 let busquedaLaminasVersion = 0;
 let paginaLaminas = 1;
 let totalLaminas = 0;
 let laminaEditando = null;
+let laminaEliminando = null;
+let eliminacionLaminaEnCurso = false;
 const reportesSinStockCache = new Map();
 const reportesSinStockPendientes = new Map();
 let moduloPdfLaminas = null;
@@ -43,7 +46,7 @@ export function buscarLaminas (inmediata = false, pagina = 1) {
         return
     }
     const ejecutar = () => ejecutarBusquedaLaminas(t, suc, est, version, paginaSolicitada);
-    if (inmediata) ejecutar();
+    if (inmediata) return ejecutar();
     else laminaTimer = setTimeout(ejecutar, 350);
 }
 
@@ -85,7 +88,11 @@ export async function ejecutarBusquedaLaminas (t, suc, est, version, pagina) {
         }
         const lams = data.datos || [];
         totalLaminas = Number.isFinite(Number(data.total)) ? Number(data.total) : lams.length;
-        paginaLaminas = Number(data.pagina) || pagina;
+        const ultimaPagina = Math.max(1, Math.ceil(totalLaminas / LIMITE_LAMINAS));
+        if (totalLaminas > 0 && pagina > ultimaPagina) {
+            return await ejecutarBusquedaLaminas(t, suc, est, version, ultimaPagina);
+        }
+        paginaLaminas = totalLaminas === 0 ? 1 : Number(data.pagina) || pagina;
         lista.innerHTML = "";
         if (lams.length === 0) {
             const vacio = document.createElement("div");
@@ -122,11 +129,13 @@ export function renderLaminaCard (lam) {
     const esDis = lam.estado === "DISPONIBLE"
       , estadoClass = esDis ? "lam-estado-disponible" : "lam-estado-sinstock"
       , nuevoEstado = esDis ? "SIN STOCK" : "DISPONIBLE"
-      , btnLabel = esDis ? "❌ Sin stock" : "✅ Disponible"
-      , acciones = can("laminas.editar")
-        ? `<button class="btn-icon lam-accion" data-accion="editar" title="Editar lámina">✏️ Editar</button><button class="btn-icon lam-accion" data-accion="cambiar-estado" title="Cambiar estado">${btnLabel}</button>`
-        : "";
-    div.innerHTML = `<div class="lamina-info"><div class="lam-titulo">${escaparHtml(lam.titulo || "Sin título")}</div><div class="lamina-detalles"><div class="lamina-detalle"><span class="lamina-detalle-label">Categoría</span><span class="lamina-detalle-valor">${escaparHtml(lam.categoria || "—")}</span></div><div class="lamina-detalle"><span class="lamina-detalle-label">Ubicación</span><span class="lamina-detalle-valor">${escaparHtml(lam.ubicacion || "—")}</span></div></div></div><div class="lam-actions"><span class="${estadoClass}">${escaparHtml(lam.estado || "—")}</span>${acciones}</div>`;
+      , btnLabel = esDis ? "❌ Sin stock" : "✅ Disponible";
+    const acciones = [
+        can("laminas.editar") ? '<button type="button" class="btn-icon lam-accion" data-accion="editar" title="Editar lámina">✏️ Editar</button>' : '',
+        can("laminas.editar") ? '<button type="button" class="btn-icon lam-accion" data-accion="cambiar-estado" title="Cambiar estado">' + btnLabel + '</button>' : '',
+        can("laminas.eliminar") ? '<button type="button" class="btn-icon lam-accion lam-accion-eliminar danger" data-accion="eliminar" title="Eliminar lámina">🗑️ Eliminar</button>' : ''
+    ].join('');
+    div.innerHTML = `<div class="lamina-info"><div class="lamina-cabecera"><div class="lam-titulo">${escaparHtml(lam.titulo || "Sin título")}</div><span class="${estadoClass}">${escaparHtml(lam.estado || "—")}</span></div><div class="lamina-detalles"><div class="lamina-detalle"><span class="lamina-detalle-label">Categoría</span><span class="lamina-detalle-valor">${escaparHtml(lam.categoria || "—")}</span></div><div class="lamina-detalle"><span class="lamina-detalle-label">Ubicación</span><span class="lamina-detalle-valor">${escaparHtml(lam.ubicacion || "—")}</span></div></div></div>` + (acciones ? `<div class="lam-actions">${acciones}</div>` : "");
     div.addEventListener('click', () => abrirDetalleLamina(lam));
     const btnEditar = div.querySelector('[data-accion="editar"]');
     if (btnEditar) btnEditar.addEventListener('click', event => {
@@ -142,6 +151,11 @@ export function renderLaminaCard (lam) {
             cambiarEstadoLamina(this.dataset.laminaId, this.dataset.nuevoEstado, this);
         });
     }
+    const btnEliminar = div.querySelector('[data-accion="eliminar"]');
+    if (btnEliminar) btnEliminar.addEventListener('click', event => {
+        event.stopPropagation();
+        abrirEliminarLamina(lam);
+    });
     return div;
 }
 
@@ -235,6 +249,7 @@ export async function agregarLamina () {
 
 // ── Init laminas ──
 export function initLaminasMode() {
+    inicializarDialogoEliminarLamina();
     const selector = document.getElementById("laminaFiltroSucursal");
     if (selector && !selector._reporteLaminasInicializado) {
         selector._reporteLaminasInicializado = true;
@@ -472,4 +487,66 @@ function escaparHtml(valor) {
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+
+function inicializarDialogoEliminarLamina() {
+    const dialogo = document.getElementById('laminaEliminarDialog');
+    if (!dialogo || dialogo._eliminarInicializado) return;
+    dialogo._eliminarInicializado = true;
+    document.getElementById('laminaEliminarCancelar').addEventListener('click', () => dialogo.close());
+    document.getElementById('laminaEliminarConfirmar').addEventListener('click', confirmarEliminarLamina);
+    dialogo.addEventListener('cancel', event => { if (eliminacionLaminaEnCurso) event.preventDefault(); });
+    dialogo.addEventListener('close', () => { laminaEliminando = null; });
+}
+
+export function abrirEliminarLamina(lam) {
+    if (!store.sessionToken || !can('laminas.eliminar')) {
+        mostrarMsg('Sin permisos para eliminar láminas', 'err');
+        return;
+    }
+    if (eliminacionLaminaEnCurso) return;
+    inicializarDialogoEliminarLamina();
+    laminaEliminando = { ...lam, token: store.sessionToken };
+    document.getElementById('laminaEliminarNombre').textContent = lam.titulo || 'Sin título';
+    document.getElementById('laminaEliminarSucursal').textContent = nombreSucursalVisible(lam.sucursal) || lam.sucursal || '—';
+    document.getElementById('laminaEliminarResultado').textContent = '';
+    document.getElementById('laminaEliminarDialog').showModal();
+}
+
+export async function confirmarEliminarLamina() {
+    if (!laminaEliminando || eliminacionLaminaEnCurso) return;
+    const lamina = laminaEliminando;
+    const resultado = document.getElementById('laminaEliminarResultado');
+    if (!can('laminas.eliminar') || !store.sessionToken || store.sessionToken !== lamina.token) {
+        resultado.textContent = 'La sesión o tus permisos cambiaron. Actualiza la página.';
+        return;
+    }
+    const dialogo = document.getElementById('laminaEliminarDialog');
+    const confirmar = document.getElementById('laminaEliminarConfirmar');
+    const cancelar = document.getElementById('laminaEliminarCancelar');
+    eliminacionLaminaEnCurso = true;
+    confirmar.disabled = cancelar.disabled = true;
+    resultado.textContent = 'Eliminando lámina…';
+    try {
+        const data = await api({ ACCION: 'ELIMINAR_LAMINA', ID: lamina.id, TOKEN: lamina.token });
+        if (!data.ok) {
+            resultado.textContent = data.error === 'LAMINA_NO_ENCONTRADA'
+                ? 'Esta lámina ya no existe. Cancela y actualiza la lista.'
+                : ['NO_AUTORIZADO', 'PERMISO_DENEGADO', 'SUCURSAL_NO_AUTORIZADA', 'SESION_CAMBIADA'].includes(data.error)
+                    ? 'No tienes autorización para eliminar esta lámina. Actualiza la página.'
+                    : 'No se pudo eliminar la lámina. Intenta nuevamente.';
+            return;
+        }
+        laminaEliminando = null;
+        dialogo.close();
+        mostrarMsg('Lámina eliminada correctamente', 'ok');
+        invalidarReporteLaminasSinStock();
+        await buscarLaminas(true, paginaLaminas);
+    } catch (_) {
+        resultado.textContent = 'Error de conexión. Intenta nuevamente.';
+    } finally {
+        eliminacionLaminaEnCurso = false;
+        confirmar.disabled = cancelar.disabled = false;
+    }
 }
