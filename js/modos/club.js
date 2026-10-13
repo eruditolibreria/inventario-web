@@ -236,7 +236,7 @@ function renderCanjes(datos) {
           ? `<select data-club-estado="${c.id}"><option value="">Cambiar estado…</option>${c.estado === 'SOLICITADO' ? '<option value="PREPARANDO">Preparando</option>' : ''}${['SOLICITADO','PREPARANDO'].includes(c.estado) ? '<option value="LISTO">Listo</option>' : ''}${c.estado === 'LISTO' ? '<option value="ENTREGADO">Entregado</option>' : ''}</select>` : '';
         const cancelar = ['SOLICITADO', 'PREPARANDO', 'LISTO'].includes(c.estado) && can('club.cancelar_canjes') ? `<button class="btn btn-ghost btn-sm" data-club-cancelar="${c.id}">Cancelar</button>` : '';
         return `<article class="club-list-card" data-club-canje="${c.id}">
-            <div><strong>#${c.id} · ${esc(premio.nombre || 'Premio')}</strong><div>${esc(cliente.nombre || 'Cliente')} · ${esc(cliente.codigo_cliente || '')}</div><small>${fecha(c.solicitado_en)} · ${esc(c.sucursal_nombre || nombreSucursalVisible(c.sucursal_id))}</small></div>
+            <div><strong>#${c.id} · ${esc(premio.nombre || 'Premio')}</strong><div>${esc(cliente.nombre || 'Cliente')} · ${esc(cliente.documento || 'Sin CI')}</div><small>${fecha(c.solicitado_en)} · ${esc(c.sucursal_nombre || nombreSucursalVisible(c.sucursal_id))}</small></div>
             <div class="club-list-actions"><span class="rol-pill">${esc(c.estado)}</span><strong>${Number(c.puntos_total).toLocaleString('es-BO')} pts</strong>${acciones}${cancelar}</div>
         </article>`;
     }).join('');

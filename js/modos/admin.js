@@ -957,6 +957,7 @@ export function abrirEditarProducto(p) {
     _productoEditando = p;
     var ubicacion = p.ubicacion || "", proveedor = p.proveedor || "";
     document.getElementById("inventarioEditNombre").textContent = p.producto;
+    document.getElementById("inventarioEditProducto").value = p.producto || "";
     document.getElementById("inventarioEditUbicacion").value = ubicacion;
     document.getElementById("inventarioEditProveedor").value = proveedor;
     const precioInput = document.getElementById("inventarioEditPrecioVenta");
@@ -978,6 +979,13 @@ export function abrirEditarProducto(p) {
 export async function guardarEdicionProducto() {
     if (!_productoEditando || !store.sessionToken) return;
     var id = _productoEditando.id;
+    const nombreInput = document.getElementById("inventarioEditProducto");
+    const producto = nombreInput.value.trim();
+    if (!producto) {
+        mostrarMsg("Ingresa el nombre del producto", "err");
+        nombreInput.focus();
+        return;
+    }
     var ubicacion = document.getElementById("inventarioEditUbicacion").value.trim();
     var proveedor = document.getElementById("inventarioEditProveedor").value.trim();
     var precioVenta = parseFloat(obtenerValorInput(document.getElementById("inventarioEditPrecioVenta")));
@@ -986,6 +994,8 @@ export async function guardarEdicionProducto() {
         var data = await api({
             ACCION: "ACTUALIZAR_PRODUCTO",
             ID: id,
+            PRODUCTO: producto,
+            NOMBRE_ORIGINAL: _productoEditando.producto,
             UBICACION: ubicacion,
             PROVEEDOR: proveedor,
             PRECIO_VENTA: can("productos.cambiar_precio") && !isNaN(precioVenta) ? precioVenta : undefined,
@@ -998,7 +1008,12 @@ export async function guardarEdicionProducto() {
             cerrarEditarProducto();
             cargarInventarioAdmin();
         } else {
-            mostrarMsg("Error: " + (data.error || "desconocido"), "err");
+            const erroresNombre = {
+                PRODUCTO_NOMBRE_DUPLICADO: "Ese nombre ya pertenece a otro producto de esta sucursal, o a uno de sus nombres anteriores",
+                PRODUCTO_REQUERIDO: "Ingresa el nombre del producto",
+                PRODUCTO_MODIFICADO_RECARGA: "El producto cambió mientras lo editabas. Cierra y vuelve a abrir su ficha"
+            };
+            mostrarMsg(erroresNombre[data.error] || "Error: " + (data.error || "desconocido"), "err");
         }
     } catch (e) {
         mostrarMsg("Error de conexion", "err");

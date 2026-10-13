@@ -2,7 +2,13 @@
 
 Portal: http://127.0.0.1:5500/club/
 
-Supabase local: http://127.0.0.1:54323/
+Supabase Studio local: http://127.0.0.1:44323/
+
+API local: http://127.0.0.1:44321/ (funciones en /functions/v1).
+
+Base de datos local: 127.0.0.1:44322. Correo de prueba: http://127.0.0.1:44324/.
+
+La configuracion compartida de administracion y Club esta en js/config.js y selecciona estos endpoints al abrir desde localhost o 127.0.0.1.
 
 La cuenta «PRUEBA LOCAL CLUB» está abierta en el portal. Su usuario es `swp4283129` y su contraseña de prueba es `ClubLocal2026!`.
 

@@ -3,7 +3,7 @@
 const LOCAL = ["localhost", "127.0.0.1"].includes(globalThis.location?.hostname); // local automático, producción por dominio
 
 export const HOST = LOCAL
-  ? "http://127.0.0.1:54321/functions/v1"
+  ? "http://127.0.0.1:44321/functions/v1"
   : "https://nhysxuqxlkmvrpxdoate.supabase.co/functions/v1";
 
 export const CLUB_CONTENT_URL = LOCAL ? `${HOST}/club-content` : '/api/club/v1';
@@ -13,7 +13,7 @@ export const LOGIN_REGION_ENABLED = true;
 
 // Cliente directo Supabase (PostgREST + Realtime)
 export const SUPABASE_URL = LOCAL
-  ? "http://127.0.0.1:54321"
+  ? "http://127.0.0.1:44321"
   : "https://nhysxuqxlkmvrpxdoate.supabase.co";
 
 export function normalizarUrlPublica(value) {
